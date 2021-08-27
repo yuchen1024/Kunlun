@@ -1,0 +1,13 @@
+.DS_Store
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.toc
+*.gz
+*.fdb_latexmk
+*.cmake
+Makefile
+deprecated
+build
