@@ -6,7 +6,7 @@ We give a C++ wrapper for OpenSSL, make it handy to use, without worrying about 
 
 ## Design philosophy
 
-Provide a neat and clean interfaces for big integer and ec group operations. However, the style of interfaces is hard to unify. So far, the library is not stable. It will keep involve. 
+Provide a neat interfaces for big integer and ec group operations. With the hope that the code is as short as paper description. However, the style of interfaces is hard to unify. So far, the library is not stable. It will keep involve. 
 
 ## Issues
 
