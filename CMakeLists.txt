@@ -19,9 +19,6 @@ link_directories("/usr/local/lib")
 add_executable(test_twisted_elgamal test/test_twisted_elgamal.cpp)
 target_link_libraries(test_twisted_elgamal ${OPENSSL_LIBRARIES} -lglog -lomp)
 
-add_executable(dummy_test test/dummy_test.cpp)
-target_link_libraries(dummy_test ${OPENSSL_LIBRARIES} -lglog)
-
 add_executable(test_nizk_plaintext_equality test/test_nizk_plaintext_equality.cpp)
 target_link_libraries(test_nizk_plaintext_equality ${OPENSSL_LIBRARIES} -lglog -lomp)
 

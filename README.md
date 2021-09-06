@@ -188,8 +188,8 @@ Test auditing policies
 
 
 3. Limit policy: for ctx1 and ctx3
-   - limit is 511 --- Alice's claim (false) 
-   - limit is 512 --- Alice's claim (correct)      
+   - limit is 512 --- Alice's claim (false) 
+   - limit is 513 --- Alice's claim (correct)      
 
 ---
 
