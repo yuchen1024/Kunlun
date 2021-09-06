@@ -23,7 +23,7 @@ public:
     // arithmetic operations 
     
     // Returns a BigInt whose value is (- *this). Causes a check failure if the operation fails.
-    BigInt Neg() const;
+    BigInt Negate() const;
 
     // Returns a BigInt whose value is (*this + other). Causes a check failure if the operation fails.
     BigInt Add(const BigInt& other) const;
@@ -45,6 +45,8 @@ public:
     // Returns a BigInt whose value is (*this ^ exponent).
     // Causes a check failure if the operation fails.
     BigInt Exp(const BigInt& exponent) const;
+
+    BigInt Square() const;
 
     // Returns a BigInt whose value is (*this mod m).
     BigInt Mod(const BigInt& modulus) const;
@@ -103,35 +105,35 @@ public:
 
     inline BigInt& operator=(const BigInt& other) { BN_copy(this->bn_ptr, other.bn_ptr); return *this; }
 
-    inline BigInt operator-() const { return this->Neg(); }
+    inline BigInt operator-() const { return this->Negate(); }
 
-    inline BigInt operator+(const BigInt& b) const { return this->Add(b); }
+    inline BigInt operator+(const BigInt& other) const { return this->Add(other); }
 
-    inline BigInt operator*(const BigInt& b) const { return this->Mul(b); }
+    inline BigInt operator*(const BigInt& other) const { return this->Mul(other); }
 
-    inline BigInt operator-(const BigInt& b) const { return this->Sub(b); }
+    inline BigInt operator-(const BigInt& other) const { return this->Sub(other); }
 
-    inline BigInt operator/(const BigInt& b) const { return this->Div(b); }
+    inline BigInt operator/(const BigInt& other) const { return this->Div(other); }
 
-    inline BigInt& operator+=(const BigInt& b) { return *this = *this + b; }
+    inline BigInt& operator+=(const BigInt& other) { return *this = *this + other; }
 
-    inline BigInt& operator*=(const BigInt& b) { return *this = *this * b; }
+    inline BigInt& operator*=(const BigInt& other) { return *this = *this * other; }
 
-    inline BigInt& operator-=(const BigInt& b) { return *this = *this - b; }
+    inline BigInt& operator-=(const BigInt& other) { return *this = *this - other; }
 
-    inline BigInt& operator/=(const BigInt& b) { return *this = *this / b; }
+    inline BigInt& operator/=(const BigInt& other) { return *this = *this / other; }
 
-    inline bool operator==(const BigInt& b) const { return 0 == this->CompareTo(b); }
+    inline bool operator==(const BigInt& other) const { return 0 == this->CompareTo(other); }
 
-    inline bool operator!=(const BigInt& b) const { return !(*this == b); }
+    inline bool operator!=(const BigInt& other) const { return !(*this == other); }
 
-    inline bool operator<(const BigInt& b) const { return -1 == this->CompareTo(b); }
+    inline bool operator<(const BigInt& other) const { return -1 == this->CompareTo(other); }
 
-    inline bool operator>(const BigInt& b) const { return 1 == this->CompareTo(b); }
+    inline bool operator>(const BigInt& other) const { return 1 == this->CompareTo(other); }
 
-    inline bool operator<=(const BigInt& b) const { return this->CompareTo(b) <= 0; }
+    inline bool operator<=(const BigInt& other) const { return this->CompareTo(other) <= 0; }
 
-    inline bool operator>=(const BigInt& b) const { return this->CompareTo(b) >= 0; }
+    inline bool operator>=(const BigInt& other) const { return this->CompareTo(other) >= 0; }
 
     inline BigInt operator%(const BigInt& modulus) const { return this->Mod(modulus); }
 
@@ -139,7 +141,7 @@ public:
 
     inline BigInt operator<<(int n) { return this->Lshift(n); }
 
-    inline BigInt& operator%=(const BigInt& b) { return *this = *this % b; }
+    inline BigInt& operator%=(const BigInt& other) { return *this = *this % other; }
 
     inline BigInt& operator>>=(int n) { return *this = *this >> n; }
 
@@ -190,16 +192,16 @@ public:
     bool IsSafePrime(double prime_error_probability) const;
 
     // print BigInt object, mode = {10, 16}
-    void Print(int mode) const; 
+    void Print() const; 
     
-    void Print(int mode, std::string note) const; 
+    void Print(std::string note) const; 
 };
 
 // global bigint objects
 const static BigInt bn_0(uint64_t(0)); 
 const static BigInt bn_1(uint64_t(1)); 
 const static BigInt bn_2(uint64_t(2)); 
-const static BigInt bn_3(uint64_t(3)); 
+const static BigInt bn_3(uint64_t(3));  
 
 
 // Copies the given BigInt.
@@ -243,7 +245,7 @@ BigInt BigIntFromByteString(const std::string& str)
     return result; 
 }
   
-std::string BigIntToByteString(const BigInt& a)
+std::string BigIntToByteString(const BigInt &a)
 {
     size_t LEN = a.GetByteLength();
     unsigned char buffer[LEN];
@@ -253,10 +255,18 @@ std::string BigIntToByteString(const BigInt& a)
     return result;
 }  
 
+/* convert a Big number to string */
+std::string BigIntToHexString(const BigInt &a)
+{
+    std::stringstream ss; 
+    ss << BN_bn2hex(a.bn_ptr);
+    return ss.str();  
+}
+
 
 // Returns a BigInt whose value is (- *this).
 // Causes a check failure if the operation fails.
-BigInt BigInt::Neg() const {
+BigInt BigInt::Negate() const {
     BigInt result = *this;
     BN_set_negative(result.bn_ptr, !BN_is_negative(result.bn_ptr));
     return result;
@@ -318,6 +328,13 @@ int BigInt::CompareTo(const BigInt& other) const {
 BigInt BigInt::Exp(const BigInt& exponent) const{
     BigInt result;
     CRYPTO_CHECK(1 == BN_exp(result.bn_ptr, this->bn_ptr, exponent.bn_ptr, bn_ctx));
+    return result;
+}
+
+// return square
+BigInt BigInt::Square() const{
+    BigInt result;
+    CRYPTO_CHECK(1 == BN_sqr(result.bn_ptr, this->bn_ptr, bn_ctx));
     return result;
 }
 
@@ -432,7 +449,15 @@ bool BigInt::IsSafePrime(double prime_error_probability = 1e-40) const {
 }
 
 
-BigInt GenRandomBnLessThan(const BigInt& max) {
+BigInt GenRandomBigIntLessThan(const BIGNUM* max) {
+    BigInt result;
+    CRYPTO_CHECK(1 == BN_rand_range(result.bn_ptr, max));
+    // BN_priv_rand_range(result.bn_ptr, max.bn_ptr);
+    return result;
+}
+
+
+BigInt GenRandomBigIntLessThan(const BigInt& max) {
     BigInt result;
     CRYPTO_CHECK(1 == BN_rand_range(result.bn_ptr, max.bn_ptr));
     // BN_priv_rand_range(result.bn_ptr, max.bn_ptr);
@@ -440,15 +465,15 @@ BigInt GenRandomBnLessThan(const BigInt& max) {
 }
 
 // Generates a cryptographically strong pseudo-random in the range [start, end).
-BigInt GenRandomBnBetween(const BigInt& start, const BigInt& end) {
+BigInt GenRandomBigIntBetween(const BigInt& start, const BigInt& end) {
     if (start > end) {
         std::cerr << "provided range is invalid" << std::endl; 
     }
-    return GenRandomBnLessThan(end - start) + start;
+    return GenRandomBigIntLessThan(end - start) + start;
 }
 
 // Generates a cryptographically strong pseudo-random bytes of the specified length.
-std::string GenRandBytes(int num_bytes) {
+std::string GenRandomBytes(int num_bytes) {
     if (num_bytes < 0){
         std::cerr << "num_bytes must be nonnegative, provided value was" << num_bytes << "."<<std::endl;
     } 
@@ -459,9 +484,9 @@ std::string GenRandBytes(int num_bytes) {
 
 // Returns a BigNum that is relatively prime to the num and less than the num.
 BigInt GenCoPrimeLessThan(const BigInt& num) {
-    BigInt rand_num = GenRandomBnLessThan(num);
+    BigInt rand_num = GenRandomBigIntLessThan(num);
     while (rand_num.GCD(num) > bn_1) {
-        rand_num = GenRandomBnLessThan(num);
+        rand_num = GenRandomBigIntLessThan(num);
     }
     return rand_num;
 }
@@ -495,29 +520,30 @@ BigInt HashToBigInt(const std::string& input){
 }
 
 
-void BigInt::Print(int mode) const
+void BigInt::Print() const
 {
     char *bn_str; 
-    switch(mode){
-        case 16: bn_str = BN_bn2hex(this->bn_ptr); break; 
-        case 10: bn_str = BN_bn2dec(this->bn_ptr); break;
-    }
+    bn_str = BN_bn2hex(this->bn_ptr);
+    // switch(mode){
+    //     case 16: bn_str = BN_bn2hex(this->bn_ptr); break; 
+    //     case 10: bn_str = BN_bn2dec(this->bn_ptr); break;
+    // }
     std::cout << bn_str << std::endl;
     OPENSSL_free(bn_str);
 }
 
-void BigInt::Print(int mode, std::string note) const
+void BigInt::Print(std::string note) const
 {
     std::cout << note << " = "; 
-    this->Print(mode);
+    this->Print();
 }
 
 
 /* compute the jth bit of a big integer i (count from little endian to big endian) */
-int BigInt::GetTheNthBit(size_t n) const
+int BigInt::GetTheNthBit(size_t j) const
 {
     BigInt a = *this;  
-    a = a >> n;
+    a = a >> j;
     a = a.GetLastNBits(1);  
 
     int result; 
@@ -553,7 +579,11 @@ int BigInt::GetTheNthBit(size_t n) const
 //             if(bitvector[i*window_size+j] == 1) scalar_vec[i] += pow_vector[j]; 
 //         }
 //     } 
-// }
+// 
+
+
+
+
 
 /* save bigint object binary form */  
 void BigInt::Serialize(std::ofstream &fout)
@@ -585,6 +615,124 @@ std::ifstream &operator>>(std::ifstream &fin, BigInt &a)
     fin.read(buffer, BN_LEN);
     BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_LEN, a.bn_ptr); // red from input file
     return fin;            
+}
+
+// print a Big Number vector
+void Print_BigIntVector(std::vector<BigInt> &vec_a, std::string note)
+{
+    for (auto i = 0; i < vec_a.size(); i++)
+    {
+        std::cout << note <<"[" << i << "]="; 
+        vec_a[i].Print(); 
+    }
+}
+
+/* a[i] = (a[i]+b[i]) mod order */
+void BigIntVector_ModAdd(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+{
+    if (vec_a.size() != vec_b.size()) {
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    //#pragma omp parallel for
+    for (auto i = 0; i < vec_a.size(); i++) 
+    {
+        result[i] = (vec_a[i] + vec_b[i]) % order;  
+        //BN_mod_add(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, bn_ctx); 
+    }
+}
+
+/* a[i] = (a[i]-b[i]) mod order */ 
+void BigIntVector_ModSub(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+{
+    if (vec_a.size() != vec_b.size()) {
+        std::cout << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    //#pragma omp parallel for
+    for (auto i = 0; i < vec_a.size(); i++) {
+        result[i] = (vec_a[i] - vec_b[i]) % order;
+        //BN_mod_sub(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, nullptr); 
+    } 
+}
+
+/* c[i] = a[i]*b[i] mod order */ 
+void BigIntVector_ModProduct(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+{
+    if (vec_a.size() != vec_b.size()) {
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    //#pragma omp parallel for
+    for (auto i = 0; i < vec_a.size(); i++) {
+        result[i] = (vec_a[i] * vec_b[i]) % order; // product = (vec_a[i]*vec_b[i]) mod order
+        //BN_mod_mul(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, nullptr);
+    }
+}
+
+/* compute the inverse of a[i] */ 
+void BigIntVector_ModInverse(std::vector<BigInt> &result, std::vector<BigInt> &vec_a)
+{
+    //#pragma omp parallel for
+    for (auto i = 0; i < vec_a.size(); i++) {
+        result[i] = vec_a[i].ModInverse(order); 
+        //BN_mod_inverse(result[i].bn_ptr, vec_a[i].bn_ptr, order, nullptr); 
+    }
+}
+
+
+/* result[i] = c * a[i] */  
+void BigIntVector_ModScalar(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, BigInt &c)
+{
+    //#pragma omp parallel for
+    for (auto i = 0; i < vec_a.size(); i++) {
+        result[i] = (vec_a[i] * c) % order;
+        //BN_mod_mul(result[i].bn_ptr, vec_a[i].bn_ptr, c.bn_ptr, order, nullptr);
+    } 
+}
+
+/* result[i] = c * a[i] */  
+void BigIntVector_Scalar(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, BigInt &c)
+{
+    //#pragma omp parallel for
+    for (auto i = 0; i < vec_a.size(); i++) {
+        result[i] = vec_a[i] * c;
+        //BN_mul(result[i].bn_ptr, vec_a[i].bn_ptr, c.bn_ptr, bn_ctx);
+    } 
+}
+
+/* result[i] = -result[i] */  
+void BigIntVector_ModNegate(std::vector<BigInt> &result, BigInt &modulus)
+{
+    for (auto i = 0; i < result.size(); i++) {
+        result[i] = result[i].ModNegate(modulus);
+    } 
+}
+
+
+/* sum_i^n a[i]*b[i] */
+BigInt BigIntVector_ModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+{
+    BigInt result(bn_0); 
+
+    if (vec_a.size() != vec_b.size()){
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    }   
+    for (auto i = 0; i < vec_a.size(); i++) {
+        result += vec_a[i] * vec_b[i]; // product = (vec_a[i]*vec_b[i]) mod order
+    }
+    result = result % BigInt(order);
+    return result; 
+}
+
+
+/* generate a vector of random EC points */  
+void GenRandomBigIntVectorLessThan(std::vector<BigInt> &vec_a, const BigInt &order)
+{
+    for(auto i = 0; i < vec_a.size(); i++){ 
+        vec_a[i] = GenRandomBigIntLessThan(order); 
+    }
 }
 
 #endif  // KUNLUN_CRYPTO_BIGINT_HPP_

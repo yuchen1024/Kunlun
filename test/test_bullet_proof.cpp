@@ -1,0 +1,156 @@
+#define DEBUG
+
+#include "../bulletproofs/bullet_proof.hpp"
+
+
+void GenRandomBulletInstanceWitness(Bullet_PP &pp, Bullet_Instance &instance, 
+                                    Bullet_Witness &witness, bool STATEMENT_FLAG)
+{
+    if(STATEMENT_FLAG == true) std::cout << "generate a true statement pair" << std::endl; 
+    else std::cout << "generate a random statement (false with overwhelming probability)" << std::endl; 
+    BigInt exp = BigInt(pp.RANGE_LEN);
+
+    BigInt bn_range_size = bn_2.ModExp(exp, order); // 2^exp 
+    std::cout << "range = [" << 0 << "," << BN_bn2hex(bn_range_size.bn_ptr) <<")" << std::endl; 
+    for(auto i = 0; i < pp.AGG_NUM; i++)
+    {
+        witness.r[i] = GenRandomBigIntLessThan(order);
+        witness.v[i] = GenRandomBigIntLessThan(order); 
+        if (STATEMENT_FLAG == true){
+            witness.v[i] = witness.v[i] % bn_range_size;  
+        }
+        instance.C[i] = pp.g * witness.r[i] + pp.h * witness.v[i]; 
+    }
+    std::cout << "random instance generation finished" << std::endl;
+    Print_BigIntVector(witness.v, "witness.v");  
+    Print_SplitLine('-');
+}
+
+void GenBoundaryBulletInstanceWitness(Bullet_PP &pp, Bullet_Instance &instance, 
+                                      Bullet_Witness &witness, std::string BOUNDARY_FLAG)
+{  
+    BigInt exp = BigInt(pp.RANGE_LEN);
+    if (BOUNDARY_FLAG == "LEFT") std::cout << "generate left boundary" << std::endl;
+    else std::cout << "generate right boundary" << std::endl;
+
+    for(auto i = 0; i < pp.AGG_NUM; i++)
+    {
+        witness.r[i] = GenRandomBigIntLessThan(order);
+        if (BOUNDARY_FLAG == "LEFT"){
+            witness.v[i] = bn_0;
+        }
+        else{
+            witness.v[i] = bn_2.ModExp(exp, order) - bn_1;
+        } 
+        instance.C[i] = pp.g * witness.r[i] + pp.h * witness.v[i]; 
+    }
+    Print_BigIntVector(witness.v, "witness.v"); 
+}
+
+void test_bulletproof_boundary(size_t RANGE_LEN, size_t AGG_NUM, std::string BOUNDARY_FLAG)
+{
+    Bullet_PP pp; 
+    Bullet_Setup(pp, RANGE_LEN, AGG_NUM);
+
+    
+
+    Bullet_Instance instance; 
+    instance.C.resize(AGG_NUM); 
+    Bullet_Witness witness; 
+    witness.r.resize(AGG_NUM);
+    witness.v.resize(AGG_NUM);
+    Bullet_Proof proof; 
+    
+
+    Print_SplitLine('-'); 
+    std::cout << "begin the test of bulletproofs >>>" << std::endl;
+    Print_SplitLine('-'); 
+
+    GenBoundaryBulletInstanceWitness(pp, instance, witness, BOUNDARY_FLAG); 
+
+    std::string transcript_str; 
+    
+    auto start_time = std::chrono::steady_clock::now(); // start to count the time
+    transcript_str = ""; 
+    Bullet_Prove(pp, instance, witness, transcript_str, proof);
+    auto end_time = std::chrono::steady_clock::now(); // end to count the time
+    auto running_time = end_time - start_time;
+    std::cout << "proof generation takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    start_time = std::chrono::steady_clock::now(); // start to count the time
+    transcript_str = ""; 
+    Bullet_Verify(pp, instance, transcript_str, proof);
+    end_time = std::chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    std::cout << "proof verification takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    Print_SplitLine('-'); 
+    std::cout << "finish the test of bulletproofs >>>" << std::endl;
+    Print_SplitLine('-'); 
+}
+
+
+void test_bulletproof(size_t RANGE_LEN, size_t AGG_NUM, bool STATEMENT_FLAG)
+{
+    Bullet_PP pp; 
+    Bullet_Setup(pp, RANGE_LEN, AGG_NUM);
+
+    Bullet_Instance instance; 
+    instance.C.resize(AGG_NUM); 
+    Bullet_Witness witness; 
+    witness.r.resize(AGG_NUM);
+    witness.v.resize(AGG_NUM);
+    Bullet_Proof proof; 
+
+    Print_SplitLine('-'); 
+    std::cout << "begin the test of bulletproofs >>>" << std::endl;
+    Print_SplitLine('-'); 
+
+    GenRandomBulletInstanceWitness(pp, instance, witness, STATEMENT_FLAG); 
+
+    std::string transcript_str; 
+    
+    auto start_time = std::chrono::steady_clock::now(); // start to count the time
+    transcript_str = ""; 
+    Bullet_Prove(pp, instance, witness, transcript_str, proof);
+    auto end_time = std::chrono::steady_clock::now(); // end to count the time
+    auto running_time = end_time - start_time;
+    std::cout << "proof generation takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    start_time = std::chrono::steady_clock::now(); // start to count the time
+    transcript_str = ""; 
+    Bullet_Verify(pp, instance, transcript_str, proof);
+    end_time = std::chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    std::cout << "proof verification takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    Print_SplitLine('-'); 
+    std::cout << "finish the test of bulletproofs >>>" << std::endl;
+    Print_SplitLine('-'); 
+}
+
+
+int main()
+{ 
+    Context_Initialize(); 
+    ECGroup_Initialize(NID_X9_62_prime256v1);   
+
+    size_t RANGE_LEN = 32; // range size
+    size_t AGG_NUM = 2;  // number of sub-argument
+    test_bulletproof(RANGE_LEN, AGG_NUM, true);
+    test_bulletproof_boundary(RANGE_LEN, AGG_NUM, "LEFT");
+    test_bulletproof_boundary(RANGE_LEN, AGG_NUM, "RIGHT");
+    test_bulletproof(RANGE_LEN, AGG_NUM, false);
+
+
+    ECGroup_Finalize(); 
+    Context_Finalize(); 
+
+    return 0; 
+    
+    return 0;
+}

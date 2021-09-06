@@ -19,5 +19,6 @@ this file includes commonly used head files
 #include <iomanip>
 #include <functional>
 #include <bitset>
+#include <omp.h>
 
 #include <boost/algorithm/hex.hpp>

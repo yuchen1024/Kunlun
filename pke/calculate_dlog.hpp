@@ -4,6 +4,8 @@ this hpp implements DLOG algorithm
 * @author     This file is part of PGC, developed by Yu Chen
 * @copyright  MIT license (see LICENSE file)
 *****************************************************************************/
+#ifndef PKE_CALCULATE_DLOG_HPP_
+#define PKE_CALCULATE_DLOG_HPP_
 
 /* 
     Shanks algorithm for DLOG problem: given (g, h) find x \in [0, n = 2^RANGE_LEN) s.t. g^x = h 
@@ -43,7 +45,7 @@ void Build_Sliced_KeyTable(ECPoint &g, ECPoint &startpoint, size_t startindex, s
     {
         hashkey = std::hash<std::string>{}(ThreadSafe_ECPointToByteString(startpoint)); 
         std::memcpy(buffer+(startindex+i)*INT_LEN, &hashkey, INT_LEN);
-        ThreadSafe_Add(startpoint, g, startpoint); 
+        ThreadSafe_ECPoint_Add(startpoint, g, startpoint); 
     } 
 }
 
@@ -71,6 +73,8 @@ void Parallel_Build_Serialize_KeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRAD
 
     std::vector<ECPoint> startpoint(THREAD_NUM); 
     std::vector<size_t> startindex(THREAD_NUM); 
+
+    //#pragma omp parallel// NEW ADD
     for (auto i = 0; i < THREAD_NUM; i++){
         startindex[i] = i * sliced_babystep_num; 
         startpoint[i] = g * BigInt(startindex[i]);
@@ -164,6 +168,7 @@ void Deserialize_KeyTable_Build_HashMap(std::string keytable_filename, size_t RA
     start_time = std::chrono::steady_clock::now(); // start to count the time
     std::size_t hashkey; 
 
+
     /* point_to_index_map[ECn_to_String(babystep)] = i */
     for(auto i = 0; i < babystep_num; i++)
     {
@@ -198,7 +203,7 @@ void Search_Sliced_Range(ECPoint &ecp_searchanchor, ECPoint &ecp_giantstep,
         if (int2index_map.find(hashkey) == int2index_map.end())
         {
             //ecp_searchanchor = ecp_searchanchor + ecp_giantstep; // not found, take a giant-step forward   
-            ThreadSafe_Add(ecp_searchanchor, ecp_giantstep, ecp_searchanchor); 
+            ThreadSafe_ECPoint_Add(ecp_searchanchor, ecp_giantstep, ecp_searchanchor); 
         }
         else{
             i = int2index_map[hashkey]; 
@@ -217,7 +222,7 @@ bool Parallel_Shanks_DLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, 
     size_t giantstep_num = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
 
     /* compute the giantstep */
-    ECPoint ecp_giantstep = g * babystep_num; // set giantstep = g^babystep_num
+    ECPoint ecp_giantstep = g * BigInt(babystep_num); // set giantstep = g^babystep_num
     ecp_giantstep = ecp_giantstep.Invert();
  
     if(giantstep_num%THREAD_NUM != 0)
@@ -266,6 +271,7 @@ bool Parallel_Shanks_DLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, 
 
     BigInt bn_i, bn_j;
 
+
     for(auto i = 0; i < THREAD_NUM; i++)
     { 
         if(finding[i] == 1)
@@ -289,3 +295,5 @@ void BruteForce_DLOG(const ECPoint &g, const ECPoint &h, BigInt &x)
         x = x + bn_1;
     }
 } 
+
+# endif

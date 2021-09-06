@@ -1,5 +1,5 @@
 //#define DEBUG
-#include "../twisted_elgamal_pke/twisted_elgamal_pke.hpp"
+#include "../pke/twisted_elgamal.hpp"
 #include "../common/print.hpp"
 
 
@@ -23,9 +23,9 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t THREA
 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        m[i] = GenRandomBnLessThan(pp.MSG_SIZE); 
-        k[i] = GenRandomBnLessThan(order); 
-        r_new[i] = GenRandomBnLessThan(order); 
+        m[i] = GenRandomBigIntLessThan(pp.MSG_SIZE); 
+        k[i] = GenRandomBigIntLessThan(order); 
+        r_new[i] = GenRandomBigIntLessThan(order); 
     }
 
     /* test keygen efficiency */ 
@@ -83,7 +83,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t THREA
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        Twisted_ElGamal_HomoAdd(CT[i], CT_new[i], CT_result[i]); 
+        Twisted_ElGamal_HomoAdd(CT_result[i], CT[i], CT_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -94,7 +94,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t THREA
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        Twisted_ElGamal_HomoSub(CT[i], CT_new[i], CT_result[i]); 
+        Twisted_ElGamal_HomoSub(CT_result[i], CT[i], CT_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -105,7 +105,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t THREA
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        Twisted_ElGamal_ScalarMul(CT[i], k[i], CT_result[i]); 
+        Twisted_ElGamal_ScalarMul(CT_result[i], CT[i], k[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -143,9 +143,9 @@ void benchmark_parallel_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, siz
 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        m[i] = GenRandomBnLessThan(pp.MSG_SIZE); 
-        k[i] = GenRandomBnLessThan(order); 
-        r_new[i] = GenRandomBnLessThan(order); 
+        m[i] = GenRandomBigIntLessThan(pp.MSG_SIZE); 
+        k[i] = GenRandomBigIntLessThan(order); 
+        r_new[i] = GenRandomBigIntLessThan(order); 
     }
 
     /* test keygen efficiency */ 
@@ -225,7 +225,7 @@ void benchmark_parallel_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, siz
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        Twisted_ElGamal_Parallel_ScalarMul(CT[i], k[i], CT_result[i]); 
+        Twisted_ElGamal_Parallel_ScalarMul(CT_result[i], CT[i], k[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;

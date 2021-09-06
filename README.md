@@ -2,7 +2,27 @@
 
 ## Overview
 
-We give a C++ wrapper for OpenSSL, make it handy to use, without worrying about the cumbersome memory management and memorizing the long interfaces. Based on this wrapper, we are going to build an efficient and modular crypto library.   
+We give a C++ wrapper for OpenSSL, make it handy to use, without worrying about the cumbersome memory management and memorizing the complex interfaces. Based on this wrapper, we are going to build an efficient and modular crypto library. 
+
+## Design philosophy
+
+Provide a neat and clean interfaces for big integer and ec group operations. However, the style of interfaces is hard to unify. So far, the library is not stable. It will keep involve. 
+
+## Issues
+
+* OpenSSL does not support pre-computation for customized generator.
+* bn_ctx is not thread-safe, so in many places it is hard to apply the SIMD parallel optimization. 
+
+If the above two issues get solved, the performance of Kunlun will be better.
+
+## To do list (impossible missions for me)
+
+1. PRF, PRG
+2. oblivious transfer
+3. garbled circuit
+4. secret sharing
+5. zk-SNARK
+6. ...
 
 
 ## Specifications
@@ -12,6 +32,7 @@ We give a C++ wrapper for OpenSSL, make it handy to use, without worrying about 
 - Requires: OpenSSL
 
 ## Install OpenSSL (On Linux)
+
 download [openssl-master.zip](https://github.com/openssl/openssl.git), then
 ```
   $ mkdir openssl
@@ -46,11 +67,24 @@ download [openssl-master.zip](https://github.com/openssl/openssl.git), then
   * std.inc: standard header files
   * openssl.inc: openssl header files
 
-- /twisted_elgamal_pke: twisted elgamal pke
+- /pke: public key encryption schemes
+  * twisted_elgamal.hpp
+  * calculate_dlog.hpp
 
-- /test: test files
-  * test_twisted_elgamal.cpp:
+- /nizk: associated sigma protocol for twisted elgamal; obtained via Fiat-Shamir transform  
+  * nizk_plaintext_equality.hpp: NIZKPoK for twisted ElGamal plaintext equality in 3-recipient mode
+  * nizk_plaintext_knowledge.hpp: NIZKPoK for twisted ElGamal plaintext and randomness knowledge
+  * nizk_dlog_equality.hpp: NIZKPoK for discrete logarithm equality
 
+- /bulletproofs
+  * bulletproof.hpp: the aggregating logarithmic size bulletproofs
+  * innerproduct_proof.hpp: the inner product argument (used by Bulletproof to shrink the proof size) 
+
+- /gadgets
+  * range_proof.hpp: two useful gadgets for proving encrypted values lie in the right range
+
+- /cryptocurrency
+  * adct.hpp: the ADCT system 
 
 
 ## Compile and Run
@@ -58,8 +92,109 @@ download [openssl-master.zip](https://github.com/openssl/openssl.git), then
   $ mkdir build && cd build
   $ cmake ..
   $ make
-  $ ./test_twisted_elgamal 
+  $ ./test_xxx 
 ```
+
+
+---
+
+## Demo with Test Cases of ADCT
+
+
+set the range size = $[0, 2^\ell = 2^{32}-1 = 4294967295]$
+
+### Flow of ADCT_Demo
+
+   1. run <font color=blue>Setup:</font> to build up the system, generating system-wide parameters and store them in "common.para"
+   2. run <font color=blue>Create_Account</font> to create accounts for Alice ($m_1$) and Bob ($m_2$); 
+      one can reveal the balance by running <font color=blue>Reveal_Balance:</font> 
+   3. Alice runs <font color=blue>Create_CTx</font> to transfer $v_1$ coins to Bob ===> Alice_sn.ctx; 
+      <font color=blue>Print_CTx:</font> shows the details of CTx
+   4. Miners runs <font color=blue>Verify_CTx:</font> check CTx validity
+   5. If CTx is valid, run <font color=blue>Update_Account</font> to Update Alice and Bob's account balance and serialize the changes.
+
+### Support to Auditing Polices
+
+   * Selective opne policy: either Alice or Bob can reveal the transfer amount of related CTx in dispute by running <font color=blue>Justify_open_policy</font>. Anyone can check if the transfer amount is correct by running <font color=blue>Audit_open_policy</font>. 
+   
+   * Anti-money laundering policy: sender can prove the transfer amount sum of a collection of ctx sent from him does not exceed a give limit by running <font color=blue>Justify_limit_policy</font>. Anyone can check if the transfer amount is correct by running <font color=blue>Audit_limit_policy</font>. 
+
+   * Tax policy: user can prove he paid the incoming tax according to the rules by running <font color=blue>Justify_tax_policy</font>. Anyone can check if the transfer amount is correct by running <font color=blue>Audit_tax_policy</font>. 
+
+
+
+### Test Cases
+---
+Create ADCT environment
+
+1. setup the ADCT system
+
+
+2. generate three accounts: Alice, Bob and Tax
+   * $512$ --- Alice's initial balance  
+   * $256$ --- Bob's initial balance    
+   * $0$   --- Tax's initial balance
+
+
+3. serialize pp and three accounts
+
+---
+Test basic transactions among Alice, Bob and Tax
+
+0. deserialize pp and three accounts
+
+1. Invalid CTx: <font color=red>$v_1 \neq v_2$ $\Rightarrow$ plaintext equality proof will be rejected</font>  
+   - $v_1 \neq v_2$ --- in transfer amount
+
+
+2. Invalid CTx: <font color=red>$v \notin [0, 2^\ell]$ $\Rightarrow$ range proof for right interval will be rejected</font>
+   - $v  = 4294967296$ --- transfer amount      
+
+
+3. Invalid CTx: <font color=red>$(m_1 - v) \notin [0, 2^\ell]$ $\Rightarrow$ range proof for solvent 
+   will be rejected</font>
+   - $m_1  = 384$ --- Alice's updated balance  
+   - $v  = 385$ --- transfer amount 
+
+4. 1st Valid CTx
+   - $v    = 128$ --- transfer amount from Alice to Bob
+   - $384$ --- Alice's updated balance  
+   - $384$ --- Bob's updated balance    
+   - $0$   --- Tax's updated balance
+
+5. 2nd Valid CTx
+   - $v    = 32$ --- transfer amount from Bob to Alice
+   - $384$ --- Alice's updated balance  
+   - $352$ --- Bob's updated balance    
+   - $32$   --- Tax's updated balance
+
+
+6. 3st Valid CTx:
+   - $v    = 384$ --- transfer amount from Alice to Bob
+   - $0$ --- Alice's updated balance  
+   - $736$ --- Bob's updated balance    
+   - $32$   --- Tax's updated balance
+
+---
+Test auditing policies
+
+1. Open policy: for ctx1
+   - $v_1  = 128$ --- Alice's claim (correct)  
+   - $v_2  = 127$ --- Bob's claim (false)  
+
+
+2. Tax policy: for ctx1 and ctx2
+   - tax rate is 1/4 --- Bob's claim (correct)
+
+
+3. Limit policy: for ctx1 and ctx3
+   - limit is 511 --- Alice's claim (false) 
+   - limit is 512 --- Alice's claim (correct)      
+
+---
+
+
+
 
 ## License
 

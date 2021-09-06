@@ -6,8 +6,9 @@
 
 static EC_GROUP *group;
 const static EC_POINT *generator; 
-static BIGNUM *order;   // The order of this group.
-static BIGNUM *cofactor;  // The cofactor of this group.
+
+static BIGNUM *order;
+static BIGNUM *cofactor;  // The cofactor of this group
 static BIGNUM *curve_params_p; 
 static BIGNUM *curve_params_a; 
 static BIGNUM *curve_params_b;
@@ -60,10 +61,10 @@ void ECGroup_Initialize(int curve_id){
     
     #ifdef DEBUG
     if(EC_GROUP_have_precompute_mult((EC_GROUP*) group)){ 
-        cout << "precompute enable" << endl;
+        std::cout << "precompute enable" << std::endl;
     } 
     else{
-        cout << "precompute disable" << endl;
+        std::cout << "precompute disable" << std::endl;
     } 
     #endif
 }

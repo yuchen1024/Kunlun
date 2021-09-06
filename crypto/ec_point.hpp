@@ -85,15 +85,12 @@ public:
 
     void Deserialize(std::ifstream &fin);
 
-    std::string ECPointToByteString() const;
-
-    std::string ThreadSafe_ECPointToByteString() const;
-
     friend std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A); 
  
     friend std::ifstream &operator>>(std::ifstream &fin, ECPoint &A); 
 };
- 
+
+// const static BigInt bn_order(order);  
 
 ECPoint::ECPoint(){
     this->point_ptr = EC_POINT_new(group);
@@ -190,10 +187,10 @@ ECPoint CreateECPoint(const BigInt& x, const BigInt& y){
     return ecp_result;
 }
 
-ECPoint GetRandomGenerator(){
+ECPoint GenRandomGenerator(){
     ECPoint ecp_result = ECPoint(generator); 
     BigInt bn_order(order); 
-    ecp_result = ecp_result * GenRandomBnBetween(bn_1, bn_order);
+    ecp_result = ecp_result * GenRandomBigIntBetween(bn_1, bn_order);
     return ecp_result; 
 }
 
@@ -275,7 +272,7 @@ void ECPoint::Deserialize(std::ifstream &fin)
     EC_POINT_oct2point(group, this->point_ptr, buffer, POINT_LEN, bn_ctx);
 }
 
-std::string ECPointToByteString(const ECPoint& A)
+std::string ECPointToByteString(const ECPoint &A)
 {
     unsigned char buffer[POINT_LEN]; 
     memset(buffer, 0, POINT_LEN); 
@@ -285,6 +282,14 @@ std::string ECPointToByteString(const ECPoint& A)
     result.assign(reinterpret_cast<char *>(buffer), POINT_LEN);
 
     return result; 
+}
+
+/* convert an EC point to string */
+std::string ECPointToHexString(const ECPoint &A)
+{
+    std::stringstream ss; 
+    ss << EC_POINT_point2hex(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, bn_ctx);
+    return ss.str();  
 }
 
 
@@ -307,19 +312,21 @@ std::ifstream &operator>>(std::ifstream &fin, ECPoint &A)
 
 
 
-inline void VectorMul(std::vector<ECPoint> &A, std::vector<BigInt> &scalar, ECPoint &result){
+ECPoint ECPointVector_Mul(std::vector<ECPoint> &A, std::vector<BigInt> &scalar){
     if (A.size()!=scalar.size()){
         std::cerr << "vector size does not match" << std::endl; 
-        return; 
     }
     size_t LEN = A.size(); 
-    std::vector<EC_POINT*> vec_A(LEN); 
-    std::vector<BIGNUM*> vec_scalar(LEN); 
-    for(auto i = 0; i < LEN; i++){
-        vec_A[i] = A[i].point_ptr; 
-        vec_scalar[i] = scalar[i].bn_ptr;
-    } 
-    EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, (const EC_POINT**)vec_A.data(), (const BIGNUM**)vec_scalar.data(), bn_ctx); 
+    // std::vector<EC_POINT*> vec_A(LEN); 
+    // std::vector<BIGNUM*> vec_scalar(LEN); 
+    // for(auto i = 0; i < LEN; i++){
+    //     vec_A[i] = A[i].point_ptr; 
+    //     vec_scalar[i] = scalar[i].bn_ptr;
+    // }
+    ECPoint result; 
+    EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, (const EC_POINT**)A.data(), 
+        (const BIGNUM**)scalar.data(), bn_ctx);
+    return result; 
 }
 
 
@@ -335,16 +342,16 @@ std::string ThreadSafe_ECPointToByteString(const ECPoint& A)
     return ecp_str; 
 }
 
-inline void ThreadSafe_Mul(ECPoint &A, BigInt &scalar, ECPoint &result){
+inline void ThreadSafe_ECPoint_Mul(ECPoint &result, ECPoint &A, BigInt &scalar){
     EC_POINT_mul(group, result.point_ptr, nullptr, A.point_ptr, scalar.bn_ptr, nullptr); 
 }
 
-inline void ThreadSafe_Add(ECPoint &X, ECPoint &Y, ECPoint &result) 
+inline void ThreadSafe_ECPoint_Add(ECPoint &result, ECPoint &X, ECPoint &Y) 
 {
     EC_POINT_add(group, result.point_ptr, X.point_ptr, Y.point_ptr, nullptr);  
 }
 
-inline void ThreadSafe_Sub(ECPoint &X, ECPoint &Y, ECPoint &result) 
+inline void ThreadSafe_ECPoint_Sub(ECPoint &result, ECPoint &X, ECPoint &Y) 
 {
     ECPoint Y_inverse = Y; 
     EC_POINT_invert(group, Y_inverse.point_ptr, nullptr); 
@@ -352,19 +359,84 @@ inline void ThreadSafe_Sub(ECPoint &X, ECPoint &Y, ECPoint &result)
 }
 
 
-inline void ThreadSafe_VectorMul(std::vector<ECPoint> &A, std::vector<BigInt> &scalar, ECPoint &result){
+inline void ThreadSafe_ECPointVector_Mul(ECPoint &result, std::vector<ECPoint> &A, std::vector<BigInt> &scalar){
     if (A.size()!=scalar.size()){
         std::cerr << "vector size does not match" << std::endl; 
         return; 
     }
     size_t LEN = A.size(); 
-    std::vector<EC_POINT*> vec_A(LEN); 
-    std::vector<BIGNUM*> vec_scalar(LEN); 
-    for(auto i = 0; i < LEN; i++){
-        vec_A[i] = A[i].point_ptr; 
-        vec_scalar[i] = scalar[i].bn_ptr;
+    EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, (const EC_POINT**)A.data(), (const BIGNUM**)scalar.data(), nullptr); 
+}
+
+
+/* g[i] = g[i]+h[i] */ 
+void ECPointVector_Add(std::vector<ECPoint> &result, std::vector<ECPoint> &vec_A, std::vector<ECPoint> &vec_B)
+{
+    if (vec_A.size()!= vec_B.size()) {
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    #pragma omp parallel for
+    for (auto i = 0; i < vec_A.size(); i++) {
+        ThreadSafe_ECPoint_Add(result[i], vec_A[i], vec_B[i]); 
+    }
+}
+
+
+void Serialize_ECPointVector(std::vector<ECPoint> &vec_A, std::ofstream &fout)
+{
+    for(auto i = 0; i < vec_A.size(); i++) fout << vec_A[i];  
+}
+
+void Deserialize_ECPointVector(std::vector<ECPoint> &vec_A, std::ifstream &fin)
+{
+    for(auto i = 0; i < vec_A.size(); i++) fin >> vec_A[i];  
+}
+
+
+// print an EC Point vector
+void Print_ECPointVector(std::vector<ECPoint> &vec_A, std::string note)
+{ 
+    for (auto i = 0; i < vec_A.size(); i++)
+    {
+        std::cout << note << "[" << i << "]="; 
+        vec_A[i].Print(); 
+    }
+}
+
+
+
+/* vec_g = c * vec_g */ 
+inline void ECPointVector_Scalar(std::vector<ECPoint> &result, std::vector<ECPoint> &vec_A, BigInt &c)
+{
+    #pragma omp parallel for
+    for (auto i = 0; i < vec_A.size(); i++) {
+        //result[i] = vec_A[i] * c; 
+        ThreadSafe_ECPoint_Mul(result[i], vec_A[i], c);  
     } 
-    EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, (const EC_POINT**)vec_A.data(), (const BIGNUM**)vec_scalar.data(), nullptr); 
+}
+
+
+/* result[i] = A[i]*a[i] */ 
+inline void ECPointVector_Product(std::vector<ECPoint> &result, std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
+{
+    if (vec_A.size() != vec_a.size()) {
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    } 
+    #pragma omp parallel for
+    for (auto i = 0; i < vec_A.size(); i++) {
+        ThreadSafe_ECPoint_Mul(result[i], vec_A[i], vec_a[i]);  
+    } 
+}
+
+
+/* generate a vector of random EC points */  
+void GenRandomECPointVector(std::vector<ECPoint> &vec_A)
+{
+    for(auto i = 0; i < vec_A.size(); i++){ 
+        vec_A[i] = GenRandomGenerator(); 
+    }
 }
 
 
@@ -380,8 +452,6 @@ namespace std
         }
     };
 }
-
-
 
 
 #endif  // KUNLUN_EC_POINT_HPP_
