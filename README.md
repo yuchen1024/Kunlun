@@ -2,11 +2,11 @@
 
 ## Overview
 
-We give a C++ wrapper for OpenSSL, make it handy to use, without worrying about the cumbersome memory management and memorizing the complex interfaces. Based on this wrapper, we are going to build an efficient and modular crypto library. 
+I give a C++ wrapper for OpenSSL, making it handy to use, without worrying about the cumbersome memory management and memorizing the complex interfaces. Based on this wrapper, I am going to build an efficient and modular crypto library. 
 
 ## Design philosophy
 
-Provide a neat interfaces for big integer and ec group operations. With the hope that the code is as short as paper description. However, the style of interfaces is hard to unify. So far, the library is not stable. It will keep involve. 
+Provide a set of neat interfaces for big integer and ec group operations, with the hope that the code is as succinct as paper description. However, the style of interfaces is hard to unify. So far, the library is not stable. It will keep evolving. 
 
 ## Issues
 

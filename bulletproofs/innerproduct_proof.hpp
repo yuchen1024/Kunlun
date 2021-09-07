@@ -306,6 +306,7 @@ bool InnerProduct_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance,
 {
     bool Validity;
 
+    // auto start_time = std::chrono::steady_clock::now(); // start to count the time
     // recover the challenge
     std::vector<BigInt> vec_x(pp.LOG_VECTOR_LEN); // the vector of challenge 
     std::vector<BigInt> vec_x_inverse(pp.LOG_VECTOR_LEN); // the vector of challenge inverse
@@ -336,8 +337,15 @@ bool InnerProduct_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance,
     BigIntVector_Scalar(vec_s, vec_s, proof.a); 
     BigIntVector_Scalar(vec_s_inverse, vec_s_inverse, proof.b); 
 
-    vec_A.insert(vec_A.end(), pp.vec_g.begin(), pp.vec_g.end()); 
-    vec_a.insert(vec_a.end(), vec_s.begin(), vec_s.end()); // pp.vec_g, vec_s
+    // auto end_time = std::chrono::steady_clock::now(); // end to count the time
+    // auto running_time = end_time - start_time;
+    // std::cout << "preparation takes time = " 
+    // << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+
+    //start_time = std::chrono::steady_clock::now(); // start to count the time
+    vec_A.assign(pp.vec_g.begin(), pp.vec_g.end()); 
+    vec_a.assign(vec_s.begin(), vec_s.end()); // pp.vec_g, vec_s
 
     vec_A.insert(vec_A.end(), pp.vec_h.begin(), pp.vec_h.end());
     vec_a.insert(vec_a.end(), vec_s_inverse.begin(), vec_s_inverse.end()); // pp.vec_h, vec_s_inverse
@@ -349,16 +357,21 @@ bool InnerProduct_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance,
 
     // compute right
     vec_A.clear(); vec_a.clear(); 
-    vec_A.insert(vec_A.end(), proof.vec_L.begin(), proof.vec_L.end()); 
+    vec_A.assign(proof.vec_L.begin(), proof.vec_L.end()); 
     vec_A.insert(vec_A.end(), proof.vec_R.begin(), proof.vec_R.end()); 
 
-    vec_a.insert(vec_a.end(), vec_x_square.begin(), vec_x_square.end()); 
+    vec_a.assign(vec_x_square.begin(), vec_x_square.end()); 
     vec_a.insert(vec_a.end(), vec_x_inverse_square.begin(), vec_x_inverse_square.end()); 
 
     vec_A.emplace_back(instance.P); 
     vec_a.emplace_back(bn_1); 
 
     ECPoint RIGHT = ECPointVector_Mul(vec_A, vec_a);  
+
+    // end_time = std::chrono::steady_clock::now(); // end to count the time
+    // running_time = end_time - start_time;
+    // std::cout << "comparison takes time = " 
+    // << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
     // the equation on top of page 17
     if (LEFT == RIGHT) {
