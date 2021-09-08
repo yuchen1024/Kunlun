@@ -31,18 +31,12 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - Language: C++
 - Requires: OpenSSL
 
-## Install OpenSSL (On Linux)
+## Install OpenSSL 3.0 (On MAC OS)
 
-download [openssl-master.zip](https://github.com/openssl/openssl.git), then
 ```
-  $ mkdir openssl
-  $ mv openssl-master.zip /openssl
-  $ unzip openssl-master.zip
-  $ cd openssl-master
-  $ ./config shared
-  $ ./make
-  $ ./make test
-  $ ./make install
+  $ git clone https://github.com/openssl/openssl.git
+  $ ./config 
+  $ make install
 ```
 
 
