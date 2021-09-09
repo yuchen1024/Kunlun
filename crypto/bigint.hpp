@@ -234,7 +234,7 @@ BigInt::~BigInt(){
 uint64_t ToInt64(const BigInt& a)
 {
     uint64_t result = BN_get_word(a.bn_ptr);
-    return result;
+    return std::move(result);
 }
 
 // Creates a new BigInt object from a bytes string.
@@ -242,7 +242,7 @@ BigInt BigIntFromByteString(const std::string& str)
 {
     BigInt result; 
     BN_bin2bn(reinterpret_cast<const unsigned char*>(str.data()), str.size(), result.bn_ptr);
-    return result; 
+    return std::move(result); 
 }
   
 std::string BigIntToByteString(const BigInt &a)
@@ -252,7 +252,7 @@ std::string BigIntToByteString(const BigInt &a)
     memset(buffer, 0, LEN);  
     BN_bn2bin(a.bn_ptr, buffer);
     std::string result(reinterpret_cast<char *>(buffer), LEN); 
-    return result;
+    return std::move(result);
 }  
 
 /* convert a Big number to string */
@@ -269,7 +269,7 @@ std::string BigIntToHexString(const BigInt &a)
 BigInt BigInt::Negate() const {
     BigInt result = *this;
     BN_set_negative(result.bn_ptr, !BN_is_negative(result.bn_ptr));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this + val).
@@ -277,7 +277,7 @@ BigInt BigInt::Negate() const {
 BigInt BigInt::Add(const BigInt& other) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_add(result.bn_ptr, this->bn_ptr, other.bn_ptr));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this - val).
@@ -285,7 +285,7 @@ BigInt BigInt::Add(const BigInt& other) const {
 BigInt BigInt::Sub(const BigInt& other) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_sub(result.bn_ptr, this->bn_ptr, other.bn_ptr));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this * val).
@@ -293,7 +293,7 @@ BigInt BigInt::Sub(const BigInt& other) const {
 BigInt BigInt::Mul(const BigInt& other) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_mul(result.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this / val).
@@ -305,7 +305,7 @@ BigInt BigInt::Div(const BigInt& other) const {
     if (BN_is_zero(remainder.bn_ptr)){
         std::cerr << "Use DivAndTruncate() instead of Div() if you want truncated division." << std::endl;  
     } 
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is *this / val, rounding towards zero.
@@ -314,7 +314,7 @@ BigInt BigInt::DivAndTruncate(const BigInt& other) const {
     BigInt result;
     BigInt remainder;
     CRYPTO_CHECK(1 == BN_div(result.bn_ptr, remainder.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Compares this BigInt with the specified BigInt.
@@ -328,21 +328,21 @@ int BigInt::CompareTo(const BigInt& other) const {
 BigInt BigInt::Exp(const BigInt& exponent) const{
     BigInt result;
     CRYPTO_CHECK(1 == BN_exp(result.bn_ptr, this->bn_ptr, exponent.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // return square
 BigInt BigInt::Square() const{
     BigInt result;
     CRYPTO_CHECK(1 == BN_sqr(result.bn_ptr, this->bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this mod m).
 BigInt BigInt::Mod(const BigInt& modulus) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_nnmod(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this + val mod m).
@@ -350,7 +350,7 @@ BigInt BigInt::Mod(const BigInt& modulus) const {
 BigInt BigInt::ModAdd(const BigInt& other, const BigInt& modulus) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_mod_add(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this - val mod m).
@@ -358,14 +358,14 @@ BigInt BigInt::ModAdd(const BigInt& other, const BigInt& modulus) const {
 BigInt BigInt::ModSub(const BigInt& other, const BigInt& modulus) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_mod_sub(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this * val mod m).
 BigInt BigInt::ModMul(const BigInt& other, const BigInt& modulus) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_mod_mul(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this ^ exponent mod m).
@@ -377,7 +377,7 @@ BigInt BigInt::ModExp(const BigInt& exponent, const BigInt& modulus) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_mod_exp(result.bn_ptr, this->bn_ptr, exponent.bn_ptr, modulus.bn_ptr, bn_ctx));
 
-    return result;
+    return std::move(result);
 }
 
 // Return a BigInt whose value is (*this^2 mod m).
@@ -385,7 +385,7 @@ BigInt BigInt::ModExp(const BigInt& exponent, const BigInt& modulus) const {
 BigInt BigInt::ModSquare(const BigInt& modulus) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_mod_sqr(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this ^ -1 mod m).
@@ -393,7 +393,7 @@ BigInt BigInt::ModSquare(const BigInt& modulus) const {
 BigInt BigInt::ModInverse(const BigInt& modulus) const {
     BigInt result;
     CRYPTO_CHECK(nullptr != BN_mod_inverse(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Returns r such that r^2 == *this mod p.
@@ -401,7 +401,7 @@ BigInt BigInt::ModInverse(const BigInt& modulus) const {
 BigInt BigInt::ModSquareRoot(const BigInt& modulus) const {
     BigInt result;
     CRYPTO_CHECK(nullptr != BN_mod_sqrt(result.bn_ptr, bn_ptr, modulus.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 // Computes -a mod m.
@@ -417,7 +417,7 @@ BigInt BigInt::ModNegate(const BigInt& modulus) const {
 BigInt BigInt::Lshift(int n) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_lshift(result.bn_ptr, this->bn_ptr, n));
-    return result;
+    return std::move(result);
 }
 
 // Returns a BigInt whose value is (*this << n).
@@ -425,7 +425,7 @@ BigInt BigInt::Lshift(int n) const {
 BigInt BigInt::Rshift(int n) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_rshift(result.bn_ptr, this->bn_ptr, n));
-    return result;
+    return std::move(result);
 }
 
 // Computes the greatest common divisor of *this and val.
@@ -433,7 +433,7 @@ BigInt BigInt::Rshift(int n) const {
 BigInt BigInt::GCD(const BigInt& other) const {
     BigInt result;
     CRYPTO_CHECK(1 == BN_gcd(result.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx));
-    return result;
+    return std::move(result);
 }
 
 
@@ -453,7 +453,7 @@ BigInt GenRandomBigIntLessThan(const BIGNUM* max) {
     BigInt result;
     CRYPTO_CHECK(1 == BN_rand_range(result.bn_ptr, max));
     // BN_priv_rand_range(result.bn_ptr, max.bn_ptr);
-    return result;
+    return std::move(result);
 }
 
 
@@ -461,7 +461,7 @@ BigInt GenRandomBigIntLessThan(const BigInt& max) {
     BigInt result;
     CRYPTO_CHECK(1 == BN_rand_range(result.bn_ptr, max.bn_ptr));
     // BN_priv_rand_range(result.bn_ptr, max.bn_ptr);
-    return result;
+    return std::move(result);
 }
 
 // Generates a cryptographically strong pseudo-random in the range [start, end).
@@ -488,14 +488,14 @@ BigInt GenCoPrimeLessThan(const BigInt& num) {
     while (rand_num.GCD(num) > bn_1) {
         rand_num = GenRandomBigIntLessThan(num);
     }
-    return rand_num;
+    return std::move(rand_num);
 }
 
 // Creates a safe prime BigNum with the given bit-length.
 BigInt GenSafePrime(int prime_length) {
     BigInt result;
     CRYPTO_CHECK(1 == BN_generate_prime_ex(result.bn_ptr, prime_length, 1, nullptr, nullptr, nullptr));
-    return result;
+    return std::move(result);
 }
 
 // Creates a prime BigNum with the given bit-length.
@@ -504,7 +504,7 @@ BigInt GenSafePrime(int prime_length) {
 BigInt GenPrime(int prime_length) {
     BigInt result;
     CRYPTO_CHECK(1 == BN_generate_prime_ex(result.bn_ptr, prime_length, 0, nullptr, nullptr, nullptr));
-    return result;
+    return std::move(result);
 }
 
 
@@ -516,7 +516,7 @@ BigInt HashToBigInt(const std::string& input){
 
     BigInt result; 
     BN_bin2bn(digest, SHA256_DIGEST_LENGTH, result.bn_ptr);
-    return result; 
+    return std::move(result); 
 }
 
 
@@ -550,39 +550,6 @@ int BigInt::GetTheNthBit(size_t j) const
     if (a.IsOne()) return 1; 
     else return 0; 
 }
-
-// inline std::bitset BnToBinaryVector(const BigInt& a)
-// {
-//     size_t LEN  = a.BitLength(); 
-//     bitset<LEN> vec_a; 
-//     vector<uint64_t> bitvector(bn_length);
-//     for(auto i = 0; i < LEN; i++){
-//         if(a.GetBit(i) == 1) vec_a.set();
-//     }
-
-//     int res_length = bn_length%window_size;  
-//     if (res_length != 0){
-//         for(int i; i <= window_size - res_length; i++){
-//             bitvector.push_back(0);
-//         }
-//     } 
-
-//     int vec_length = bitvector.size()/window_size; 
-//     vector<uint64_t> pow_vector(window_size);
-//     for(int i = 0; i < window_size; i++){
-//         pow_vector[i] = 1 << i;  
-//     }
-
-//     scalar_vec.resize(vec_length); 
-//     for(int i = 0; i < vec_length; i++){
-//         for(int j = 0; j < window_size; j++){
-//             if(bitvector[i*window_size+j] == 1) scalar_vec[i] += pow_vector[j]; 
-//         }
-//     } 
-// 
-
-
-
 
 
 /* save bigint object binary form */  
@@ -723,7 +690,7 @@ BigInt BigIntVector_ModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigI
         result += vec_a[i] * vec_b[i]; // product = (vec_a[i]*vec_b[i]) mod order
     }
     result = result % BigInt(order);
-    return result; 
+    return std::move(result); 
 }
 
 

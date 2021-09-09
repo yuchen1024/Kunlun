@@ -280,7 +280,7 @@ void InnerProduct_Prove(InnerProduct_PP pp, InnerProduct_Instance instance, Inne
         vec_a = {x_square, bn_1, x_inverse_square}; 
 
         //instance_sub.P = L * x_square + instance.P + R * x_inverse_square; 
-        instance_sub.P = ECPointVector_Mul(vec_A, vec_a); // Eq (31) P' = L^{x^2} P R^{x^{-2}}
+        instance_sub.P = std::move(ECPointVector_Mul(vec_A, vec_a)); // Eq (31) P' = L^{x^2} P R^{x^{-2}}
 
         // generate new witness
         InnerProduct_Witness witness_sub; 
@@ -337,12 +337,6 @@ bool InnerProduct_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance,
     BigIntVector_Scalar(vec_s, vec_s, proof.a); 
     BigIntVector_Scalar(vec_s_inverse, vec_s_inverse, proof.b); 
 
-    // auto end_time = std::chrono::steady_clock::now(); // end to count the time
-    // auto running_time = end_time - start_time;
-    // std::cout << "preparation takes time = " 
-    // << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-
-
     //start_time = std::chrono::steady_clock::now(); // start to count the time
     vec_A.assign(pp.vec_g.begin(), pp.vec_g.end()); 
     vec_a.assign(vec_s.begin(), vec_s.end()); // pp.vec_g, vec_s
@@ -368,11 +362,6 @@ bool InnerProduct_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance,
 
     ECPoint RIGHT = ECPointVector_Mul(vec_A, vec_a);  
 
-    // end_time = std::chrono::steady_clock::now(); // end to count the time
-    // running_time = end_time - start_time;
-    // std::cout << "comparison takes time = " 
-    // << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-
     // the equation on top of page 17
     if (LEFT == RIGHT) {
         Validity = true;
@@ -390,5 +379,79 @@ bool InnerProduct_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance,
 
     return Validity;
 }
+
+// this is the optimized verifier algorithm
+bool InnerProduct_Fast_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance, 
+                         std::string &transcript_str, InnerProduct_Proof &proof)
+{
+    bool Validity;
+
+    // recover the challenge
+    std::vector<BigInt> vec_x(pp.LOG_VECTOR_LEN); // the vector of challenge 
+    std::vector<BigInt> vec_x_inverse(pp.LOG_VECTOR_LEN); // the vector of challenge inverse
+    std::vector<BigInt> vec_x_square(pp.LOG_VECTOR_LEN); // the vector of challenge 
+    std::vector<BigInt> vec_x_inverse_square(pp.LOG_VECTOR_LEN); // the vector of challenge inverse
+    
+    for (auto i = 0; i < pp.LOG_VECTOR_LEN; i++)
+    {  
+        transcript_str += ECPointToByteString(proof.vec_L[i]) + ECPointToByteString(proof.vec_R[i]); 
+        vec_x[i] = HashToBigInt(transcript_str); // reconstruct the challenge
+
+        vec_x_square[i] = -vec_x[i].ModSquare(order); 
+        vec_x_inverse[i] = vec_x[i].ModInverse(order);  
+        vec_x_inverse_square[i] = -vec_x_inverse[i].ModSquare(order); 
+    }
+
+    // define the left and right side of the equation on top of pp.17 (with slight modification)
+    std::vector<ECPoint> vec_A; 
+    std::vector<BigInt> vec_a; 
+
+    // compute scalar for g and h
+    std::vector<BigInt> vec_s(pp.VECTOR_LEN); 
+    std::vector<BigInt> vec_s_inverse(pp.VECTOR_LEN); 
+
+    ComputeVectorSS(vec_s, vec_x, vec_x_inverse); // page 15: the s vector
+    BigIntVector_ModInverse(vec_s_inverse, vec_s);  // the s^{-1} vector
+    BigIntVector_Scalar(vec_s, vec_s, proof.a); 
+    BigIntVector_Scalar(vec_s_inverse, vec_s_inverse, proof.b); 
+
+    vec_A.assign(pp.vec_g.begin(), pp.vec_g.end()); 
+    vec_a.assign(vec_s.begin(), vec_s.end()); // pp.vec_g, vec_s
+
+    vec_A.insert(vec_A.end(), pp.vec_h.begin(), pp.vec_h.end());
+    vec_a.insert(vec_a.end(), vec_s_inverse.begin(), vec_s_inverse.end()); // pp.vec_h, vec_s_inverse
+
+    vec_A.emplace_back(pp.u); 
+    vec_a.emplace_back((proof.a * proof.b)); // LEFT = u^{ab}
+
+  
+    vec_A.insert(vec_A.end(), proof.vec_L.begin(), proof.vec_L.end()); 
+    vec_A.insert(vec_A.end(), proof.vec_R.begin(), proof.vec_R.end()); 
+
+    vec_a.insert(vec_a.end(), vec_x_square.begin(), vec_x_square.end()); 
+    vec_a.insert(vec_a.end(), vec_x_inverse_square.begin(), vec_x_inverse_square.end()); 
+
+    vec_A.emplace_back(instance.P); 
+    vec_a.emplace_back(-bn_1); 
+
+    ECPoint result = ECPointVector_Mul(vec_A, vec_a);  
+
+    // the equation on top of page 17
+    if (result.IsAtInfinity()) {
+        Validity = true;
+        #ifdef DEBUG 
+        std::cout<< "Inner Product Proof Accept >>>" << std::endl; 
+        #endif
+    }
+    else {
+        Validity = false;
+        #ifdef DEBUG
+        std::cout<< "Inner Product Proof Reject >>>" << std::endl; 
+        #endif
+    }
+
+    return Validity;
+}
+
 
 #endif

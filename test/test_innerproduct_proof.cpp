@@ -27,7 +27,7 @@ void test_innerproduct_proof()
     std::cout << "begin the test of innerproduct proof >>>" << std::endl; 
     
     InnerProduct_PP pp; 
-    size_t VECTOR_LEN = 32; 
+    size_t VECTOR_LEN = 64; 
 
     InnerProduct_Setup(pp, VECTOR_LEN, true);
     
@@ -45,18 +45,25 @@ void test_innerproduct_proof()
     
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
-    std::cout << "proof generation takes time = " 
+    std::cout << "inner-product proof generation takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
-    //Print_InnerProduct_Proof(proof); 
-    
     start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
     transcript_str += ECPointToByteString(instance.P); 
     InnerProduct_Verify(pp, instance, transcript_str, proof); 
     end_time = std::chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
-    std::cout << "fast proof verification takes time = " 
+    std::cout << "inner-product proof verification takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    start_time = std::chrono::steady_clock::now(); // start to count the time
+    transcript_str = ""; 
+    transcript_str += ECPointToByteString(instance.P); 
+    InnerProduct_Fast_Verify(pp, instance, transcript_str, proof); 
+    end_time = std::chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    std::cout << "fast inner-product proof verification takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
     std::cout << "finish the test of innerproduct proof >>>" << std::endl; 

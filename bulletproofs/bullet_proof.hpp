@@ -453,7 +453,7 @@ bool Bullet_Verify(Bullet_PP &pp, Bullet_Instance &instance, std::string &transc
     ip_instance.P = ECPointVector_Mul(vec_A, vec_a);  // set P_new = P h^{-u} U^<l, r>   
 
     transcript_str += ECPointToByteString(ip_instance.P); 
-    V2 = InnerProduct_Verify(ip_pp, ip_instance, transcript_str, proof.ip_proof); 
+    V2 = InnerProduct_Fast_Verify(ip_pp, ip_instance, transcript_str, proof.ip_proof); 
     #ifdef DEBUG
         std::cout << std::boolalpha << "Condition 2 (Aggregating Log Size BulletProof) = " << V2 << std::endl; 
     #endif

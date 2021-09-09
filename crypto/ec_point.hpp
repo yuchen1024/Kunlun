@@ -117,7 +117,7 @@ ECPoint ECPoint::Mul(const BigInt& scalar) const {
     if (1 != EC_POINT_mul(group, ecp_result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, bn_ctx)) {
         std::cerr << "EC_POINT_mul failed:" << OpenSSLErrorString() << std::endl;
     }
-    return ecp_result;
+    return std::move(ecp_result);
 }
 
 ECPoint ECPoint::Add(const ECPoint& other) const {
@@ -125,7 +125,7 @@ ECPoint ECPoint::Add(const ECPoint& other) const {
     if (1 != EC_POINT_add(group, ecp_result.point_ptr, this->point_ptr, other.point_ptr, bn_ctx)) {
         std::cerr << "EC_POINT_add failed:" << OpenSSLErrorString() << std::endl;
     }
-    return ecp_result; 
+    return std::move(ecp_result); 
 }
 
 ECPoint ECPoint::Invert() const {
@@ -134,7 +134,7 @@ ECPoint ECPoint::Invert() const {
     if (1 != EC_POINT_invert(group, ecp_result.point_ptr, bn_ctx)) {
         std::cerr <<"EC_POINT_invert failed:" << OpenSSLErrorString() << std::endl;
     }
-    return ecp_result; 
+    return std::move(ecp_result); 
 }
 
 ECPoint ECPoint::Sub(const ECPoint& other) const { 
@@ -142,7 +142,7 @@ ECPoint ECPoint::Sub(const ECPoint& other) const {
     if (1 != EC_POINT_add(group, ecp_result.point_ptr, this->point_ptr, ecp_result.point_ptr, bn_ctx)) {
         std::cerr << "EC_POINT_sub failed:" << OpenSSLErrorString() << std::endl;
     }
-    return ecp_result; 
+    return std::move(ecp_result); 
 }
 
 void ECPoint::Clone(const ECPoint& other) const {
@@ -184,14 +184,14 @@ ECPoint CreateECPoint(const BigInt& x, const BigInt& y){
     if (!ecp_result.IsValid()) {
         std::cerr << "ECGroup::CreateECPoint(x,y) - The point is not valid." << std::endl;
     }
-    return ecp_result;
+    return std::move(ecp_result);
 }
 
 ECPoint GenRandomGenerator(){
     ECPoint ecp_result = ECPoint(generator); 
     BigInt bn_order(order); 
     ecp_result = ecp_result * GenRandomBigIntBetween(bn_1, bn_order);
-    return ecp_result; 
+    return std::move(ecp_result); 
 }
 
 // Creates an ECPoint which is the identity.
@@ -200,7 +200,7 @@ ECPoint GetPointAtInfinity(){
     if (EC_POINT_set_to_infinity(group, ecp_result.point_ptr) != 1) {
         std::cerr << "ECGroup::GetPointAtInfinity() - Could not get point at infinity." << std::endl;
     }
-    return ecp_result;
+    return std::move(ecp_result);
 }
 
 bool IsSquare(const BigInt& q) {
@@ -235,7 +235,7 @@ ECPoint HashToPoint(const std::string& input)
         x = HashToBigInt(BigIntToByteString(x));
     }
 
-    return ecp_result;
+    return std::move(ecp_result);
 }
 
 void ECPoint::SetInfinity()
@@ -281,7 +281,7 @@ std::string ECPointToByteString(const ECPoint &A)
     std::string result; 
     result.assign(reinterpret_cast<char *>(buffer), POINT_LEN);
 
-    return result; 
+    return std::move(result); 
 }
 
 /* convert an EC point to string */
@@ -317,16 +317,11 @@ ECPoint ECPointVector_Mul(std::vector<ECPoint> &A, std::vector<BigInt> &scalar){
         std::cerr << "vector size does not match" << std::endl; 
     }
     size_t LEN = A.size(); 
-    // std::vector<EC_POINT*> vec_A(LEN); 
-    // std::vector<BIGNUM*> vec_scalar(LEN); 
-    // for(auto i = 0; i < LEN; i++){
-    //     vec_A[i] = A[i].point_ptr; 
-    //     vec_scalar[i] = scalar[i].bn_ptr;
-    // }
+
     ECPoint result; 
     EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, (const EC_POINT**)A.data(), 
         (const BIGNUM**)scalar.data(), bn_ctx);
-    return result; 
+    return std::move(result); 
 }
 
 
@@ -339,7 +334,7 @@ std::string ThreadSafe_ECPointToByteString(const ECPoint& A)
 
     EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_LEN, nullptr);
     std::string ecp_str(reinterpret_cast<char *>(buffer), POINT_LEN);
-    return ecp_str; 
+    return std::move(ecp_str); 
 }
 
 inline void ThreadSafe_ECPoint_Mul(ECPoint &result, ECPoint &A, BigInt &scalar){

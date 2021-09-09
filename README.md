@@ -71,7 +71,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * nizk_dlog_equality.hpp: NIZKPoK for discrete logarithm equality
 
 - /bulletproofs
-  * bulletproof.hpp: the aggregating logarithmic size bulletproofs
+  * bullet_proof.hpp: the aggregating logarithmic size bulletproofs
   * innerproduct_proof.hpp: the inner product argument (used by Bulletproof to shrink the proof size) 
 
 - /gadgets
