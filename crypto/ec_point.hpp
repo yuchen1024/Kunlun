@@ -48,7 +48,6 @@ public:
 
     // Returns "true" if the value of this ECPoint is the point-at-infinity.
     // (The point-at-infinity is the additive unit in the EC group).
-    bool IsPointAtInfinity() const;
     bool IsOnCurve() const; 
     bool IsValid() const;
     bool IsAtInfinity() const;  
@@ -114,8 +113,14 @@ ECPoint::ECPoint(const BigInt& x, const BigInt& y){
 
 ECPoint ECPoint::Mul(const BigInt& scalar) const {
     ECPoint ecp_result;
-    if (1 != EC_POINT_mul(group, ecp_result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, bn_ctx)) {
-        std::cerr << "EC_POINT_mul failed:" << OpenSSLErrorString() << std::endl;
+    // use fix-point exp with precomputation
+    if (EC_POINT_cmp(group, this->point_ptr, generator, bn_ctx) == 0){
+        EC_POINT_mul(group, ecp_result.point_ptr, scalar.bn_ptr, nullptr, nullptr, bn_ctx);    
+    }
+    else{
+        if (1 != EC_POINT_mul(group, ecp_result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, bn_ctx)) {
+            std::cerr << "EC_POINT_mul failed:" << OpenSSLErrorString() << std::endl;
+        }
     }
     return std::move(ecp_result);
 }

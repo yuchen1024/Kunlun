@@ -237,7 +237,12 @@ void benchmark_parallel_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, siz
 int main()
 {  
     Context_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);    
+    ECGroup_Initialize(NID_X9_62_prime256v1);  
+    //ECGroup_Initialize(NID_sm2);   
+    //ECGroup_Initialize(NID_secp256k1);
+    // std::cout << NID_ED25519 << std::endl; 
+    //ECGroup_Initialize(NID_X25519);
+    //ECGroup_Initialize(NID_secp224r1);
 
     // std::cout << sizeof(size_t) << std::endl;  
     // ECPoint A(generator);

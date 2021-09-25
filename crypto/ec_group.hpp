@@ -1,6 +1,8 @@
 #ifndef CRYPTO_EC_GROUP_HPP_
 #define CRYPTO_EC_GROUP_HPP_
 
+#define PRECOMPUTE_ENABLE
+
 #include "openssl.inc"
 #include "context.hpp"
 
@@ -59,7 +61,7 @@ void ECGroup_Initialize(int curve_id){
 
     EC_GROUP_precompute_mult((EC_GROUP*) group, bn_ctx); // pre-compute the table of g     
     
-    #ifdef DEBUG
+    #ifdef PRECOMPUTE_ENABLE
     if(EC_GROUP_have_precompute_mult((EC_GROUP*) group)){ 
         std::cout << "precompute enable" << std::endl;
     } 

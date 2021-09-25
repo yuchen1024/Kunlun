@@ -145,6 +145,8 @@ void ComputeVectorSS(std::vector<BigInt> &vec_s, std::vector<BigInt> &vec_x, std
             } 
         }
     }
+
+    //Print_BigIntVector(vec_s, "vec_s");   
 } 
 
 
@@ -380,6 +382,47 @@ bool InnerProduct_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance,
     return Validity;
 }
 
+
+
+/* this module is used to enable fast verification (cf pp.15) */
+std::vector<BigInt> FastComputeVectorSS(std::vector<BigInt> &vec_x_square, std::vector<BigInt> &vec_x_inverse)
+{
+    size_t m = vec_x_inverse.size(); 
+    size_t n = pow(2, m); 
+    std::vector<BigInt> vec_s(n, bn_1); 
+    
+    for (auto j = 0; j < m; j++){
+        vec_s[0] *= vec_x_inverse[j];
+    }
+    vec_s[0] = vec_s[0] % order; 
+
+    // // first compute even
+    // for (auto i = 2; i < n; i+=2){
+    //     int k = floor(log2(i)); // position of the first 1 of j: e.g, k of 110 = 2 
+    //     vec_s[i] = (vec_s[i-(1<<k)] * vec_x_square[m-1-k]) % order; 
+    // }
+    // // then compute odd
+    // for (auto i = 1; i < n; i+=2){ 
+    //     vec_s[i] = (vec_s[i-1] * vec_x_square[m-1]) % order; 
+    // } 
+
+    /* set vec_s[0] as the starting point of iteration
+    *  let z be the index we are going to compute, say 01010 or 01001
+    *  we can find its "particular" precursor index y which only differs at the first 1 
+    *  since we use iterative approach, such precursor always exists
+    *  let the differing position be k
+    *  then we have z = y * x[k]^2
+    *  we can find the position of z's first 1 as floor(log2())  
+    */
+    for (auto i = 1; i < n; i++){
+        int k = floor(log2(i)); // position of the first 1 of j: e.g, k of 110 = 2 
+        vec_s[i] = (vec_s[i-(1<<k)] * vec_x_square[m-1-k]) % order; 
+    }
+
+    return std::move(vec_s);    
+} 
+
+
 // this is the optimized verifier algorithm
 bool InnerProduct_Fast_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instance, 
                          std::string &transcript_str, InnerProduct_Proof &proof)
@@ -397,9 +440,9 @@ bool InnerProduct_Fast_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instan
         transcript_str += ECPointToByteString(proof.vec_L[i]) + ECPointToByteString(proof.vec_R[i]); 
         vec_x[i] = HashToBigInt(transcript_str); // reconstruct the challenge
 
-        vec_x_square[i] = -vec_x[i].ModSquare(order); 
+        vec_x_square[i] = vec_x[i].ModSquare(order); 
         vec_x_inverse[i] = vec_x[i].ModInverse(order);  
-        vec_x_inverse_square[i] = -vec_x_inverse[i].ModSquare(order); 
+        vec_x_inverse_square[i] = vec_x_inverse[i].ModSquare(order); 
     }
 
     // define the left and right side of the equation on top of pp.17 (with slight modification)
@@ -407,10 +450,11 @@ bool InnerProduct_Fast_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instan
     std::vector<BigInt> vec_a; 
 
     // compute scalar for g and h
-    std::vector<BigInt> vec_s(pp.VECTOR_LEN); 
+    //std::vector<BigInt> vec_s(pp.VECTOR_LEN, bn_1); // initialize every vec_s[i] = bn_1
     std::vector<BigInt> vec_s_inverse(pp.VECTOR_LEN); 
 
-    ComputeVectorSS(vec_s, vec_x, vec_x_inverse); // page 15: the s vector
+    std::vector<BigInt> vec_s = FastComputeVectorSS(vec_x_square, vec_x_inverse); // page 15: the s vector
+    
     BigIntVector_ModInverse(vec_s_inverse, vec_s);  // the s^{-1} vector
     BigIntVector_Scalar(vec_s, vec_s, proof.a); 
     BigIntVector_Scalar(vec_s_inverse, vec_s_inverse, proof.b); 
@@ -422,22 +466,25 @@ bool InnerProduct_Fast_Verify(InnerProduct_PP &pp, InnerProduct_Instance &instan
     vec_a.insert(vec_a.end(), vec_s_inverse.begin(), vec_s_inverse.end()); // pp.vec_h, vec_s_inverse
 
     vec_A.emplace_back(pp.u); 
-    vec_a.emplace_back((proof.a * proof.b)); // LEFT = u^{ab}
+    vec_a.emplace_back((proof.a * proof.b)); // LEFT = u^{ab}   
 
-  
     vec_A.insert(vec_A.end(), proof.vec_L.begin(), proof.vec_L.end()); 
     vec_A.insert(vec_A.end(), proof.vec_R.begin(), proof.vec_R.end()); 
 
     vec_a.insert(vec_a.end(), vec_x_square.begin(), vec_x_square.end()); 
     vec_a.insert(vec_a.end(), vec_x_inverse_square.begin(), vec_x_inverse_square.end()); 
 
-    vec_A.emplace_back(instance.P); 
-    vec_a.emplace_back(-bn_1); 
 
-    ECPoint result = ECPointVector_Mul(vec_A, vec_a);  
+    for(auto i = 2*pp.VECTOR_LEN+1; i <= 2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN; i++){
+        vec_a[i] = -vec_a[i];
+    }
+    
+    ECPoint LEFT = ECPointVector_Mul(vec_A, vec_a);  
+
+    ECPoint RIGHT = instance.P;  
 
     // the equation on top of page 17
-    if (result.IsAtInfinity()) {
+    if (LEFT==RIGHT) {
         Validity = true;
         #ifdef DEBUG 
         std::cout<< "Inner Product Proof Accept >>>" << std::endl; 

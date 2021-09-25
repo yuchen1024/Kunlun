@@ -27,7 +27,7 @@ void test_innerproduct_proof()
     std::cout << "begin the test of innerproduct proof >>>" << std::endl; 
     
     InnerProduct_PP pp; 
-    size_t VECTOR_LEN = 64; 
+    size_t VECTOR_LEN = 32; 
 
     InnerProduct_Setup(pp, VECTOR_LEN, true);
     

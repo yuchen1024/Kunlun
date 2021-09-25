@@ -122,7 +122,6 @@ bool NIZK_DLOG_Equality_Verify(DLOG_Equality_PP &pp,
 
     bool V1, V2; 
 
-    
     ECPoint LEFT, RIGHT;
     LEFT = instance.g1 * proof.z; // LEFT = g1^z
     RIGHT = proof.A1 + instance.h1 * e;  // RIGHT = A1 h1^e  
