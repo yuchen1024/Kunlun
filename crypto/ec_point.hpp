@@ -264,27 +264,27 @@ void ECPoint::Print(std::string note) const
 
 void ECPoint::Serialize(std::ofstream &fout)
 {
-    unsigned char buffer[POINT_LEN];
-    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_LEN, bn_ctx);
+    unsigned char buffer[POINT_BYTE_LEN];
+    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
     // write to outfile
-    fout.write(reinterpret_cast<char *>(buffer), POINT_LEN); 
+    fout.write(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
 }
 
 void ECPoint::Deserialize(std::ifstream &fin)
 {
-    unsigned char buffer[POINT_LEN];
-    fin.read(reinterpret_cast<char *>(buffer), POINT_LEN); 
-    EC_POINT_oct2point(group, this->point_ptr, buffer, POINT_LEN, bn_ctx);
+    unsigned char buffer[POINT_BYTE_LEN];
+    fin.read(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
+    EC_POINT_oct2point(group, this->point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
 }
 
 std::string ECPointToByteString(const ECPoint &A)
 {
-    unsigned char buffer[POINT_LEN]; 
-    memset(buffer, 0, POINT_LEN); 
+    unsigned char buffer[POINT_BYTE_LEN]; 
+    memset(buffer, 0, POINT_BYTE_LEN); 
 
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_LEN, bn_ctx);
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
     std::string result; 
-    result.assign(reinterpret_cast<char *>(buffer), POINT_LEN);
+    result.assign(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN);
 
     return std::move(result); 
 }
@@ -300,18 +300,18 @@ std::string ECPointToHexString(const ECPoint &A)
 
 std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A)
 { 
-    unsigned char buffer[POINT_LEN];
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, BN_LEN+1, bn_ctx);
+    unsigned char buffer[POINT_BYTE_LEN];
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, BN_BYTE_LEN+1, bn_ctx);
     // write to outfile
-    fout.write(reinterpret_cast<char *>(buffer), POINT_LEN); 
+    fout.write(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
     return fout;            
 }
  
 std::ifstream &operator>>(std::ifstream &fin, ECPoint &A)
 { 
-    unsigned char buffer[POINT_LEN];
-    fin.read(reinterpret_cast<char *>(buffer), BN_LEN+1); 
-    EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_LEN, bn_ctx);
+    unsigned char buffer[POINT_BYTE_LEN];
+    fin.read(reinterpret_cast<char *>(buffer), BN_BYTE_LEN+1); 
+    EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
     return fin;            
 }
 
@@ -334,11 +334,11 @@ ECPoint ECPointVector_Mul(std::vector<ECPoint> &A, std::vector<BigInt> &scalar){
 
 std::string ThreadSafe_ECPointToByteString(const ECPoint& A)
 {
-    unsigned char buffer[POINT_LEN]; 
-    memset(buffer, 0, POINT_LEN); 
+    unsigned char buffer[POINT_BYTE_LEN]; 
+    memset(buffer, 0, POINT_BYTE_LEN); 
 
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_LEN, nullptr);
-    std::string ecp_str(reinterpret_cast<char *>(buffer), POINT_LEN);
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
+    std::string ecp_str(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN);
     return std::move(ecp_str); 
 }
 

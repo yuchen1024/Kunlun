@@ -4,9 +4,9 @@
 #include "std.inc"
 #include "openssl.inc"
 
-static size_t BN_LEN;  // the byte length of bigint
-static size_t BIT_SIZE;  // each scalar field element is 256 bit 
-static size_t INT_LEN;   // the byte length of built-in size_t
+static size_t BN_BYTE_LEN;  // the byte length of bigint
+static size_t FIELD_BYTE_LEN;  // each scalar field element is 256 bit 
+static size_t INT_BYTE_LEN;   // the byte length of built-in size_t
 
 static BN_CTX *bn_ctx; 
 // EVP_MD_CTX *evp_md_ctx;  

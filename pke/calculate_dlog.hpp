@@ -14,9 +14,6 @@ this hpp implements DLOG algorithm
 
 #include "../crypto/ec_point.hpp"
 
-#include <thread>
-#include <vector>
-
 class naivehash{
 public:
     size_t operator()(const size_t& a) const
@@ -38,13 +35,13 @@ std::unordered_map<size_t, size_t, naivehash> int2index_map;
 
 
 /* sliced babystep build */
-void Build_Sliced_KeyTable(ECPoint &g, ECPoint &startpoint, size_t startindex, size_t sliced_babystep_num, unsigned char* buffer)
+void Build_Sliced_KeyTable(ECPoint &g, ECPoint &startpoint, size_t startindex, size_t SLICED_BABYSTEP_NUM, unsigned char* buffer)
 {    
     size_t hashkey; 
-    for(auto i = 0; i < sliced_babystep_num; i++)
+    for(auto i = 0; i < SLICED_BABYSTEP_NUM; i++)
     {
         hashkey = std::hash<std::string>{}(ThreadSafe_ECPointToByteString(startpoint)); 
-        std::memcpy(buffer+(startindex+i)*INT_LEN, &hashkey, INT_LEN);
+        std::memcpy(buffer+(startindex+i)*INT_BYTE_LEN, &hashkey, INT_BYTE_LEN);
         ThreadSafe_ECPoint_Add(startpoint, g, startpoint); 
     } 
 }
@@ -62,36 +59,36 @@ void Parallel_Build_Serialize_KeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRAD
     std::cout << "babystep hashkey table does not exist, begin to build and serialize >>>" << std::endl;
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
-    size_t babystep_num = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep num = giantstep size
+    size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep num = giantstep size
 
-    if(babystep_num%THREAD_NUM != 0)
+    if (BABYSTEP_NUM%THREAD_NUM != 0)
     {
         std::cout << "thread assignment fails" << std::endl; 
         exit(EXIT_FAILURE); 
     }
-    size_t sliced_babystep_num = babystep_num/THREAD_NUM; 
+    size_t SLICED_BABYSTEP_NUM = BABYSTEP_NUM/THREAD_NUM; 
 
     std::vector<ECPoint> startpoint(THREAD_NUM); 
     std::vector<size_t> startindex(THREAD_NUM); 
 
     //#pragma omp parallel// NEW ADD
     for (auto i = 0; i < THREAD_NUM; i++){
-        startindex[i] = i * sliced_babystep_num; 
+        startindex[i] = i * SLICED_BABYSTEP_NUM; 
         startpoint[i] = g * BigInt(startindex[i]);
     } 
 
     // allocate memory
-    unsigned char *buffer = new unsigned char[babystep_num*INT_LEN]();
+    unsigned char *buffer = new unsigned char[BABYSTEP_NUM*INT_BYTE_LEN]();
     if(buffer == nullptr)
     {
-        std::cout << "fail to create buffer for babystep table" << std::endl; 
+        std::cerr << "fail to create buffer for babystep table" << std::endl; 
         exit(EXIT_FAILURE); 
     } 
 
     std::vector<std::thread> initialize_task;
     for(auto i = 0; i < THREAD_NUM; i++){ 
         initialize_task.push_back(std::thread(Build_Sliced_KeyTable, std::ref(g), std::ref(startpoint[i]), 
-                                  std::ref(startindex[i]), std::ref(sliced_babystep_num), std::ref(buffer)));
+                                  std::ref(startindex[i]), std::ref(SLICED_BABYSTEP_NUM), std::ref(buffer)));
     }
 
     for(auto i = 0; i < THREAD_NUM; i++){ 
@@ -113,7 +110,56 @@ void Parallel_Build_Serialize_KeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRAD
         std::cerr << keytable_filename << " open error" << std::endl;
         exit(1); 
     }
-    fout.write(reinterpret_cast<char *>(buffer), babystep_num*INT_LEN); 
+    fout.write(reinterpret_cast<char *>(buffer), BABYSTEP_NUM*INT_BYTE_LEN); 
+    fout.close(); 
+    delete[] buffer; 
+        
+    end_time = std::chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    std::cout << "serializing babystep table takes time = " 
+        << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+}
+
+
+void Build_Serialize_KeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::string keytable_filename)
+{
+    std::cout << "babystep hashkey table does not exist, begin to build and serialize >>>" << std::endl;
+
+    auto start_time = std::chrono::steady_clock::now(); // start to count the time
+    size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep num = giantstep size
+
+    // allocate memory
+    unsigned char *buffer = new unsigned char[BABYSTEP_NUM*INT_BYTE_LEN]();
+    if(buffer == nullptr)
+    {
+        std::cerr << "fail to create buffer for babystep table" << std::endl; 
+        exit(EXIT_FAILURE); 
+    } 
+
+    size_t hashkey; 
+    ECPoint startpoint = GetPointAtInfinity();  
+    for(auto index = 0; index < BABYSTEP_NUM; index++)
+    {
+        hashkey = std::hash<std::string>{}(ECPointToByteString(startpoint)); 
+        std::memcpy(buffer+index*INT_BYTE_LEN, &hashkey, INT_BYTE_LEN);
+        startpoint = startpoint + g; 
+    } 
+
+    auto end_time = std::chrono::steady_clock::now(); // end to count the time
+    auto running_time = end_time - start_time;
+    std::cout << "building babystep hashkey table takes time = " 
+        << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;  
+
+    start_time = std::chrono::steady_clock::now(); // end to count the time
+    // save buffer to babystep table
+    std::ofstream fout; 
+    fout.open(keytable_filename, std::ios::binary); 
+    if(!fout)
+    {
+        std::cerr << keytable_filename << " open error" << std::endl;
+        exit(1); 
+    }
+    fout.write(reinterpret_cast<char *>(buffer), BABYSTEP_NUM*INT_BYTE_LEN); 
     fout.close(); 
     delete[] buffer; 
         
@@ -129,12 +175,12 @@ void Deserialize_KeyTable_Build_HashMap(std::string keytable_filename, size_t RA
     std::cout << "babystep table already exists, begin to load and build the hashmap >>>" << std::endl; 
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
-    size_t babystep_num = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); 
+    size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); 
 
-    unsigned char* buffer = new unsigned char[babystep_num*INT_LEN]();  
+    unsigned char* buffer = new unsigned char[BABYSTEP_NUM*INT_BYTE_LEN]();  
     if(buffer == nullptr)
     {
-        std::cout << "fail to create buffer for babystep table" << std::endl; 
+        std::cerr << "fail to create buffer for babystep table" << std::endl; 
         exit(EXIT_FAILURE); 
     }   
     // load hashmap_file to buffer
@@ -146,18 +192,18 @@ void Deserialize_KeyTable_Build_HashMap(std::string keytable_filename, size_t RA
         exit(EXIT_FAILURE); 
     }
     fin.seekg(0, fin.end);
-    size_t FILE_LEN = fin.tellg(); // get the size of hash table file 
+    size_t FILE_BYTE_LEN = fin.tellg(); // get the size of hash table file 
 
-    if (FILE_LEN != babystep_num*INT_LEN)
+    if (FILE_BYTE_LEN != BABYSTEP_NUM * INT_BYTE_LEN)
     {
         std::cout << "buffer size does not match babystep table size" << std::endl; 
         exit(EXIT_FAILURE); 
     }
 
-    std::cout << keytable_filename << " size = " << FILE_LEN/pow(2,20) << " MB" << std::endl;
+    std::cout << keytable_filename << " size = " << FILE_BYTE_LEN/pow(2,20) << " MB" << std::endl;
 
     fin.seekg(0);                  // reset the file pointer to the beginning of file
-    fin.read(reinterpret_cast<char*>(buffer), FILE_LEN); // read file from disk to RAM
+    fin.read(reinterpret_cast<char*>(buffer), FILE_BYTE_LEN); // read file from disk to RAM
     fin.close(); 
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
@@ -170,9 +216,9 @@ void Deserialize_KeyTable_Build_HashMap(std::string keytable_filename, size_t RA
 
 
     /* point_to_index_map[ECn_to_String(babystep)] = i */
-    for(auto i = 0; i < babystep_num; i++)
+    for(auto i = 0; i < BABYSTEP_NUM; i++)
     {
-        std::memcpy(&hashkey, buffer+i*INT_LEN, INT_LEN);
+        std::memcpy(&hashkey, buffer+i*INT_BYTE_LEN, INT_BYTE_LEN);
         int2index_map[hashkey] = i; 
     }
 
@@ -187,12 +233,12 @@ void Deserialize_KeyTable_Build_HashMap(std::string keytable_filename, size_t RA
 
 /* parallelizable search task */
 void Search_Sliced_Range(ECPoint &ecp_searchanchor, ECPoint &ecp_giantstep, 
-                         size_t sliced_giantstep_num, size_t &i, size_t &j, 
+                         size_t SLICED_GIANTSTEP_NUM, size_t &i, size_t &j, 
                          int &finding, int &parallel_finding)
 {    
     std::size_t hashkey; 
     // giant-step and baby-step search
-    for(j = 0; j < sliced_giantstep_num; j++)
+    for(j = 0; j < SLICED_GIANTSTEP_NUM; j++)
     {
         /* If key not found in map iterator to end is returned */ 
         if (parallel_finding == 1) break; 
@@ -218,22 +264,22 @@ void Search_Sliced_Range(ECPoint &ecp_searchanchor, ECPoint &ecp_giantstep,
 // compute x = log_g h
 bool Parallel_Shanks_DLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, BigInt &x)
 {
-    size_t babystep_num  = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); 
-    size_t giantstep_num = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
+    size_t BABYSTEP_NUM  = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep_num = giantstep_size
+    size_t GIANTSTEP_NUM = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
 
     /* compute the giantstep */
-    ECPoint ecp_giantstep = g * BigInt(babystep_num); // set giantstep = g^babystep_num
+    ECPoint ecp_giantstep = g * BigInt(BABYSTEP_NUM); // set giantstep = g^babystep_num
     ecp_giantstep = ecp_giantstep.Invert();
  
-    if(giantstep_num%THREAD_NUM != 0)
+    if(GIANTSTEP_NUM%THREAD_NUM != 0)
     {
         std::cerr << "thread assignment fails" << std::endl; 
         exit(EXIT_FAILURE); 
     }
-    size_t sliced_giantstep_num = giantstep_num/THREAD_NUM; 
+    size_t SLICED_GIANTSTEP_NUM = GIANTSTEP_NUM/THREAD_NUM; 
 
 
-    ECPoint ecp_slicedrange = ecp_giantstep * BigInt(sliced_giantstep_num);
+    ECPoint ecp_slicedrange = ecp_giantstep * BigInt(SLICED_GIANTSTEP_NUM);
 
     /* begin to search */
     std::vector<size_t> i_index(THREAD_NUM); 
@@ -260,7 +306,7 @@ bool Parallel_Shanks_DLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, 
     std::vector<std::thread> searchtask;
     for(auto i = 0; i < THREAD_NUM; i++){ 
         searchtask.push_back(std::thread(Search_Sliced_Range, std::ref(ecp_vec_searchanchor[i]), 
-                             std::ref(ecp_giantstep), std::ref(sliced_giantstep_num), 
+                             std::ref(ecp_giantstep), std::ref(SLICED_GIANTSTEP_NUM), 
                              std::ref(i_index[i]), std::ref(j_index[i]), 
                              std::ref(finding[i]), std::ref(parallel_finding)));
     }
@@ -277,7 +323,7 @@ bool Parallel_Shanks_DLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, 
         if(finding[i] == 1)
         {
             // x = i + j*giantstep_size; 
-            x = BigInt(i_index[i]) + BigInt(j_index[i]+i*sliced_giantstep_num) * BigInt(babystep_num); 
+            x = BigInt(i_index[i]) + BigInt(j_index[i]+i*SLICED_GIANTSTEP_NUM) * BigInt(BABYSTEP_NUM); 
             break;          
         }
     }  
@@ -285,6 +331,50 @@ bool Parallel_Shanks_DLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, 
     else return false; 
 }
 
+
+// compute x = log_g h
+bool Shanks_DLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRADEOFF_NUM, BigInt &x)
+{
+    size_t BABYSTEP_NUM  = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep_num = giantstep_size
+    size_t GIANTSTEP_NUM = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
+
+    /* compute the giantstep */
+    ECPoint ecp_giantstep = g * BigInt(BABYSTEP_NUM); // set giantstep = g^babystep_num
+    ecp_giantstep = ecp_giantstep.Invert();
+
+    bool FINDING = false; 
+
+    // check if the hash map is empty
+    if(int2index_map.empty() == true)
+    {
+        std::cout << "the hashmap is empty" << std::endl; 
+        exit (EXIT_FAILURE);
+    }
+
+    std::size_t hashkey; 
+    ECPoint ecp_searchanchor = h;
+    size_t i, j; 
+    for(j = 0; j < GIANTSTEP_NUM; j++)
+    {
+        // map the point to keyvalue
+        hashkey = std::hash<std::string>{}(ECPointToByteString(ecp_searchanchor)); 
+        
+        // baby-step search in the hash map
+        if (int2index_map.find(hashkey) == int2index_map.end())
+        {
+            ecp_searchanchor = ecp_searchanchor + ecp_giantstep; // not found, take a giant-step forward   
+        }
+        else{
+            i = int2index_map[hashkey]; 
+            FINDING = true;  
+            break;
+        }
+    }
+    
+    x = BigInt(i) + BigInt(j) * BigInt(BABYSTEP_NUM); // x = i + j*giantstep_size; 
+    
+    return FINDING;  
+}
 
 void BruteForce_DLOG(const ECPoint &g, const ECPoint &h, BigInt &x)
 {

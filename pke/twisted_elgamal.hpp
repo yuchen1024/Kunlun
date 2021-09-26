@@ -118,7 +118,12 @@ void Twisted_ElGamal_Initialize(Twisted_ElGamal_PP &pp)
     if(!FileExist(keytable_filename))
     {
         // generate and serialize the babystep table
-        Parallel_Build_Serialize_KeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, pp.THREAD_NUM, keytable_filename);
+        if(pp.THREAD_NUM > 1){
+            Parallel_Build_Serialize_KeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, pp.THREAD_NUM, keytable_filename);
+        }
+        if(pp.THREAD_NUM == 1){
+            Build_Serialize_KeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, keytable_filename);
+        }
     }
     // load the table from file 
     Deserialize_KeyTable_Build_HashMap(keytable_filename, pp.MSG_LEN, pp.TRADEOFF_NUM); 
@@ -182,7 +187,7 @@ void Twisted_ElGamal_Dec(const Twisted_ElGamal_PP &pp, const BigInt& sk, const T
     ECPoint M = ct.Y - ct.X * sk.ModInverse(order); // M = Y - X^{sk^{-1}} = h^m 
 
     //Brute_Search(pp.h, M, m); 
-    bool success = Parallel_Shanks_DLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, 1, m); // use Shanks's algorithm to decrypt
+    bool success = Shanks_DLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, m); // use Shanks's algorithm to decrypt
     
     if(success == false)
     {

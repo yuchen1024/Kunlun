@@ -555,32 +555,32 @@ int BigInt::GetTheNthBit(size_t j) const
 /* save bigint object binary form */  
 void BigInt::Serialize(std::ofstream &fout)
 {
-    unsigned char buffer[BN_LEN];
-    BN_bn2binpad(this->bn_ptr, buffer, BN_LEN);
-    fout.write(reinterpret_cast<char *>(buffer), BN_LEN);   // write to outfile
+    unsigned char buffer[BN_BYTE_LEN];
+    BN_bn2binpad(this->bn_ptr, buffer, BN_BYTE_LEN);
+    fout.write(reinterpret_cast<char *>(buffer), BN_BYTE_LEN);   // write to outfile
 }
 
 /* recover bigint object from binary file */
 void BigInt::Deserialize(std::ifstream &fin)
 {
-    char buffer[BN_LEN];
-    fin.read(buffer, BN_LEN);
-    BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_LEN, this->bn_ptr);
+    char buffer[BN_BYTE_LEN];
+    fin.read(buffer, BN_BYTE_LEN);
+    BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_BYTE_LEN, this->bn_ptr);
 }
 
 std::ofstream &operator<<(std::ofstream &fout, const BigInt& a)
 { 
-    unsigned char buffer[BN_LEN];
-    BN_bn2binpad(a.bn_ptr, buffer, BN_LEN);
-    fout.write(reinterpret_cast<char *>(buffer), BN_LEN);   // write to output file
+    unsigned char buffer[BN_BYTE_LEN];
+    BN_bn2binpad(a.bn_ptr, buffer, BN_BYTE_LEN);
+    fout.write(reinterpret_cast<char *>(buffer), BN_BYTE_LEN);   // write to output file
     return fout;            
 }
  
 std::ifstream &operator>>(std::ifstream &fin, BigInt &a)
 { 
-    char buffer[BN_LEN];
-    fin.read(buffer, BN_LEN);
-    BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_LEN, a.bn_ptr); // red from input file
+    char buffer[BN_BYTE_LEN];
+    fin.read(buffer, BN_BYTE_LEN);
+    BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_BYTE_LEN, a.bn_ptr); // red from input file
     return fin;            
 }
 

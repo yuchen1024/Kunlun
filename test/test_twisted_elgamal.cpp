@@ -6,11 +6,18 @@
 void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, size_t TEST_NUM)
 {
     Print_SplitLine('-'); 
-    std::cout << "begin the benchmark test (single thread), test_num = " << TEST_NUM << std::endl;
+    std::cout << "begin the benchmark test (single thread)"<< std::endl;
+    Print_SplitLine('-'); 
+    std::cout << "MSG_LEN = " << MSG_LEN << std::endl;
+    std::cout << "TRADEOFF_NUM = " << TRADEOFF_NUM << std::endl; 
+    std::cout << "THREAD_NUM = " << THREAD_NUM << std::endl; 
+    std::cout << "TEST_NUM = " << TEST_NUM << std::endl;
+    Print_SplitLine('-'); 
 
     Twisted_ElGamal_PP pp; 
     Twisted_ElGamal_Setup(pp, MSG_LEN, TRADEOFF_NUM, THREAD_NUM);
     Twisted_ElGamal_Initialize(pp); 
+    Print_SplitLine('-'); 
 
     Twisted_ElGamal_KP keypair[TEST_NUM];       // keypairs
     BigInt m[TEST_NUM];                        // messages  
@@ -116,8 +123,9 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t THREA
 
 void benchmark_parallel_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, size_t TEST_NUM)
 {
+    Print_SplitLine('-'); 
     std::cout << "begin the parallel benchmark test >>> " << std::endl; 
-    
+    Print_SplitLine('-'); 
     std::cout << "MSG_LEN = " << MSG_LEN << std::endl;
     std::cout << "TRADEOFF_NUM = " << TRADEOFF_NUM << std::endl; 
     std::cout << "THREAD_NUM = " << THREAD_NUM << std::endl; 
@@ -128,8 +136,6 @@ void benchmark_parallel_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, siz
     Twisted_ElGamal_Setup(pp, MSG_LEN, TRADEOFF_NUM, THREAD_NUM);
 
     Twisted_ElGamal_Initialize(pp); 
-  
-
     Print_SplitLine('-'); 
 
     Twisted_ElGamal_KP keypair[TEST_NUM];       // keypairs
@@ -251,17 +257,18 @@ int main()
 
     Print_SplitLine('-'); 
     std::cout << "Twisted ElGamal PKE test begins >>>>>>" << std::endl; 
-    Print_SplitLine('-'); 
 
 
     size_t MSG_LEN = 32; 
-    size_t TRADEOFF_NUM = 7; 
-    size_t THREAD_NUM = 8; 
+    size_t TRADEOFF_NUM = 9; 
     size_t TEST_NUM = 10000;  
-
+    size_t THREAD_NUM; 
 
     // test_twisted_elgamal(MSG_LEN, TRADEOFF_NUM, THREAD_NUM);
-    // benchmark_twisted_elgamal(MSG_LEN, TRADEOFF_NUM, THREAD_NUM, TEST_NUM); 
+    THREAD_NUM = 1; 
+    benchmark_twisted_elgamal(MSG_LEN, TRADEOFF_NUM, THREAD_NUM, TEST_NUM);
+
+    THREAD_NUM = 8; 
     benchmark_parallel_twisted_elgamal(MSG_LEN, TRADEOFF_NUM, THREAD_NUM, TEST_NUM); 
     
     Print_SplitLine('-'); 

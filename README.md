@@ -4,7 +4,7 @@
 
 I give a C++ wrapper for OpenSSL, making it handy to use, without worrying about the cumbersome memory management and memorizing the complex interfaces. Based on this wrapper, I am going to build an efficient and modular crypto library. 
 
-## Design philosophy
+## Design Philosophy
 
 Provide a set of neat interfaces for big integer and ec group operations, with the hope that the code is as succinct as paper description. However, the style of interfaces is hard to unify. So far, the library is not stable. It will keep evolving. 
 
@@ -12,6 +12,7 @@ Provide a set of neat interfaces for big integer and ec group operations, with t
 
 * OpenSSL does not support pre-computation for customized generator.
 * bn_ctx is not thread-safe, so in many places it is hard to apply the SIMD parallel optimization. 
+* A dirty trick is to make openssl-based programs parallizable is to set bn_ctx = nullptr. This trick works for some cases but not all, and only beats the single-thread programs when THREAD_NUM is much larger than 1.  
 
 If the above two issues get solved, the performance of Kunlun will be better.
 
