@@ -7,7 +7,10 @@
 /*
  * When the key is public, we usually need to model AES with this public key as a random permutation.
  * [REF] "Efficient Garbling from a Fixed-Key Blockcipher" https://eprint.iacr.org/2013/426.pdf
- */
+*/
+
+namespace PRP{
+
 struct PRP_Key{
     AES_KEY key;
 }; 
@@ -26,5 +29,7 @@ void PRP_Permutation(PRP_Key &key, block *data, size_t BLOCK_NUM) {
     size_t REMAIN_NUM = BLOCK_NUM % AES_BATCH_SIZE;
     AES_ECB_Encrypt(key, data + BLOCK_NUM - REMAIN_NUM, REMAIN_NUM);
     
+}
+
 }
 #endif

@@ -3,45 +3,46 @@
 #include "../bulletproofs/innerproduct_proof.hpp"
 
 // generate a random instance-witness pair
-void GenRandomInnerProductInstanceWitness(InnerProduct_PP &pp, InnerProduct_Instance &instance, InnerProduct_Witness &witness)
+void GenRandomInnerProductInstanceWitness(InnerProduct::PP &pp, InnerProduct::Instance &instance, InnerProduct::Witness &witness)
 { 
 
     std::cout << "generate random (instance, witness) pair >>>" << std::endl;  
 
     // InnerProduct_Instance_new(instance); 
-    witness.vec_a.resize(pp.VECTOR_LEN); 
-    witness.vec_b.resize(pp.VECTOR_LEN); 
-    GenRandomBigIntVectorLessThan(witness.vec_a, order); 
-    GenRandomBigIntVectorLessThan(witness.vec_b, order); 
+    witness.vec_a = GenRandomBigIntVectorLessThan(pp.VECTOR_LEN, order); 
+    witness.vec_b = GenRandomBigIntVectorLessThan(pp.VECTOR_LEN, order); 
 
     //instance.u = GenRandomGenerator();
-    BigInt c = BigIntVector_ModInnerProduct(witness.vec_a, witness.vec_b); 
+    BigInt c = BigIntVectorModInnerProduct(witness.vec_a, witness.vec_b); 
 
     instance.P = pp.u * c;  // P = u^c
  
-    instance.P = instance.P + ECPointVector_Mul(pp.vec_g, witness.vec_a) + ECPointVector_Mul(pp.vec_h, witness.vec_b);
+    instance.P = instance.P + ECPointVectorMul(pp.vec_g, witness.vec_a) + ECPointVectorMul(pp.vec_h, witness.vec_b);
 }
 
 void test_innerproduct_proof()
 {
+    PrintSplitLine('-');
     std::cout << "begin the test of innerproduct proof >>>" << std::endl; 
     
-    InnerProduct_PP pp; 
+    InnerProduct::PP pp; 
     size_t VECTOR_LEN = 32; 
 
-    InnerProduct_Setup(pp, VECTOR_LEN, true);
+    InnerProduct::Setup(pp, VECTOR_LEN, true);
     
-    InnerProduct_Instance instance; 
-    InnerProduct_Witness witness; 
+    InnerProduct::Instance instance; 
+    InnerProduct::Witness witness; 
 
     GenRandomInnerProductInstanceWitness(pp, instance, witness); 
-    InnerProduct_Proof proof; 
+
+
+    InnerProduct::Proof proof; 
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     std::string transcript_str = ""; 
-    transcript_str += ECPointToByteString(instance.P); 
+    transcript_str += instance.P.ToByteString(); 
 
-    InnerProduct_Prove(pp, instance, witness, transcript_str, proof);
+    InnerProduct::Prove(pp, instance, witness, transcript_str, proof);
     
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
@@ -50,8 +51,8 @@ void test_innerproduct_proof()
 
     start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
-    transcript_str += ECPointToByteString(instance.P); 
-    InnerProduct_Verify(pp, instance, transcript_str, proof); 
+    transcript_str += instance.P.ToByteString(); 
+    InnerProduct::Verify(pp, instance, transcript_str, proof); 
     end_time = std::chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     std::cout << "inner-product proof verification takes time = " 
@@ -59,8 +60,8 @@ void test_innerproduct_proof()
 
     start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
-    transcript_str += ECPointToByteString(instance.P); 
-    InnerProduct_Fast_Verify(pp, instance, transcript_str, proof); 
+    transcript_str += instance.P.ToByteString(); 
+    InnerProduct::FastVerify(pp, instance, transcript_str, proof); 
     end_time = std::chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     std::cout << "fast inner-product proof verification takes time = " 

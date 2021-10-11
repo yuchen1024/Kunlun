@@ -2,14 +2,15 @@
 
 #include "../nizk/nizk_dlog_equality.hpp"
 
-void GenRandomDDHInstanceWitness(DLOG_Equality_PP &pp, DLOG_Equality_Instance &instance, 
-                              DLOG_Equality_Witness &witness, bool flag)
+void GenRandomDDHInstanceWitness(DLOGEquality::PP &pp, DLOGEquality::Instance &instance, 
+                                 DLOGEquality::Witness &witness, bool flag)
 {
     // generate a true statement (false with overwhelming probability)
-    Print_SplitLine('-'); 
+    PrintSplitLine('-'); 
     if (flag == true){
         std::cout << "generate a DDH tuple >>>" << std::endl;
-    } else{
+    } 
+    else{
         std::cout << "generate a random tuple >>>" << std::endl; 
     } 
     witness.w = GenRandomBigIntLessThan(order);  
@@ -28,13 +29,14 @@ void GenRandomDDHInstanceWitness(DLOG_Equality_PP &pp, DLOG_Equality_Instance &i
 
 void test_nizk_dlog_equality(bool flag)
 {
+    PrintSplitLine('-');
     std::cout << "begin the test of dlog equality proof (standard version) >>>" << std::endl; 
     
-    DLOG_Equality_PP pp;  
-    NIZK_DLOG_Equality_Setup(pp);
-    DLOG_Equality_Instance instance; 
-    DLOG_Equality_Witness witness; 
-    DLOG_Equality_Proof proof; 
+    DLOGEquality::PP pp;  
+    DLOGEquality::Setup(pp);
+    DLOGEquality::Instance instance; 
+    DLOGEquality::Witness witness; 
+    DLOGEquality::Proof proof; 
 
 
     std::string transcript_str;
@@ -44,7 +46,7 @@ void test_nizk_dlog_equality(bool flag)
     GenRandomDDHInstanceWitness(pp, instance, witness, flag); 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = "";
-    NIZK_DLOG_Equality_Prove(pp, instance, witness, transcript_str, proof); 
+    DLOGEquality::Prove(pp, instance, witness, transcript_str, proof); 
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
     std::cout << "DDH proof generation takes time = " 
@@ -53,13 +55,14 @@ void test_nizk_dlog_equality(bool flag)
 
     start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = "";
-    NIZK_DLOG_Equality_Verify(pp, instance, transcript_str, proof);
+    DLOGEquality::Verify(pp, instance, transcript_str, proof);
     end_time = std::chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     std::cout << "DDH proof verification takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
     std::cout << "finish the test of dlog equality proof (standard version) >>>" << std::endl; 
+
 }
 
 int main()

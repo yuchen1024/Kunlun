@@ -18,12 +18,12 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 ## To do list (impossible missions for me)
 
-1. PRF, PRG
-2. oblivious transfer
+1. PRF, PRG (done)
+2. oblivious transfer (done)
 3. garbled circuit
 4. secret sharing
 5. zk-SNARK
-6. ...
+6. add class for Zn and ECPoint/BigInt vector
 
 
 ## Specifications
@@ -54,11 +54,16 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * print.hpp: print info for debug
 
 - /crypto: C++ wrapper for OpenSSL
+  * constant.h: define global constants
   * context.hpp: initialize openssl environment
   * ec_group.hpp: initialize ec group environment
   * bigint.hpp: class for BIGNUM
   * ec_point.hpp: class for EC_POINT
   * hash.hpp: related hash function
+  * aes.hpp: implement AES using SSE
+  * prg.hpp: implement PRG associated algorithms
+  * prp.hpp: implement PRP using AES
+  * block.hpp: __m128i related algorithms (necessary for exploiting SSE)
   * std.inc: standard header files
   * openssl.inc: openssl header files
 
@@ -81,6 +86,14 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - /cryptocurrency
   * adct.hpp: the ADCT system 
 
+- /io
+  * net_io_stream_channel.hpp: basic network socket functionality for OT
+
+- /ot
+  * naor_pinkas_ot.hpp: one base OT
+  * chou_orlandi_ot.hpp: another base OT
+  * iknp_ote.hpp: IKNP OT extension
+
 
 ## Compile and Run
 ```
@@ -90,6 +103,13 @@ If the above two issues get solved, the performance of Kunlun will be better.
   $ ./test_xxx 
 ```
 
+---
+
+## Evolution and Updates Log
+
+   * 20210827: post the initial version, mainly consists of wrapper class for BIGNUM* and EC_Point*
+   * 20210925: shift twisted elgamal, sigma protocols, bulletproofs, and ADCT to Kunlun
+   * 20211011: feed my first grammer sugar "namespace" to Kunlun, add OT primitive 
 
 ---
 

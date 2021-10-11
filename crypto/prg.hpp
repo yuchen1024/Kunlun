@@ -1,9 +1,11 @@
 #ifndef KUNLUN_CRYPTO_PRG_HPP_
 #define KUNLUN_CRYPTO_PRG_HPP_
-#include "block.h"
-#include "aes.h"
+
+#include "block.hpp"
+#include "aes.hpp"
 #include "constants.h"
 #include "std.inc"
+#include "../common/print.hpp"
 
 #ifdef ENABLE_RDSEED
 #include <x86intrin.h>
@@ -11,23 +13,25 @@
 #include <random>
 #endif
 
-struct PRG_Seed{ 
-    size_t counter = 0;
-    AES_KEY aes_key;
-    block key;
-}
+namespace PRG{
 
-void ReSeed(PRG_seed &seed, const block* salt, uint64_t id = 0) 
+struct Seed{ 
+    size_t counter = 0;
+    AES::Key aes_key;
+    block key;
+};
+
+void ReSeed(Seed &seed, const block* salt, uint64_t id = 0) 
 {
     seed.key = _mm_loadu_si128(salt);
-    seed.key ^= MakeBlock(0LL, id);
-    AES_Set_Encrypt_Key(seed.key, seed.aes_key);
+    seed.key ^= Block::MakeBlock(0LL, id);
+    AES::SetEncKey(seed.key, seed.aes_key);
     seed.counter = 0;
 }
 
-void PRG_Set_Seed(PRG_Seed &seed, const void* salt = nullptr, uint64_t id = 0) {
+void SetSeed(Seed &seed, const void* salt = nullptr, uint64_t id = 0) {
     if (salt != nullptr) {
-        ReSeed((const block *)salt, id);
+        ReSeed(seed, (const block *)salt, id);
     } 
     else {
         block v;
@@ -48,78 +52,81 @@ void PRG_Set_Seed(PRG_Seed &seed, const void* salt = nullptr, uint64_t id = 0) {
                 if(_rdseed64_step(&r1) == 1) break;
             if(i == 10) error("RDSEED FAILURE");
 
-            v = makeBlock(r0, r1);
+            v = Block::MakeBlock(r0, r1);
         #endif
         ReSeed(seed, &v, id);
     }
+    seed.counter = 0; 
 }
 
-void GenRandomBytes(PRG_Seed &seed, void* data, size_t BYTE_LEN) {
-    GenRandomBlocks((block*)data, BYTE_LEN/16);
-    if (BYTE_LEN % 16 != 0) {
-        block extra;
-        GenRandomBlocks(seed, &extra, 1);
-        memcpy((char*)data+(BYTE_LEN/16*16), &extra, BYTE_LEN%16);
-    }
-}
-
-void GenRandomBits(PRG_Seed &seed, bool* data, size_t BIT_LEN) 
+std::vector<block> GenRandomBlocks(Seed &seed, size_t LEN)
 {
-    uint8_t* uint_data = (uint8_t*)data;
-    size_t a = BIT_LEN/8; 
-    size_t b = BIT_LEN%8; 
-    GenRandomBytes(seed, uint_data, a+b);
-    for(auto i = 0; i < a; i++){
-        uint8_t temp = uint_data[i]; 
-        for(auto j = 0; j < 8; j++){
-            data[i*8+j] = temp & 1; 
-            temp = temp >> 1; 
-        }
-    }
-    if (b > 0){
-        uint8_t temp = uint_data[a]; 
-        for(auto j = 0; j < b; j++){
-            data[a*8+j] = temp & 1; 
-            temp = temp >> 1; 
-        }  
-    }
-}
-
-void GenRandomBlocks(PRG_Seed &seed, block* data, size_t BLOCK_LEN)
-{
+    std::vector<block> vec_b(LEN); 
     block temp_block[AES_BATCH_SIZE];
-    for(auto i = 0; i < BLOCK_LEN/AES_BATCH_SIZE; i++){
+    for(auto i = 0; i < LEN/AES_BATCH_SIZE; i++){
         for (auto j = 0; j < AES_BATCH_SIZE; j++){
-            temp_block[j] = MakeBlock(0LL, counter++);
-            AES_ECB_Encrypt(seed.aes_key, temp_block, AES_BATCH_SIZE);
-            memcpy(data + i*AES_BATCH_SIZE, temp_block, AES_BATCH_SIZE*sizeof(block));
+            temp_block[j] = Block::MakeBlock(0LL, seed.counter++);
+            AES::ECBEnc(seed.aes_key, temp_block, AES_BATCH_SIZE);
+            memcpy(vec_b.data() + i*AES_BATCH_SIZE, temp_block, AES_BATCH_SIZE*sizeof(block));
         }
-        size_t REMAIN_LEN = BLOCK_LEN % AES_BATCH_SIZE;
-        for (auto j = 0; j < remain; j++)
-            temp_block[j] = MakeBlock(0LL, counter++);
-        AES_ECB_Encrypt(seed.aes_key, temp_block, REMAIN_LEN);
-        memcpy(data + (BLOCK_LEN/AES_BATCH_SIZE)*AES_BATCH_SIZE, temp_block, REMAIN_LEN*sizeof(block));
     }
+    size_t REMAIN_LEN = LEN % AES_BATCH_SIZE;
+    for (auto j = 0; j < REMAIN_LEN; j++)
+        temp_block[j] = Block::MakeBlock(0LL, seed.counter++);
+    AES::ECBEnc(seed.aes_key, temp_block, REMAIN_LEN);
+    memcpy(vec_b.data()+(LEN/AES_BATCH_SIZE)*AES_BATCH_SIZE, temp_block, REMAIN_LEN*sizeof(block));
+
+    return std::move(vec_b); 
 }
+
+
+// generate a random byte vector
+std::vector<uint8_t> GenRandomBytes(Seed &seed, size_t LEN) {
+    std::vector<uint8_t> vec_b(LEN);
+    size_t BLOCK_LEN = size_t(ceil(double(LEN)/16)); 
+    std::vector<block> vec_a(BLOCK_LEN); 
+    vec_a = GenRandomBlocks(seed, BLOCK_LEN);
+
+    memcpy(vec_b.data(), vec_a.data(), LEN); 
+
+    return std::move(vec_b); 
+}
+
+// generate a random bool vector: each byte represent a bit in a sparse way
+std::vector<uint8_t> GenRandomBits(Seed &seed, size_t LEN) 
+{
+    std::vector<uint8_t> vec_b; // interpret each byte as a bit
+    vec_b = GenRandomBytes(seed, LEN);
+    for(auto i = 0; i < LEN; i++){
+        vec_b[i] = vec_b[i] & 1;
+    }
+    return std::move(vec_b); 
+}
+
+// generate a random bit matrix (store in column vector)
+std::vector<uint8_t> GenRandomBitMatrix(Seed &seed, size_t ROW_NUM, size_t COLUMN_NUM)
+{
+    assert(ROW_NUM % 8 == 0 && COLUMN_NUM % 8 == 0);
+    // pack 8-bits into 1-byte
+    std::vector<uint8_t> T(ROW_NUM/8 * COLUMN_NUM); 
+
+    std::vector<uint8_t> random_column(ROW_NUM/8); 
+    
+    // generate the i-th row
+    for(auto i = 0; i < COLUMN_NUM; i++){
+        //std::cout << i << std::endl;
+        random_column = GenRandomBytes(seed, ROW_NUM/8);
+        //PrintBytes(temp_column.data(), ROW_NUM/8); 
+        memcpy(T.data()+i*ROW_NUM/8, random_column.data(), ROW_NUM/8);  
+    }
+    return std::move(T);
+}
+}
+
+
 
 #endif// PRP_H__
 
-// void GenRandomDataUnaligned(PRG_Seed &seed, void *data, size_t BYTE_LEN) {
-//     size_t size = nbytes;
-//     void* aligned_data = data;
-//     if(std::align(sizeof(block), sizeof(block), aligned_data, size)) 
-//     {
-//         int chopped = nbytes - size;
-//         GenRandomByte(seed, aligned_data, nbytes - chopped);
-//         block temp[1];
-//         GenRandomBlock(seed, temp, 1);
-//         memcpy(data, temp, chopped);
-//     } 
-//     else{
-//         block temp[2];
-//         GenRandomBlock(temp, 2);
-//         memcpy(data, temp, nbytes);
-//     }
-// }
+
 
 

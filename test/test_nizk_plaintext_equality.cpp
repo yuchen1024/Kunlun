@@ -4,10 +4,10 @@
 #include "../pke/twisted_elgamal.hpp"
 #include "../nizk/nizk_plaintext_equality.hpp"
 
-void GenRandomTripleEncInstanceWitness(Plaintext_Equality_PP &pp, Plaintext_Equality_Instance &instance, 
-                                       Plaintext_Equality_Witness &witness, bool flag)
+void GenRandomTripleEncInstanceWitness(PlaintextEquality::PP &pp, PlaintextEquality::Instance &instance, 
+                                       PlaintextEquality::Witness &witness, bool flag)
 {
-    Print_SplitLine('-');  
+    PrintSplitLine('-');  
     if (flag == true){
         std::cout << "generate a well-formed 1-message 3-recipient twisted ElGamal ciphertext >>>" << std::endl; 
     } else{
@@ -21,14 +21,14 @@ void GenRandomTripleEncInstanceWitness(Plaintext_Equality_PP &pp, Plaintext_Equa
     instance.pk2 = GenRandomGenerator();
     instance.pk3 = GenRandomGenerator();
 
-    Twisted_ElGamal_PP enc_pp; 
+    TwistedElGamal::PP enc_pp; 
     enc_pp.g = pp.g; 
     enc_pp.h = pp.h; 
-    MR_Twisted_ElGamal_CT ct; 
+    TwistedElGamal::MRCT ct; 
 
     std::vector<ECPoint> vec_pk{instance.pk1, instance.pk2, instance.pk3};
      
-    MR_Twisted_ElGamal_Enc(enc_pp, vec_pk, witness.v, witness.r, ct); 
+    TwistedElGamal::Enc(enc_pp, vec_pk, witness.v, witness.r, ct); 
     
     instance.X1 = ct.X[0]; 
     instance.X2 = ct.X[1]; 
@@ -43,20 +43,21 @@ void GenRandomTripleEncInstanceWitness(Plaintext_Equality_PP &pp, Plaintext_Equa
 
 void test_nizk_plaintext_equality(bool flag)
 {
+    PrintSplitLine('-');  
     std::cout << "begin the test of NIZKPoK for plaintext equality >>>" << std::endl; 
 
-    Plaintext_Equality_PP pp;   
-    NIZK_Plaintext_Equality_Setup(pp);
-    Plaintext_Equality_Instance instance; 
-    Plaintext_Equality_Witness witness; 
-    Plaintext_Equality_Proof proof; 
+    PlaintextEquality::PP pp;   
+    PlaintextEquality::Setup(pp);
+    PlaintextEquality::Instance instance; 
+    PlaintextEquality::Witness witness; 
+    PlaintextEquality::Proof proof; 
 
     std::string transcript_str; 
 
     GenRandomTripleEncInstanceWitness(pp, instance, witness, flag); 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
-    NIZK_Plaintext_Equality_Prove(pp, instance, witness, transcript_str, proof); 
+    PlaintextEquality::Prove(pp, instance, witness, transcript_str, proof); 
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
     std::cout << "proof generation takes time = " 
@@ -64,7 +65,7 @@ void test_nizk_plaintext_equality(bool flag)
 
     start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
-    NIZK_Plaintext_Equality_Verify(pp, instance, transcript_str, proof);
+    PlaintextEquality::Verify(pp, instance, transcript_str, proof);
     end_time = std::chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     std::cout << "proof verification takes time = " 

@@ -16,8 +16,17 @@ include_directories("/usr/local/include")
 
 link_directories("/usr/local/lib")
 
-add_executable(test_ecc test/test_ecc.cpp)
-target_link_libraries(test_ecc ${OPENSSL_LIBRARIES} -lglog -lomp)
+#add_executable(test_net_io test/test_net_io.cpp)
+#target_link_libraries(test_net_io ${OPENSSL_LIBRARIES} -lglog -lomp)
+
+add_executable(test_naor_pinkas_ot test/test_naor_pinkas_ot.cpp)
+target_link_libraries(test_naor_pinkas_ot ${OPENSSL_LIBRARIES} -lglog -lomp)
+
+add_executable(test_iknp_ote test/test_iknp_ote.cpp)
+target_link_libraries(test_iknp_ote ${OPENSSL_LIBRARIES} -lglog -lomp)
+
+# add_executable(test_ecc test/test_ecc.cpp)
+# target_link_libraries(test_ecc ${OPENSSL_LIBRARIES} -lglog -lomp)
   
 add_executable(test_twisted_elgamal test/test_twisted_elgamal.cpp)
 target_link_libraries(test_twisted_elgamal ${OPENSSL_LIBRARIES} -lglog -lomp)

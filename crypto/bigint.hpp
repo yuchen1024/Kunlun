@@ -151,6 +151,11 @@ public:
 
     // serialization and deserialization 
 
+    void FromByteString(const std::string& str); 
+  
+    std::string ToByteString() const;
+    std::string ToHexString() const;
+
     /* save bigint object binary form */  
     void Serialize(std::ofstream &fout);
 
@@ -204,6 +209,7 @@ const static BigInt bn_2(uint64_t(2));
 const static BigInt bn_3(uint64_t(3));  
 
 
+
 // Copies the given BigInt.
 BigInt::BigInt(){ 
     this->bn_ptr = BN_new(); 
@@ -238,28 +244,26 @@ uint64_t ToInt64(const BigInt& a)
 }
 
 // Creates a new BigInt object from a bytes string.
-BigInt BigIntFromByteString(const std::string& str)
-{
-    BigInt result; 
-    BN_bin2bn(reinterpret_cast<const unsigned char*>(str.data()), str.size(), result.bn_ptr);
-    return std::move(result); 
+void BigInt::FromByteString(const std::string& str)
+{ 
+    BN_bin2bn(reinterpret_cast<const unsigned char*>(str.data()), str.size(), this->bn_ptr);
 }
   
-std::string BigIntToByteString(const BigInt &a)
+std::string BigInt::ToByteString() const
 {
-    size_t LEN = a.GetByteLength();
+    size_t LEN = this->GetByteLength();
     unsigned char buffer[LEN];
     memset(buffer, 0, LEN);  
-    BN_bn2bin(a.bn_ptr, buffer);
+    BN_bn2bin(this->bn_ptr, buffer);
     std::string result(reinterpret_cast<char *>(buffer), LEN); 
     return std::move(result);
 }  
 
 /* convert a Big number to string */
-std::string BigIntToHexString(const BigInt &a)
+std::string BigInt::ToHexString() const
 {
     std::stringstream ss; 
-    ss << BN_bn2hex(a.bn_ptr);
+    ss << BN_bn2hex(this->bn_ptr);
     return ss.str();  
 }
 
@@ -448,14 +452,13 @@ bool BigInt::IsSafePrime(double prime_error_probability = 1e-40) const {
     return IsPrime(prime_error_probability) && ((*this - bn_1) / bn_2).IsPrime(prime_error_probability);
 }
 
-
+//generates a cryptographically strong pseudo-random number rnd in the range 0 <= rnd < range.
 BigInt GenRandomBigIntLessThan(const BIGNUM* max) {
     BigInt result;
     CRYPTO_CHECK(1 == BN_rand_range(result.bn_ptr, max));
     // BN_priv_rand_range(result.bn_ptr, max.bn_ptr);
     return std::move(result);
 }
-
 
 BigInt GenRandomBigIntLessThan(const BigInt& max) {
     BigInt result;
@@ -505,18 +508,6 @@ BigInt GenPrime(int prime_length) {
     BigInt result;
     CRYPTO_CHECK(1 == BN_generate_prime_ex(result.bn_ptr, prime_length, 0, nullptr, nullptr, nullptr));
     return std::move(result);
-}
-
-
-BigInt HashToBigInt(const std::string& input){
-    unsigned char digest[SHA256_DIGEST_LENGTH]; 
-    memset(digest, 0, SHA256_DIGEST_LENGTH); 
-    
-    SHA256(reinterpret_cast<const unsigned char*>(input.data()), input.size(), digest);
-
-    BigInt result; 
-    BN_bin2bn(digest, SHA256_DIGEST_LENGTH, result.bn_ptr);
-    return std::move(result); 
 }
 
 
@@ -585,7 +576,7 @@ std::ifstream &operator>>(std::ifstream &fin, BigInt &a)
 }
 
 // print a Big Number vector
-void Print_BigIntVector(std::vector<BigInt> &vec_a, std::string note)
+void PrintBigIntVector(std::vector<BigInt> &vec_a, std::string note)
 {
     for (auto i = 0; i < vec_a.size(); i++)
     {
@@ -595,90 +586,112 @@ void Print_BigIntVector(std::vector<BigInt> &vec_a, std::string note)
 }
 
 /* a[i] = (a[i]+b[i]) mod order */
-void BigIntVector_ModAdd(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+std::vector<BigInt> BigIntVectorModAdd(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
 {
     if (vec_a.size() != vec_b.size()) {
         std::cerr << "vector size does not match!" << std::endl;
         exit(EXIT_FAILURE); 
     }
+    size_t LEN = vec_a.size(); 
+    std::vector<BigInt> vec_result(LEN);
     //#pragma omp parallel for
     for (auto i = 0; i < vec_a.size(); i++) 
     {
-        result[i] = (vec_a[i] + vec_b[i]) % order;  
+        vec_result[i] = (vec_a[i] + vec_b[i]) % order;  
         //BN_mod_add(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, bn_ctx); 
     }
+    return std::move(vec_result); 
 }
 
 /* a[i] = (a[i]-b[i]) mod order */ 
-void BigIntVector_ModSub(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+std::vector<BigInt> BigIntVectorModSub(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
 {
     if (vec_a.size() != vec_b.size()) {
         std::cout << "vector size does not match!" << std::endl;
         exit(EXIT_FAILURE); 
     }
+    size_t LEN = vec_a.size(); 
+    std::vector<BigInt> vec_result(LEN);
     //#pragma omp parallel for
-    for (auto i = 0; i < vec_a.size(); i++) {
-        result[i] = (vec_a[i] - vec_b[i]) % order;
+    for (auto i = 0; i < LEN; i++) {
+        vec_result[i] = (vec_a[i] - vec_b[i]) % order;
         //BN_mod_sub(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, nullptr); 
     } 
+    return std::move(vec_result); 
 }
 
 /* c[i] = a[i]*b[i] mod order */ 
-void BigIntVector_ModProduct(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+std::vector<BigInt> BigIntVectorModProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
 {
     if (vec_a.size() != vec_b.size()) {
         std::cerr << "vector size does not match!" << std::endl;
         exit(EXIT_FAILURE); 
     }
+    size_t LEN = vec_a.size(); 
+    std::vector<BigInt> vec_result(LEN);
     //#pragma omp parallel for
     for (auto i = 0; i < vec_a.size(); i++) {
-        result[i] = (vec_a[i] * vec_b[i]) % order; // product = (vec_a[i]*vec_b[i]) mod order
+        vec_result[i] = (vec_a[i] * vec_b[i]) % order; // product = (vec_a[i]*vec_b[i]) mod order
         //BN_mod_mul(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, nullptr);
     }
+    return std::move(vec_result); 
 }
 
 /* compute the inverse of a[i] */ 
-void BigIntVector_ModInverse(std::vector<BigInt> &result, std::vector<BigInt> &vec_a)
+std::vector<BigInt> BigIntVectorModInverse(std::vector<BigInt> &vec_a)
 {
+    size_t LEN = vec_a.size(); 
+    std::vector<BigInt> vec_result(LEN);
     //#pragma omp parallel for
     for (auto i = 0; i < vec_a.size(); i++) {
-        result[i] = vec_a[i].ModInverse(order); 
+        vec_result[i] = vec_a[i].ModInverse(order); 
         //BN_mod_inverse(result[i].bn_ptr, vec_a[i].bn_ptr, order, nullptr); 
     }
+    return std::move(vec_result);
 }
 
 
 /* result[i] = c * a[i] */  
-void BigIntVector_ModScalar(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, BigInt &c)
+std::vector<BigInt> BigIntVectorModScalar(std::vector<BigInt> &vec_a, BigInt &c)
 {
+    size_t LEN = vec_a.size();
+    std::vector<BigInt> vec_result(LEN);
     //#pragma omp parallel for
-    for (auto i = 0; i < vec_a.size(); i++) {
-        result[i] = (vec_a[i] * c) % order;
+    for (auto i = 0; i < LEN; i++) {
+        vec_result[i] = (vec_a[i] * c) % order;
         //BN_mod_mul(result[i].bn_ptr, vec_a[i].bn_ptr, c.bn_ptr, order, nullptr);
     } 
+    return std::move(vec_result); 
 }
 
 /* result[i] = c * a[i] */  
-void BigIntVector_Scalar(std::vector<BigInt> &result, std::vector<BigInt> &vec_a, BigInt &c)
+std::vector<BigInt> BigIntVectorScalar(std::vector<BigInt> &vec_a, BigInt &c)
 {
+    size_t LEN = vec_a.size();
+    std::vector<BigInt> vec_result(LEN); 
     //#pragma omp parallel for
     for (auto i = 0; i < vec_a.size(); i++) {
-        result[i] = vec_a[i] * c;
+        vec_result[i] = vec_a[i] * c;
         //BN_mul(result[i].bn_ptr, vec_a[i].bn_ptr, c.bn_ptr, bn_ctx);
     } 
+    return std::move(vec_result);
 }
 
 /* result[i] = -result[i] */  
-void BigIntVector_ModNegate(std::vector<BigInt> &result, BigInt &modulus)
+std::vector<BigInt> BigIntVectorModNegate(std::vector<BigInt> &vec_a, BigInt &modulus)
 {
-    for (auto i = 0; i < result.size(); i++) {
-        result[i] = result[i].ModNegate(modulus);
-    } 
+    size_t LEN = vec_a.size();
+    std::vector<BigInt> vec_result(LEN); 
+    
+    for (auto i = 0; i < vec_result.size(); i++) {
+        vec_result[i] = vec_a[i].ModNegate(modulus);
+    }
+    return std::move(vec_result); 
 }
 
 
 /* sum_i^n a[i]*b[i] */
-BigInt BigIntVector_ModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+BigInt BigIntVectorModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
 {
     BigInt result(bn_0); 
 
@@ -695,11 +708,13 @@ BigInt BigIntVector_ModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigI
 
 
 /* generate a vector of random EC points */  
-void GenRandomBigIntVectorLessThan(std::vector<BigInt> &vec_a, const BigInt &order)
+std::vector<BigInt> GenRandomBigIntVectorLessThan(size_t LEN, const BigInt &order)
 {
-    for(auto i = 0; i < vec_a.size(); i++){ 
-        vec_a[i] = GenRandomBigIntLessThan(order); 
+    std::vector<BigInt> vec_result(LEN);
+    for(auto i = 0; i < LEN; i++){ 
+        vec_result[i] = GenRandomBigIntLessThan(order); 
     }
+    return std::move(vec_result); 
 }
 
 #endif  // KUNLUN_CRYPTO_BIGINT_HPP_

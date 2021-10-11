@@ -11,22 +11,24 @@ this hpp implements NIZKPoK for three twisited ElGamal ciphertexts
 #include "../common/routines.hpp"
 #include "../common/print.hpp"
 
+namespace PlaintextEquality{
+
 // define structure of PT_EQ_Proof 
-struct Plaintext_Equality_PP
+struct PP
 {
     ECPoint g; 
     ECPoint h; 
 };
 
 // structure of instance
-struct Plaintext_Equality_Instance
+struct Instance
 {
     ECPoint pk1, pk2, pk3; 
     ECPoint X1, X2, X3, Y; 
 };
 
 // structure of witness 
-struct Plaintext_Equality_Witness
+struct Witness
 {
     BigInt v; 
     BigInt r; 
@@ -34,7 +36,7 @@ struct Plaintext_Equality_Witness
 
 
 // structure of proof 
-struct Plaintext_Equality_Proof
+struct Proof
 {
     ECPoint A1, A2, A3, B; // P's first round message
     BigInt z, t;    // P's response in Zq
@@ -42,7 +44,7 @@ struct Plaintext_Equality_Proof
 
 
 
-void Plaintext_Equality_Print_Instance(Plaintext_Equality_Instance &instance)
+void PrintInstance(Instance &instance)
 {
     std::cout << "Plaintext Equality Instance >>> " << std::endl; 
     instance.pk1.Print("instance.pk1"); 
@@ -54,16 +56,16 @@ void Plaintext_Equality_Print_Instance(Plaintext_Equality_Instance &instance)
     instance.Y.Print("instance.Y"); 
 } 
 
-void Plaintext_Equality_Print_Witness(Plaintext_Equality_Witness &witness)
+void PrintWitness(Witness &witness)
 {
     std::cout << "Plaintext Equality Witness >>> " << std::endl; 
     witness.v.Print("witness.v"); 
     witness.r.Print("witness.r"); 
 } 
 
-void Plaintext_Equality_Print_Proof(Plaintext_Equality_Proof &proof)
+void PrintProof(Proof &proof)
 {
-    Print_SplitLine('-'); 
+    PrintSplitLine('-'); 
     std::cout << "NIZKPoK for Plaintext Equality >>> " << std::endl; 
     proof.A1.Print("proof.A1"); 
     proof.A2.Print("proof.A2"); 
@@ -73,35 +75,30 @@ void Plaintext_Equality_Print_Proof(Plaintext_Equality_Proof &proof)
     proof.t.Print("proof.t"); 
 } 
 
-void Plaintext_Equality_Serialize_Proof(Plaintext_Equality_Proof &proof, std::ofstream &fout)
+void SerializeProof(Proof &proof, std::ofstream &fout)
 {
     fout << proof.A1 << proof.A2 << proof.A3 << proof.B << proof.z << proof.t; 
 } 
 
-void Plaintext_Equality_Deserialize_Proof(Plaintext_Equality_Proof &proof, std::ifstream &fin)
+void DeserializeProof(Proof &proof, std::ifstream &fin)
 {
     fin >> proof.A1 >> proof.A2 >> proof.A3 >> proof.B >> proof.z >> proof.t; 
 } 
 
 /* Setup algorithm */ 
-void NIZK_Plaintext_Equality_Setup(Plaintext_Equality_PP &pp)
+void Setup(PP &pp)
 { 
     pp.g = generator; 
-    pp.h = HashToPoint(ECPointToByteString(pp.g));  
+    pp.h = Hash::StringToECPoint(pp.g.ToByteString());  
 }
 
 // generate NIZK proof for Ci = Enc(pki, v; r) i={1,2,3} the witness is (r, v)
-void NIZK_Plaintext_Equality_Prove(Plaintext_Equality_PP &pp, 
-                                   Plaintext_Equality_Instance &instance, 
-                                   Plaintext_Equality_Witness &witness, 
-                                   std::string &transcript_str, 
-                                   Plaintext_Equality_Proof &proof)
+void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str, Proof &proof)
 {    
     // initialize the transcript with instance 
-    transcript_str += ECPointToByteString(instance.pk1) + ECPointToByteString(instance.pk2)  
-                    + ECPointToByteString(instance.pk3) + ECPointToByteString(instance.X1)   
-                    + ECPointToByteString(instance.X2)  + ECPointToByteString(instance.X3)
-                    + ECPointToByteString(instance.Y); 
+    transcript_str += instance.pk1.ToByteString() + instance.pk2.ToByteString() + instance.pk3.ToByteString() 
+                    + instance.X1.ToByteString()  + instance.X2.ToByteString()  + instance.X3.ToByteString()
+                    + instance.Y.ToByteString(); 
 
     BigInt a = GenRandomBigIntLessThan(order); 
     proof.A1 = instance.pk1 * a; // A1 = pk1^a
@@ -111,42 +108,39 @@ void NIZK_Plaintext_Equality_Prove(Plaintext_Equality_PP &pp,
     BigInt b = GenRandomBigIntLessThan(order); 
     std::vector<ECPoint> vec_A{pp.g, pp.h}; 
     std::vector<BigInt> vec_x{a, b};
-    proof.B = ECPointVector_Mul(vec_A, vec_x); // B = g^a h^b
+    proof.B = ECPointVectorMul(vec_A, vec_x); // B = g^a h^b
 
     // update the transcript with the first round message
-    transcript_str += ECPointToByteString(proof.A1) + ECPointToByteString(proof.A2) 
-                    + ECPointToByteString(proof.A3) + ECPointToByteString(proof.B);  
+    transcript_str += proof.A1.ToByteString() + proof.A2.ToByteString() 
+                    + proof.A3.ToByteString() + proof.B.ToByteString();  
+                     
     // compute the challenge
-    BigInt e = HashToBigInt(transcript_str); // apply FS-transform to generate the challenge
+    BigInt e = Hash::StringToBigInt(transcript_str); // apply FS-transform to generate the challenge
 
     // compute the response 
     proof.z = (a + e * witness.r) % order; // z = a+e*r mod q 
     proof.t = (b + e * witness.v) % order; // t = b+e*v mod q
 
     #ifdef DEBUG
-    Plaintext_Equality_Print_Proof(proof); 
+        PrintProof(proof); 
     #endif
 }
 
 
 // check NIZK proof PI for Ci = Enc(pki, m; r) the witness is (r1, r2, m)
-bool NIZK_Plaintext_Equality_Verify(Plaintext_Equality_PP &pp, 
-                                    Plaintext_Equality_Instance &instance, 
-                                    std::string &transcript_str,
-                                    Plaintext_Equality_Proof &proof)
+bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {
     // initialize the transcript with instance 
-    transcript_str += ECPointToByteString(instance.pk1) + ECPointToByteString(instance.pk2)  
-                    + ECPointToByteString(instance.pk3) + ECPointToByteString(instance.X1)   
-                    + ECPointToByteString(instance.X2)  + ECPointToByteString(instance.X3)
-                    + ECPointToByteString(instance.Y); 
+    transcript_str += instance.pk1.ToByteString() + instance.pk2.ToByteString() + instance.pk3.ToByteString() 
+                    + instance.X1.ToByteString()  + instance.X2.ToByteString()  + instance.X3.ToByteString()
+                    + instance.Y.ToByteString(); 
 
     // update the transcript
-    transcript_str += ECPointToByteString(proof.A1) + ECPointToByteString(proof.A2) 
-                    + ECPointToByteString(proof.A3) + ECPointToByteString(proof.B);  
+    transcript_str += proof.A1.ToByteString() + proof.A2.ToByteString() 
+                    + proof.A3.ToByteString() + proof.B.ToByteString();  
     
     // compute the challenge
-    BigInt e = HashToBigInt(transcript_str); // apply FS-transform to generate the challenge
+    BigInt e = Hash::StringToBigInt(transcript_str); // apply FS-transform to generate the challenge
 
     bool V1, V2, V3, V4; 
     ECPoint LEFT, RIGHT; 
@@ -172,7 +166,7 @@ bool NIZK_Plaintext_Equality_Verify(Plaintext_Equality_PP &pp,
     // check condition 4
     std::vector<ECPoint> vec_A{pp.g, pp.h}; 
     std::vector<BigInt> vec_x{proof.z, proof.t}; 
-    LEFT = ECPointVector_Mul(vec_A, vec_x); // g^z h^t
+    LEFT = ECPointVectorMul(vec_A, vec_x); // g^z h^t
     RIGHT = proof.B + instance.Y * e; // B Y^e
     
     V4 = (LEFT == RIGHT); // check g^z h^t = B Y^e
@@ -192,6 +186,8 @@ bool NIZK_Plaintext_Equality_Verify(Plaintext_Equality_PP &pp,
     #endif
 
     return Validity;
+}
+
 }
 
 #endif
