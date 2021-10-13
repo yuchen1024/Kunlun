@@ -64,11 +64,10 @@ std::vector<block> GenRandomBlocks(Seed &seed, size_t LEN)
     std::vector<block> vec_b(LEN); 
     block temp_block[AES_BATCH_SIZE];
     for(auto i = 0; i < LEN/AES_BATCH_SIZE; i++){
-        for (auto j = 0; j < AES_BATCH_SIZE; j++){
+        for (auto j = 0; j < AES_BATCH_SIZE; j++)
             temp_block[j] = Block::MakeBlock(0LL, seed.counter++);
-            AES::ECBEnc(seed.aes_key, temp_block, AES_BATCH_SIZE);
-            memcpy(vec_b.data() + i*AES_BATCH_SIZE, temp_block, AES_BATCH_SIZE*sizeof(block));
-        }
+        AES::ECBEnc(seed.aes_key, temp_block, AES_BATCH_SIZE);
+        memcpy(vec_b.data() + i*AES_BATCH_SIZE, temp_block, AES_BATCH_SIZE*sizeof(block));
     }
     size_t REMAIN_LEN = LEN % AES_BATCH_SIZE;
     for (auto j = 0; j < REMAIN_LEN; j++)

@@ -85,27 +85,19 @@ inline bool Compare(std::vector<block> &vec_a, std::vector<block> &vec_b, size_t
 	return EQUAL;
 }
 
-
-std::string ToHex(const std::string& str, bool upper_case)
+inline bool Compare(const block &a, const block &b) 
 {
-    std::ostringstream ret;
-
-    for (std::string::size_type i = 0; i < str.length(); ++i)
-        ret << std::hex << std::setfill('0') << std::setw(2) 
-            << (upper_case ? std::uppercase : std::nouppercase) << (int)str[i];
-
-    return ret.str();
+    __m128i vcmp = _mm_xor_si128(a, b); 
+    if(!_mm_testz_si128(vcmp, vcmp)) return false;
+    else return true;
 }
 
 inline std::string ToString(const block &var)
 {
-    uint16_t val[8];
     std::string str(16, '0'); 
     memcpy(&str[0], &var, 16);
     return std::move(str); 
 }
-
-
 
 // shrink 128*n bits into n block
 inline void FromSparseBits(const uint8_t *bool_data, size_t BIT_LEN, block *block_data,  size_t BLOCK_LEN) 
@@ -143,6 +135,15 @@ inline void ToDenseBits(const block *block_data, size_t BLOCK_LEN, uint8_t *bool
 }
 
 }
+
+
+class BlockHash{
+public:
+    size_t operator()(const block& a) const
+    {
+        return std::hash<std::string>{}(Block::ToString(a));
+    }
+};
 
 
 inline std::ostream& operator<<(std::ostream &out, const block &a) 
@@ -203,7 +204,7 @@ void BitMatrixTranspose(uint8_t const *inp, int nrows, int ncols, uint8_t *out)
         OUT(rr, cc + II) = _mm_movemask_epi8(tmp.x);
 }
 
-#endif
+
 
 
 // // expand n block to 128*n bits: each bit store in a byte 
@@ -249,75 +250,75 @@ void BitMatrixTranspose(uint8_t const *inp, int nrows, int ncols, uint8_t *out)
 //    return (a[0] & 1) == 1;
 // }
 
-// // Modified from
-// // https://mischasan.wordpress.com/2011/10/03/the-full-sse2-bit-matrix-transpose-routine/
-// // with inner most loops changed to _mm_set_epi8 and _mm_set_epi16
-// #define INPUT(x, y) input[(x)*COLUMN_NUM/8 + (y)/8]
-// #define OUTPUT(x, y) output[(y)*ROW_NUM/8 + (x)/8]
+// Modified from
+// https://mischasan.wordpress.com/2011/10/03/the-full-sse2-bit-matrix-transpose-routine/
+// with inner most loops changed to _mm_set_epi8 and _mm_set_epi16
+#define INPUT(x, y) input[(x)*COLUMN_NUM/8 + (y)/8]
+#define OUTPUT(x, y) output[(y)*ROW_NUM/8 + (x)/8]
 
-// __attribute__((target("sse2")))
-// inline void SSE_WangBitMatrix_Transpose(uint8_t const *input, uint64_t ROW_NUM, uint64_t COLUMN_NUM, uint8_t *output) 
-// {
-//     int rr, cc, i, h;
-//     union { __m128i x; uint8_t b[16];} tmp;
-//     __m128i vec;
-//     assert(ROW_NUM%8 == 0 && COLUMN_NUM%8 == 0);
+__attribute__((target("sse2")))
+inline void empBitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64_t COLUMN_NUM, uint8_t *output) 
+{
+    int rr, cc, i, h;
+    union { __m128i x; uint8_t b[16];} tmp;
+    __m128i vec;
+    assert(ROW_NUM%8 == 0 && COLUMN_NUM%8 == 0);
 
-//     // Do the main body in 16x8 blocks:
-//     for (rr = 0; rr <= ROW_NUM - 16; rr += 16) {
-//         for (cc = 0; cc < COLUMN_NUM; cc += 8) {
-//             vec = _mm_set_epi8(INPUT(rr + 15, cc), INPUT(rr + 14, cc), INPUT(rr + 13, cc),
-//                                INPUT(rr + 12, cc), INPUT(rr + 11, cc), INPUT(rr + 10, cc),
-//                                INPUT(rr + 9, cc),  INPUT(rr + 8, cc),  INPUT(rr + 7, cc),
-//                                INPUT(rr + 6, cc),  INPUT(rr + 5, cc),  INPUT(rr + 4, cc),
-//                                INPUT(rr + 3, cc),  INPUT(rr + 2, cc),  INPUT(rr + 1, cc),
-//                                INPUT(rr + 0, cc));
-//             for (i = 8; --i >= 0; vec = _mm_slli_epi64(vec, 1))
-//               *(uint16_t *)&OUTPUT(rr, cc + i) = _mm_movemask_epi8(vec);
-//         }
-//     }
-//     if (rr == ROW_NUM) return;
+    // Do the main body in 16x8 blocks:
+    for (rr = 0; rr <= ROW_NUM - 16; rr += 16) {
+        for (cc = 0; cc < COLUMN_NUM; cc += 8) {
+            vec = _mm_set_epi8(INPUT(rr + 15, cc), INPUT(rr + 14, cc), INPUT(rr + 13, cc),
+                               INPUT(rr + 12, cc), INPUT(rr + 11, cc), INPUT(rr + 10, cc),
+                               INPUT(rr + 9, cc),  INPUT(rr + 8, cc),  INPUT(rr + 7, cc),
+                               INPUT(rr + 6, cc),  INPUT(rr + 5, cc),  INPUT(rr + 4, cc),
+                               INPUT(rr + 3, cc),  INPUT(rr + 2, cc),  INPUT(rr + 1, cc),
+                               INPUT(rr + 0, cc));
+            for (i = 8; --i >= 0; vec = _mm_slli_epi64(vec, 1))
+              *(uint16_t *)&OUTPUT(rr, cc + i) = _mm_movemask_epi8(vec);
+        }
+    }
+    if (rr == ROW_NUM) return;
 
-//     // The remainder is a block of 8x(16n+8) bits (n may be 0).
-//     //  Do a PAIR of 8x8 blocks in each step:
-//     if ((COLUMN_NUM%8 == 0 && COLUMN_NUM%16 != 0) || (ROW_NUM%8 == 0 && ROW_NUM%16 != 0)) {
-//         // The fancy optimizations in the else-branch don't work if the above if-condition
-//         // holds, so we use the simpler non-simd variant for that case.
-//         for (cc = 0; cc <= COLUMN_NUM - 16; cc += 16) {
-//             for (i = 0; i < 8; ++i) {
-//                 tmp.b[i] = h = *(uint16_t const *)&INPUT(rr + i, cc);
-//                 tmp.b[i + 8] = h >> 8;
-//             }
-//             for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1)) {
-//                 OUTPUT(rr, cc + i) = h = _mm_movemask_epi8(tmp.x);
-//                 OUTPUT(rr, cc + i + 8) = h >> 8;
-//             }
-//         }
-//     } 
-//     else {
-//         for (cc = 0; cc <= COLUMN_NUM - 16; cc += 16) {
-//             vec = _mm_set_epi16(*(uint16_t const *)&INPUT(rr + 7, cc),
-//                                 *(uint16_t const *)&INPUT(rr + 6, cc),
-//                                 *(uint16_t const *)&INPUT(rr + 5, cc),
-//                                 *(uint16_t const *)&INPUT(rr + 4, cc),
-//                                 *(uint16_t const *)&INPUT(rr + 3, cc),
-//                                 *(uint16_t const *)&INPUT(rr + 2, cc),
-//                                 *(uint16_t const *)&INPUT(rr + 1, cc),
-//                                 *(uint16_t const *)&INPUT(rr + 0, cc));
-//             for (i = 8; --i >= 0; vec = _mm_slli_epi64(vec, 1)) {
-//                 OUTPUT(rr, cc + i) = h = _mm_movemask_epi8(vec);
-//                 OUTPUT(rr, cc + i + 8) = h >> 8;
-//             }
-//         }
-//     }
-//     if (cc == COLUMN_NUM) return;
+    // The remainder is a block of 8x(16n+8) bits (n may be 0).
+    //  Do a PAIR of 8x8 blocks in each step:
+    if ((COLUMN_NUM%8 == 0 && COLUMN_NUM%16 != 0) || (ROW_NUM%8 == 0 && ROW_NUM%16 != 0)) {
+        // The fancy optimizations in the else-branch don't work if the above if-condition
+        // holds, so we use the simpler non-simd variant for that case.
+        for (cc = 0; cc <= COLUMN_NUM - 16; cc += 16) {
+            for (i = 0; i < 8; ++i) {
+                tmp.b[i] = h = *(uint16_t const *)&INPUT(rr + i, cc);
+                tmp.b[i + 8] = h >> 8;
+            }
+            for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1)) {
+                OUTPUT(rr, cc + i) = h = _mm_movemask_epi8(tmp.x);
+                OUTPUT(rr, cc + i + 8) = h >> 8;
+            }
+        }
+    } 
+    else {
+        for (cc = 0; cc <= COLUMN_NUM - 16; cc += 16) {
+            vec = _mm_set_epi16(*(uint16_t const *)&INPUT(rr + 7, cc),
+                                *(uint16_t const *)&INPUT(rr + 6, cc),
+                                *(uint16_t const *)&INPUT(rr + 5, cc),
+                                *(uint16_t const *)&INPUT(rr + 4, cc),
+                                *(uint16_t const *)&INPUT(rr + 3, cc),
+                                *(uint16_t const *)&INPUT(rr + 2, cc),
+                                *(uint16_t const *)&INPUT(rr + 1, cc),
+                                *(uint16_t const *)&INPUT(rr + 0, cc));
+            for (i = 8; --i >= 0; vec = _mm_slli_epi64(vec, 1)) {
+                OUTPUT(rr, cc + i) = h = _mm_movemask_epi8(vec);
+                OUTPUT(rr, cc + i + 8) = h >> 8;
+            }
+        }
+    }
+    if (cc == COLUMN_NUM) return;
 
-//     //  Do the remaining 8x8 block:
-//     for (i = 0; i < 8; ++i)
-//         tmp.b[i] = INPUT(rr + i, cc);
-//     for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
-//         OUTPUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
-// }
+    //  Do the remaining 8x8 block:
+    for (i = 0; i < 8; ++i)
+        tmp.b[i] = INPUT(rr + i, cc);
+    for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
+        OUTPUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
+}
 
 // inline void SetBlockBit(block &a, size_t i) 
 // {
@@ -333,5 +334,5 @@ void BitMatrixTranspose(uint8_t const *inp, int nrows, int ncols, uint8_t *out)
 //     return uint8_t(_mm_testz_si128(mask, mask));
 // }
 
-
+#endif
 

@@ -40,6 +40,11 @@ If the above two issues get solved, the performance of Kunlun will be better.
   $ make install
 ```
 
+## Install OpenMP (On MAC OS)
+```
+  $ brew install libomp
+```
+
 
 ## Code Structure
 
@@ -209,9 +214,14 @@ Test auditing policies
 ---
 
 
-
-
 ## License
 
 This library is licensed under the [MIT License](LICENSE).
+
+---
+
+## Tips
+
+* thread vector is more efficient than thread array: I don't know the reason why
+* add mutex to lock bn_ctx will severely harm the performance of multi thread 
 

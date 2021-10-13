@@ -26,6 +26,8 @@ public:
 // key-value hash table: key is integer, value is its corresponding DLOG w.r.t. g
 std::unordered_map<size_t, size_t, naivehash> int2index_map; 
 
+// add mutex lock will severely harm the performance
+// std::mutex bn_ctx_mutex;
 
 /* 
 * parallel implementation
@@ -35,8 +37,9 @@ std::unordered_map<size_t, size_t, naivehash> int2index_map;
 
 
 /* sliced babystep build */
-void BuildSlicedKeyTable(ECPoint &g, ECPoint &startpoint, size_t startindex, size_t SLICED_BABYSTEP_NUM, unsigned char* buffer)
+void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_t SLICED_BABYSTEP_NUM, unsigned char* buffer)
 {    
+    //std::lock_guard<std::mutex> guard(bn_ctx_mutex);
     size_t hashkey; 
     for(auto i = 0; i < SLICED_BABYSTEP_NUM; i++)
     {
@@ -85,13 +88,10 @@ void ParallelBuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOF
         exit(EXIT_FAILURE); 
     } 
 
-    std::vector<std::thread> build_task;
+    std::vector<std::thread> build_task(DEC_THREAD_NUM);
     for(auto i = 0; i < DEC_THREAD_NUM; i++){ 
-        build_task.push_back(std::thread(BuildSlicedKeyTable, std::ref(g), std::ref(startpoint[i]), 
-                             std::ref(startindex[i]), std::ref(SLICED_BABYSTEP_NUM), std::ref(buffer)));
-    }
-
-    for(auto i = 0; i < DEC_THREAD_NUM; i++){ 
+        build_task[i] = std::thread(BuildSlicedKeyTable, g, startpoint[i], 
+                                    startindex[i], SLICED_BABYSTEP_NUM, buffer);
         build_task[i].join(); 
     }  
 
@@ -232,9 +232,10 @@ void DeserializeKeyTableBuildHashMap(std::string keytable_filename, size_t RANGE
 
 
 /* parallelizable search task */
-void SearchSlicedRange(ECPoint &ecp_searchanchor, ECPoint &ecp_giantstep, size_t SLICED_GIANTSTEP_NUM, 
+void SearchSlicedRange(ECPoint ecp_searchanchor, ECPoint ecp_giantstep, size_t SLICED_GIANTSTEP_NUM, 
                        size_t &i, size_t &j, int &FIND, bool &PARALLEL_FIND)
 {    
+    //std::lock_guard<std::mutex> guard(bn_ctx_mutex);
     std::size_t hashkey; 
     // giant-step and baby-step search
     for(j = 0; j < SLICED_GIANTSTEP_NUM; j++)
@@ -303,12 +304,12 @@ bool ParallelShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN,
         exit (EXIT_FAILURE);
     }
 
-    std::vector<std::thread> search_task;
+    std::vector<std::thread> search_task(DEC_THREAD_NUM);
     for(auto i = 0; i < DEC_THREAD_NUM; i++){ 
-        search_task.push_back(std::thread(SearchSlicedRange, std::ref(ecp_vec_searchanchor[i]), 
-                             std::ref(ecp_giantstep), std::ref(SLICED_GIANTSTEP_NUM), 
-                             std::ref(i_index[i]), std::ref(j_index[i]), 
-                             std::ref(FIND[i]), std::ref(PARALLEL_FIND)));
+        search_task[i] = std::thread(SearchSlicedRange, ecp_vec_searchanchor[i], 
+                                     ecp_giantstep, SLICED_GIANTSTEP_NUM, 
+                                     std::ref(i_index[i]), std::ref(j_index[i]), 
+                                     std::ref(FIND[i]), std::ref(PARALLEL_FIND));
     }
 
     for(auto i = 0; i < DEC_THREAD_NUM; i++){ 

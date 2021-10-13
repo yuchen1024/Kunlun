@@ -15,6 +15,7 @@ this file includes commonly used head files
 #include <vector>
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include <thread>
 #include <iomanip>
 #include <functional>

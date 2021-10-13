@@ -39,8 +39,14 @@ public:
 	void SendBlocks(const block* data, size_t LEN);
 	void ReceiveBlocks(block* data, size_t LEN);  
 
+	void SendBlock(const block &a);
+	void ReceiveBlock(block &a);  
+
 	void SendECPoints(const ECPoint* A, size_t LEN); 
 	void ReceiveECPoints(ECPoint* A, size_t LEN); 
+
+	void SendECPoint(const ECPoint &A);
+	void ReceiveECPoint(ECPoint &A);
 
 	void SendBits(uint8_t *data, size_t LEN);
 	void ReceiveBits(uint8_t *data, size_t LEN); 
@@ -218,6 +224,16 @@ void NetIO::ReceiveBlocks(block* data, size_t LEN)
 	ReceiveBytes(data, LEN*sizeof(block));
 }
 
+void NetIO::SendBlock(const block &a) 
+{
+	SendBytes(&a, sizeof(block));
+}
+
+void NetIO::ReceiveBlock(block &a) 
+{
+	ReceiveBytes(&a, sizeof(block));
+}
+
 void NetIO::SendBits(uint8_t *data, size_t LEN) 
 {
 	SendBytes(data, LEN);
@@ -257,6 +273,20 @@ void NetIO::ReceiveECPoints(ECPoint* A, size_t LEN)
 		EC_POINT_oct2point(group, A[i].point_ptr, buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx);
 	}
 	delete[] buffer; 
+}
+
+void NetIO::SendECPoint(const ECPoint &A) 
+{
+	unsigned char buffer[POINT_BYTE_LEN];
+	EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+	SendBytes(buffer, POINT_BYTE_LEN);
+}
+
+void NetIO::ReceiveECPoint(ECPoint &A) 
+{
+	unsigned char buffer[POINT_BYTE_LEN];
+	ReceiveBytes(buffer, POINT_BYTE_LEN); 
+	EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
 }
 
 

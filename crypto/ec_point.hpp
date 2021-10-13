@@ -438,14 +438,27 @@ void PrintECPointVector(std::vector<ECPoint> &vec_A, std::string note)
 
 
 /* customized hash for ECPoint class */
-namespace std{
-    template <> struct hash<ECPoint>{
-        std::size_t operator()(const ECPoint& A) const
-        { 
-            return std::hash<std::string>{}(A.ToByteString());
-        }
-    };
-}
+// namespace std{
+//     template <> struct hash<ECPoint>{
+//         std::size_t operator()(const ECPoint& A) const
+//         { 
+//             return std::hash<std::string>{}(A.ToByteString());
+//         }
+//     };
+// }
+
+class ECPointHash{
+public:
+    size_t operator()(const ECPoint& A) const
+    {
+        return std::hash<std::string>{}(A.ToByteString());
+    }
+};
+
+
+auto ECPoint_Lexical_Compare = [](ECPoint A, ECPoint B){ 
+    return A.ToByteString() < B.ToByteString(); 
+};
 
 
 #endif  // KUNLUN_EC_POINT_HPP_

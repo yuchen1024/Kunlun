@@ -12,6 +12,18 @@ this hpp implements print functionality
 
 const static size_t LINE_LEN = 120;     // the length of split line
 
+
+std::string ToHex(const std::string& str, bool upper_case)
+{
+    std::ostringstream ret;
+
+    for (std::string::size_type i = 0; i < str.length(); ++i)
+        ret << std::hex << std::setfill('0') << std::setw(2) 
+            << (upper_case ? std::uppercase : std::nouppercase) << (int)str[i];
+
+    return ret.str();
+}
+
 /* print split line */
 void PrintSplitLine(char ch)
 {
@@ -30,10 +42,7 @@ void PrintBytes(uint8_t* A, size_t LEN)
 void PrintBlocks(block* var, size_t LEN) 
 {
     for(auto i = 0; i< LEN; i++){
-        int64_t v64val[2];
-        memcpy(v64val, var+16*i, sizeof(v64val));
-        printf("%.16llx %.16llx\n", v64val[0], v64val[1]);
-        std::cout << " " << std::endl;
+        std::cout << var[i] << std::endl; 
     }
 }
 
