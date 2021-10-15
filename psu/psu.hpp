@@ -74,6 +74,7 @@ void Receiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::uno
     BigInt k2 = GenRandomBigIntLessThan(order);
     std::vector<ECPoint> vec_Fk2_Y(LEN);
 
+    //#pragma omp parallel for
     for(auto i = 0; i < LEN; i++){
         vec_Fk2_Y[i] = Hash::StringToECPoint(Block::ToString(vec_Y[i])); 
         vec_Fk2_Y[i] = vec_Fk2_Y[i] * k2; // H(y_i)^k2
@@ -98,14 +99,8 @@ void Receiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::uno
     std::vector<uint8_t> vec_selection_bit(LEN); 
     for(auto i = 0; i < LEN; i++){ 
         vec_Fk2k1_X[i] = vec_Fk1_X[i]* k2; 
-        if(S.find(vec_Fk2k1_X[i]) == S.end()){
-            vec_selection_bit[i] = 1;  
-            //std::cout << i <<"=1" << std::endl;   
-        }
-        else{
-            vec_selection_bit[i] = 0;
-            //std::cout << i <<"=0" << std::endl;   
-        }
+        if(S.find(vec_Fk2k1_X[i]) == S.end()) vec_selection_bit[i] = 1;  
+        else vec_selection_bit[i] = 0;
     }
     std::cout <<"wcPRF-based PSU [step 3]: Receiver ===> selection vector ===> Sender" << std::endl;
     // receiver vec_X via one-sided OT
@@ -188,14 +183,8 @@ void PipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, 
     for(auto i = 0; i < LEN; i++){ 
         io.ReceiveECPoint(Fk1_X); 
         Fk2k1_X = Fk1_X * k2; 
-        if(S.find(Fk2k1_X) == S.end()){
-            vec_selection_bit[i] = 1;  
-            //std::cout << i <<"=1" << std::endl;   
-        }
-        else{
-            vec_selection_bit[i] = 0;
-            //std::cout << i <<"=0" << std::endl;   
-        }
+        if(S.find(Fk2k1_X) == S.end()) vec_selection_bit[i] = 1;  
+        else vec_selection_bit[i] = 0;
     }
     std::cout <<"wcPRF-based PSU [step 3]: Receiver ===> selection vector ===> Sender" << std::endl;
     // receiver vec_X via one-sided OT

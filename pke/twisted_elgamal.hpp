@@ -269,22 +269,6 @@ void ScalarMul(CT &ct_result, const CT &ct, const BigInt &k)
     ct_result.Y = ct.Y * k;  
 }
 
-/* Decryption algorithm: compute m = Dec(sk, CT) */
-void ParallelDec(const PP &pp, BigInt &sk, CT &ct, BigInt &m)
-{ 
-    /* begin to decrypt */  
-    ECPoint M = ct.Y - ct.X * sk.ModInverse(BigInt(order)); // M = Y - X^{sk^{-1}} = h^m 
-
-    // use Shanks's algorithm to decrypt
-    bool SUCCESS = ParallelShanksDLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, pp.DEC_THREAD_NUM, m); 
-  
-    if(SUCCESS == false)
-    {
-        std::cout << "parallel decyption fails: cannot find the message in the specified range" << std::endl; 
-        exit(EXIT_FAILURE); 
-    }  
-}
-
 
 /* 
 * Encryption algorithm (2-recipients 1-message) with given random coins
@@ -416,6 +400,20 @@ void DeserializeCT(MRCT &ct, std::ifstream& fin)
 // }
 
 
+// /* Decryption algorithm: compute m = Dec(sk, CT) */
+// void ParallelDec(const PP &pp, BigInt &sk, CT &ct, BigInt &m)
+// { 
+//     /* begin to decrypt */  
+//     ECPoint M = ct.Y - ct.X * sk.ModInverse(BigInt(order)); // M = Y - X^{sk^{-1}} = h^m 
 
+//     // use Shanks's algorithm to decrypt
+//     bool SUCCESS = ParallelShanksDLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, pp.DEC_THREAD_NUM, m); 
+  
+//     if(SUCCESS == false)
+//     {
+//         std::cout << "parallel decyption fails: cannot find the message in the specified range" << std::endl; 
+//         exit(EXIT_FAILURE); 
+//     }  
+// }
 
 
