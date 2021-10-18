@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fno-pic -Wno-deprecated-decl
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build) 
 
-find_package(OPENSSL REQUIRED)
+find_package(Openssl REQUIRED)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
 
@@ -28,8 +28,11 @@ target_link_libraries(test_iknp_ote ${OPENSSL_LIBRARIES} -lomp)
 add_executable(test_psu test/test_psu.cpp)
 target_link_libraries(test_psu ${OPENSSL_LIBRARIES} -lomp)
 
-# add_executable(test_ecc test/test_ecc.cpp)
-# target_link_libraries(test_ecc ${OPENSSL_LIBRARIES} -lomp)
+add_executable(test_psi test/test_psi.cpp)
+target_link_libraries(test_psi ${OPENSSL_LIBRARIES} -lomp)
+
+add_executable(test_misc test/test_misc.cpp)
+target_link_libraries(test_misc ${OPENSSL_LIBRARIES} -lomp)
   
 add_executable(test_twisted_elgamal test/test_twisted_elgamal.cpp)
 target_link_libraries(test_twisted_elgamal ${OPENSSL_LIBRARIES} -lomp)
@@ -43,11 +46,11 @@ target_link_libraries(test_twisted_elgamal ${OPENSSL_LIBRARIES} -lomp)
 # add_executable(test_nizk_dlog_equality test/test_nizk_dlog_equality.cpp)
 # target_link_libraries(test_nizk_dlog_equality ${OPENSSL_LIBRARIES} -lomp)
 
-# add_executable(test_innerproduct_proof test/test_innerproduct_proof.cpp)
-# target_link_libraries(test_innerproduct_proof ${OPENSSL_LIBRARIES} -lomp)
+add_executable(test_innerproduct_proof test/test_innerproduct_proof.cpp)
+target_link_libraries(test_innerproduct_proof ${OPENSSL_LIBRARIES} -lomp)
 
-# add_executable(test_bullet_proof test/test_bullet_proof.cpp)
-# target_link_libraries(test_bullet_proof ${OPENSSL_LIBRARIES} -lomp)
+add_executable(test_bullet_proof test/test_bullet_proof.cpp)
+target_link_libraries(test_bullet_proof ${OPENSSL_LIBRARIES} -lomp)
 
 # add_executable(test_range_proof test/test_range_proof.cpp)
 # target_link_libraries(test_range_proof ${OPENSSL_LIBRARIES} -lomp)

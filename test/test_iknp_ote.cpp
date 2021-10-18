@@ -5,7 +5,7 @@
 void test_sender(IKNPOTE::PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec_m1, size_t EXTEND_LEN)
 {
 	auto start_time = std::chrono::steady_clock::now(); 
-    NetIO server("server", "127.0.0.1", 8080); 
+    NetIO server("server", "", 8080); 
 	IKNPOTE::Send(server, pp, vec_m0, vec_m1, EXTEND_LEN);
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -74,7 +74,7 @@ void test_iknp_ote(std::string& party, size_t EXTEND_LEN)
 void test_one_sided_sender(IKNPOTE::PP &pp, std::vector<block> &vec_m, size_t EXTEND_LEN)
 {
     auto start_time = std::chrono::steady_clock::now(); 
-    NetIO server("server", "127.0.0.1", 8080); 
+    NetIO server("server", "", 8080); 
     IKNPOTE::OnesidedSend(server, pp, vec_m, EXTEND_LEN);
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;

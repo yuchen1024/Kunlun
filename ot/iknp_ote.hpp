@@ -69,7 +69,6 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     // generate Phase 1 selection bit vector
     std::vector<uint8_t> vec_selection_bit(BASE_LEN);
     vec_selection_bit = GenRandomBits(seed, BASE_LEN); 
-    // for(auto i = 0; i < vec_selection_bit.size(); i++) vec_selection_bit[i] = 0; 
 
     // first receive 1-out-2 two keys from the receiver 
     std::vector<block> vec_K(BASE_LEN); 
@@ -93,6 +92,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     
     std::vector<uint8_t> Q(ROW_NUM/8 * COLUMN_NUM); // the matrix sender is going to receive from receiver (dense form)
     // for every column: prepare two column vectors
+    
     for(auto j = 0; j < BASE_LEN; j++){
         // receiver the two ciphertexts
         io.ReceiveBlocks(vec_inner_C0.data(), ROW_NUM/128); 
@@ -138,8 +138,6 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
         std::vector<block> Q_row_block(BASE_LEN/128);
 
         Block::FromDenseBits(Q_tanspose.data() + i*COLUMN_NUM/8, BASE_LEN, Q_row_block.data(), BASE_LEN/128); 
-    
-        //std::vector<block> K(BASE_LEN/128);
         
         vec_outer_C0[i] = vec_m0[i]^Hash::BlocksToBlock(Q_row_block); 
         vec_outer_C1[i] = vec_m1[i]^Hash::BlocksToBlock(Block::XOR(Q_row_block, vec_selection_block));

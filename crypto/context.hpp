@@ -4,6 +4,10 @@
 #include "std.inc"
 #include "openssl.inc"
 
+
+// this define means every implementation should be thread safe w.r.t. bn_ctx
+//#define THREAD_SAFE
+
 static size_t BN_BYTE_LEN;  // the byte length of bigint
 static size_t FIELD_BYTE_LEN;  // each scalar field element is 256 bit 
 static size_t INT_BYTE_LEN;   // the byte length of built-in size_t
@@ -13,15 +17,11 @@ static BN_CTX *bn_ctx;
 // HMAC_CTX *hmac_ctx;
 
 // return the error message reported by OpenSSL
-std::string OpenSSLErrorString() {
-    char buffer[256];
-    ERR_error_string_n(ERR_get_error(), buffer, sizeof(buffer));
-    return std::string(buffer);
-}
-
 void CRYPTO_CHECK(bool condition){
     if (condition == false){
-        std::cerr << OpenSSLErrorString();
+        char buffer[256];
+        ERR_error_string_n(ERR_get_error(), buffer, sizeof(buffer));
+        std::cerr << std::string(buffer);
     }
 } 
 

@@ -209,38 +209,41 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
 
 
         // compute cL, cR
-        BigInt cL = BigIntVectorModInnerProduct(vec_aL, vec_bR); // Eq (21) 
+        BigInt cL = BigIntVectorModInnerProduct(vec_aL, vec_bR); // Eq (21)        
         BigInt cR = BigIntVectorModInnerProduct(vec_aR, vec_bL); // Eq (22)
 
+
         // compute L, R
-        std::vector<ECPoint> vec_A; 
-        std::vector<BigInt> vec_a;
+        std::vector<ECPoint> vec_A(2*n+1); 
+        std::vector<BigInt> vec_a(2*n+1);
 
 
-        vec_A.insert(vec_A.end(), vec_gR.begin(), vec_gR.end()); 
-        vec_A.insert(vec_A.end(), vec_hL.begin(), vec_hL.end());
-        vec_A.emplace_back(pp.u); 
+        std::copy(vec_gR.begin(), vec_gR.end(), vec_A.begin());
+        std::copy(vec_hL.begin(), vec_hL.end(), vec_A.begin() + n);
+        vec_A[2*n] = pp.u; 
 
-        vec_a.insert(vec_a.end(), vec_aL.begin(), vec_aL.end()); 
-        vec_a.insert(vec_a.end(), vec_bR.begin(), vec_bR.end());
-        vec_a.emplace_back(cL); 
+
+        std::copy(vec_aL.begin(), vec_aL.end(), vec_a.begin()); 
+        std::copy(vec_bR.begin(), vec_bR.end(), vec_a.begin()+n); 
+        vec_a[2*n] = cL; 
 
         ECPoint L = ECPointVectorMul(vec_A, vec_a);  // Eq (23) 
 
-        vec_A.clear(); vec_a.clear(); 
+ 
 
-        vec_A.insert(vec_A.end(), vec_gL.begin(), vec_gL.end()); 
-        vec_A.insert(vec_A.end(), vec_hR.begin(), vec_hR.end());
-        vec_A.emplace_back(pp.u); 
+        std::copy(vec_gL.begin(), vec_gL.end(), vec_A.begin());
+        std::copy(vec_hR.begin(), vec_hR.end(), vec_A.begin() + n);
+        vec_A[2*n] = pp.u; 
 
-        vec_a.insert(vec_a.end(), vec_aR.begin(), vec_aR.end()); 
-        vec_a.insert(vec_a.end(), vec_bL.begin(), vec_bL.end());
-        vec_a.emplace_back(cR); 
+
+        std::copy(vec_aR.begin(), vec_aR.end(), vec_a.begin()); 
+        std::copy(vec_bL.begin(), vec_bL.end(), vec_a.begin()+n); 
+        vec_a[2*n] = cR; 
 
         ECPoint R = ECPointVectorMul(vec_A, vec_a);  // Eq (24)
 
-        proof.vec_L.push_back(L); 
-        proof.vec_R.push_back(R);  // store the n-th round L and R values
+        proof.vec_L.emplace_back(L); 
+        proof.vec_R.emplace_back(R);  // store the n-th round L and R values
 
         // compute the challenge
         transcript_str += L.ToByteString() + R.ToByteString(); 
@@ -257,14 +260,14 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
         Setup(pp_sub, pp.VECTOR_LEN/2, false);
 
         // compute vec_g
-        vec_gL = ECPointVectorScalar(vec_gL, x_inverse); 
-        vec_gR = ECPointVectorScalar(vec_gR, x); 
-        pp_sub.vec_g = ECPointVectorAdd(vec_gL, vec_gR); // Eq (29)
+        vec_gL = ThreadSafeECPointVectorScalar(vec_gL, x_inverse); 
+        vec_gR = ThreadSafeECPointVectorScalar(vec_gR, x); 
+        pp_sub.vec_g = ThreadSafeECPointVectorAdd(vec_gL, vec_gR); // Eq (29)
 
         // compute vec_h
-        vec_hL = ECPointVectorScalar(vec_hL, x); 
-        vec_hR = ECPointVectorScalar(vec_hR, x_inverse); 
-        pp_sub.vec_h = ECPointVectorAdd(vec_hL, vec_hR); // Eq (30)
+        vec_hL = ThreadSafeECPointVectorScalar(vec_hL, x); 
+        vec_hR = ThreadSafeECPointVectorScalar(vec_hR, x_inverse); 
+        pp_sub.vec_h = ThreadSafeECPointVectorAdd(vec_hL, vec_hR); // Eq (30)
 
         // generate new instance
         Instance instance_sub; 
@@ -321,8 +324,8 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     }
 
     // define the left and right side of the equation on top of pp.17 (with slight modification)
-    std::vector<ECPoint> vec_A; 
-    std::vector<BigInt> vec_a; 
+    std::vector<ECPoint> vec_A(2*pp.VECTOR_LEN+1); 
+    std::vector<BigInt> vec_a(2*pp.VECTOR_LEN+1); 
 
     // compute left
     std::vector<BigInt> vec_s(pp.VECTOR_LEN); 
@@ -334,28 +337,28 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     vec_s = BigIntVectorScalar(vec_s, proof.a); 
     vec_s_inverse = BigIntVectorScalar(vec_s_inverse, proof.b); 
 
-    //start_time = std::chrono::steady_clock::now(); // start to count the time
-    vec_A.assign(pp.vec_g.begin(), pp.vec_g.end()); 
-    vec_a.assign(vec_s.begin(), vec_s.end()); // pp.vec_g, vec_s
 
-    vec_A.insert(vec_A.end(), pp.vec_h.begin(), pp.vec_h.end());
-    vec_a.insert(vec_a.end(), vec_s_inverse.begin(), vec_s_inverse.end()); // pp.vec_h, vec_s_inverse
+    std::move(pp.vec_g.begin(), pp.vec_g.end(), vec_A.begin());
+    std::move(pp.vec_h.begin(), pp.vec_h.end(), vec_A.begin()+pp.VECTOR_LEN);
+    vec_A[2*pp.VECTOR_LEN] = pp.u; 
 
-    vec_A.emplace_back(pp.u); 
-    vec_a.emplace_back((proof.a * proof.b)); // LEFT = u^{ab}
+    std::move(vec_s.begin(), vec_s.end(), vec_a.begin()); // pp.vec_g, vec_s
+    std::move(vec_s_inverse.begin(), vec_s_inverse.end(), vec_a.begin()+pp.VECTOR_LEN); 
+    vec_a[2*pp.VECTOR_LEN] = std::move(proof.a * proof.b); // LEFT = u^{ab}
 
     ECPoint LEFT = ECPointVectorMul(vec_A, vec_a); 
 
     // compute right
-    vec_A.clear(); vec_a.clear(); 
-    vec_A.assign(proof.vec_L.begin(), proof.vec_L.end()); 
-    vec_A.insert(vec_A.end(), proof.vec_R.begin(), proof.vec_R.end()); 
+    vec_A.resize(2*pp.LOG_VECTOR_LEN+1);  
+    std::move(proof.vec_L.begin(), proof.vec_L.end(), vec_A.begin()); 
+    std::move(proof.vec_R.begin(), proof.vec_R.end(), vec_A.begin()+pp.LOG_VECTOR_LEN); 
 
-    vec_a.assign(vec_x_square.begin(), vec_x_square.end()); 
-    vec_a.insert(vec_a.end(), vec_x_inverse_square.begin(), vec_x_inverse_square.end()); 
+    vec_a.resize(2*pp.LOG_VECTOR_LEN+1);
+    std::move(vec_x_square.begin(), vec_x_square.end(), vec_a.begin()); 
+    std::move(vec_x_inverse_square.begin(), vec_x_inverse_square.end(), vec_a.begin()+pp.LOG_VECTOR_LEN); 
 
-    vec_A.emplace_back(instance.P); 
-    vec_a.emplace_back(bn_1); 
+    vec_A[2*pp.LOG_VECTOR_LEN] = instance.P; 
+    vec_a[2*pp.LOG_VECTOR_LEN] = bn_1; 
 
     ECPoint RIGHT = ECPointVectorMul(vec_A, vec_a);  
 
@@ -439,8 +442,8 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
     }
 
     // define the left and right side of the equation on top of pp.17 (with slight modification)
-    std::vector<ECPoint> vec_A; 
-    std::vector<BigInt> vec_a; 
+    std::vector<ECPoint> vec_A(2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN+1); 
+    std::vector<BigInt> vec_a(2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN+1); 
 
     // compute scalar for g and h
     //std::vector<BigInt> vec_s(pp.VECTOR_LEN, bn_1); // initialize every vec_s[i] = bn_1
@@ -452,23 +455,20 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
     vec_s = BigIntVectorScalar(vec_s, proof.a); 
     vec_s_inverse = BigIntVectorScalar(vec_s_inverse, proof.b); 
 
-    vec_A.assign(pp.vec_g.begin(), pp.vec_g.end()); 
-    vec_a.assign(vec_s.begin(), vec_s.end()); // pp.vec_g, vec_s
-
-    vec_A.insert(vec_A.end(), pp.vec_h.begin(), pp.vec_h.end());
-    vec_a.insert(vec_a.end(), vec_s_inverse.begin(), vec_s_inverse.end()); // pp.vec_h, vec_s_inverse
-
-    vec_A.emplace_back(pp.u); 
-    vec_a.emplace_back((proof.a * proof.b)); // LEFT = u^{ab}   
-
-    vec_A.insert(vec_A.end(), proof.vec_L.begin(), proof.vec_L.end()); 
-    vec_A.insert(vec_A.end(), proof.vec_R.begin(), proof.vec_R.end()); 
-
-    vec_a.insert(vec_a.end(), vec_x_square.begin(), vec_x_square.end()); 
-    vec_a.insert(vec_a.end(), vec_x_inverse_square.begin(), vec_x_inverse_square.end()); 
+    std::move(pp.vec_g.begin(), pp.vec_g.end(), vec_A.begin()); 
+    std::move(pp.vec_h.begin(), pp.vec_h.end(), vec_A.begin()+pp.VECTOR_LEN);
+    std::move(proof.vec_L.begin(), proof.vec_L.end(), vec_A.begin()+2*pp.VECTOR_LEN); 
+    std::move(proof.vec_R.begin(), proof.vec_R.end(), vec_A.begin()+2*pp.VECTOR_LEN+pp.LOG_VECTOR_LEN); 
+    vec_A[2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN] = pp.u; 
 
 
-    for(auto i = 2*pp.VECTOR_LEN+1; i <= 2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN; i++){
+    std::move(vec_s.begin(), vec_s.end(), vec_a.begin()); // pp.vec_g, vec_s
+    std::move(vec_s_inverse.begin(), vec_s_inverse.end(), vec_a.begin()+pp.VECTOR_LEN); // pp.vec_h, vec_s_inverse
+    std::move(vec_x_square.begin(), vec_x_square.end(), vec_a.begin()+2*pp.VECTOR_LEN); 
+    std::move(vec_x_inverse_square.begin(), vec_x_inverse_square.end(), vec_a.begin()+2*pp.VECTOR_LEN+pp.LOG_VECTOR_LEN); 
+    vec_a[2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN] = std::move(proof.a * proof.b); // LEFT = u^{ab}   
+
+    for(auto i = 2*pp.VECTOR_LEN; i < 2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN; i++){
         vec_a[i] = -vec_a[i];
     }
     
@@ -480,13 +480,13 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
     if (LEFT==RIGHT) {
         Validity = true;
         #ifdef DEBUG 
-        std::cout<< "InnerProduct Proof accepts >>>" << std::endl; 
+            std::cout<< "InnerProduct Proof accepts >>>" << std::endl; 
         #endif
     }
     else {
         Validity = false;
         #ifdef DEBUG
-        std::cout<< "InnerProduct Proof rejects >>>" << std::endl; 
+            std::cout<< "InnerProduct Proof rejects >>>" << std::endl; 
         #endif
     }
 

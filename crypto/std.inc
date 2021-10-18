@@ -17,6 +17,7 @@ this file includes commonly used head files
 #include <unordered_map>
 #include <unordered_set>
 #include <thread>
+#include <atomic> 
 #include <iomanip>
 #include <functional>
 #include <bitset>

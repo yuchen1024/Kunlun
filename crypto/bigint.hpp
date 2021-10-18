@@ -380,7 +380,6 @@ BigInt BigInt::ModExp(const BigInt& exponent, const BigInt& modulus) const {
     } 
     BigInt result;
     CRYPTO_CHECK(1 == BN_mod_exp(result.bn_ptr, this->bn_ptr, exponent.bn_ptr, modulus.bn_ptr, bn_ctx));
-
     return std::move(result);
 }
 
@@ -594,11 +593,9 @@ std::vector<BigInt> BigIntVectorModAdd(std::vector<BigInt> &vec_a, std::vector<B
     }
     size_t LEN = vec_a.size(); 
     std::vector<BigInt> vec_result(LEN);
-    //#pragma omp parallel for
-    for (auto i = 0; i < vec_a.size(); i++) 
-    {
+    
+    for (auto i = 0; i < vec_a.size(); i++) {
         vec_result[i] = (vec_a[i] + vec_b[i]) % order;  
-        //BN_mod_add(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, bn_ctx); 
     }
     return std::move(vec_result); 
 }
@@ -612,10 +609,9 @@ std::vector<BigInt> BigIntVectorModSub(std::vector<BigInt> &vec_a, std::vector<B
     }
     size_t LEN = vec_a.size(); 
     std::vector<BigInt> vec_result(LEN);
-    //#pragma omp parallel for
+
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = (vec_a[i] - vec_b[i]) % order;
-        //BN_mod_sub(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, nullptr); 
     } 
     return std::move(vec_result); 
 }
@@ -629,10 +625,9 @@ std::vector<BigInt> BigIntVectorModProduct(std::vector<BigInt> &vec_a, std::vect
     }
     size_t LEN = vec_a.size(); 
     std::vector<BigInt> vec_result(LEN);
-    //#pragma omp parallel for
+
     for (auto i = 0; i < vec_a.size(); i++) {
         vec_result[i] = (vec_a[i] * vec_b[i]) % order; // product = (vec_a[i]*vec_b[i]) mod order
-        //BN_mod_mul(result[i].bn_ptr, vec_a[i].bn_ptr, vec_b[i].bn_ptr, order, nullptr);
     }
     return std::move(vec_result); 
 }
@@ -642,10 +637,10 @@ std::vector<BigInt> BigIntVectorModInverse(std::vector<BigInt> &vec_a)
 {
     size_t LEN = vec_a.size(); 
     std::vector<BigInt> vec_result(LEN);
-    //#pragma omp parallel for
+
     for (auto i = 0; i < vec_a.size(); i++) {
         vec_result[i] = vec_a[i].ModInverse(order); 
-        //BN_mod_inverse(result[i].bn_ptr, vec_a[i].bn_ptr, order, nullptr); 
+
     }
     return std::move(vec_result);
 }
@@ -656,10 +651,9 @@ std::vector<BigInt> BigIntVectorModScalar(std::vector<BigInt> &vec_a, BigInt &c)
 {
     size_t LEN = vec_a.size();
     std::vector<BigInt> vec_result(LEN);
-    //#pragma omp parallel for
+
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = (vec_a[i] * c) % order;
-        //BN_mod_mul(result[i].bn_ptr, vec_a[i].bn_ptr, c.bn_ptr, order, nullptr);
     } 
     return std::move(vec_result); 
 }
@@ -669,10 +663,9 @@ std::vector<BigInt> BigIntVectorScalar(std::vector<BigInt> &vec_a, BigInt &c)
 {
     size_t LEN = vec_a.size();
     std::vector<BigInt> vec_result(LEN); 
-    //#pragma omp parallel for
+
     for (auto i = 0; i < vec_a.size(); i++) {
         vec_result[i] = vec_a[i] * c;
-        //BN_mul(result[i].bn_ptr, vec_a[i].bn_ptr, c.bn_ptr, bn_ctx);
     } 
     return std::move(vec_result);
 }
@@ -682,7 +675,7 @@ std::vector<BigInt> BigIntVectorModNegate(std::vector<BigInt> &vec_a, BigInt &mo
 {
     size_t LEN = vec_a.size();
     std::vector<BigInt> vec_result(LEN); 
-    
+
     for (auto i = 0; i < vec_result.size(); i++) {
         vec_result[i] = vec_a[i].ModNegate(modulus);
     }
@@ -693,12 +686,13 @@ std::vector<BigInt> BigIntVectorModNegate(std::vector<BigInt> &vec_a, BigInt &mo
 /* sum_i^n a[i]*b[i] */
 BigInt BigIntVectorModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
 {
-    BigInt result(bn_0); 
+    BigInt result = bn_0; 
 
     if (vec_a.size() != vec_b.size()){
         std::cerr << "vector size does not match!" << std::endl;
         exit(EXIT_FAILURE); 
-    }   
+    } 
+
     for (auto i = 0; i < vec_a.size(); i++) {
         result += vec_a[i] * vec_b[i]; // product = (vec_a[i]*vec_b[i]) mod order
     }
@@ -711,6 +705,10 @@ BigInt BigIntVectorModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigIn
 std::vector<BigInt> GenRandomBigIntVectorLessThan(size_t LEN, const BigInt &order)
 {
     std::vector<BigInt> vec_result(LEN);
+    
+    #ifdef OMP
+    #pragma omp parallel for
+    #endif
     for(auto i = 0; i < LEN; i++){ 
         vec_result[i] = GenRandomBigIntLessThan(order); 
     }

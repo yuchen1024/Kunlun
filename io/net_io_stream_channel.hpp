@@ -143,7 +143,7 @@ NetIO::NetIO(std::string party, std::string address, int port)
 			std::cout << "client conencts to server successfully >>>" << std::endl;
 		}
 	}
-
+	
 	SetNodelay(); 
 	// very impprotant: bind the socket to a file stream
 	stream = fdopen(this->connect_socket, "wb+"); 

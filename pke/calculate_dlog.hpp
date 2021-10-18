@@ -49,7 +49,6 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
     } 
 }
 
-
 /* 
 * generate babystep hashkey table
 * standard method is using babystep point as key for point2index hashmap: big key size
@@ -74,7 +73,9 @@ void ParallelBuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOF
     std::vector<ECPoint> startpoint(DEC_THREAD_NUM); 
     std::vector<size_t> startindex(DEC_THREAD_NUM); 
 
-    //#pragma omp parallel// NEW ADD
+    #ifdef THREAD_SAFE
+    #pragma omp parallel// NEW ADD
+    #endif
     for (auto i = 0; i < DEC_THREAD_NUM; i++){
         startindex[i] = i * SLICED_BABYSTEP_NUM; 
         startpoint[i] = g * BigInt(startindex[i]);
@@ -138,6 +139,10 @@ void BuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, s
 
     size_t hashkey; 
     ECPoint startpoint = GetPointAtInfinity();  
+
+    #ifdef THREAD_SAFE
+    #pragma omp parallel// NEW ADD
+    #endif
     for(auto index = 0; index < BABYSTEP_NUM; index++)
     {
         hashkey = std::hash<std::string>{}(startpoint.ToByteString()); 

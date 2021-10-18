@@ -7,6 +7,7 @@
 #include "bigint.hpp"
 #include "../common/routines.hpp"
 
+
 class BigInt;
 
 // C++ Wrapper class for openssl EC_POINT.
@@ -88,13 +89,14 @@ public:
     void Deserialize(std::ifstream &fin);
 
     std::string ToByteString() const;
+    std::string ThreadSafeToByteString() const; 
     std::string ToHexString() const;
 
     friend std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A); 
  
     friend std::ifstream &operator>>(std::ifstream &fin, ECPoint &A);
 
-    std::string ThreadSafeToByteString() const; 
+
 };
 
 // const static BigInt bn_order(order);  
@@ -118,7 +120,7 @@ ECPoint::ECPoint(const BigInt& x, const BigInt& y){
     EC_POINT_set_affine_coordinates_GFp(group, this->point_ptr, x.bn_ptr, y.bn_ptr, bn_ctx);
 }
 
-
+// dirty but thread safe implementation by setting bn_ctx = nullptr 
 ECPoint ECPoint::Mul(const BigInt& scalar) const {
     ECPoint result; 
     // use fix-point exp with precomputation
@@ -128,6 +130,7 @@ ECPoint ECPoint::Mul(const BigInt& scalar) const {
     else{
         CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, bn_ctx));
     }
+ 
     return std::move(result);
 }
 
@@ -144,6 +147,7 @@ ECPoint ECPoint::ThreadSafeMul(const BigInt& scalar) const {
 }
 
 ECPoint ECPoint::Add(const ECPoint& other) const {  
+
     ECPoint result; 
     CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, other.point_ptr, bn_ctx)); 
     return std::move(result); 
@@ -214,8 +218,8 @@ void ECPoint::SetInfinity()
 }
 
 void ECPoint::Print() const
-{
-    char *ecp_str = EC_POINT_point2hex(group, this->point_ptr, POINT_CONVERSION_UNCOMPRESSED, NULL);
+{ 
+    char *ecp_str = EC_POINT_point2hex(group, this->point_ptr, POINT_CONVERSION_UNCOMPRESSED, bn_ctx);
     std::cout << ecp_str << std::endl; 
     OPENSSL_free(ecp_str); 
 }
@@ -245,7 +249,7 @@ void ECPoint::Deserialize(std::ifstream &fin)
 std::string ECPoint::ToByteString() const
 {
     unsigned char buffer[POINT_BYTE_LEN]; 
-    memset(buffer, 0, POINT_BYTE_LEN); 
+    //memset(buffer, 0, POINT_BYTE_LEN); 
 
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
     std::string result; 
@@ -256,11 +260,9 @@ std::string ECPoint::ToByteString() const
 
 std::string ECPoint::ThreadSafeToByteString() const
 {
-    unsigned char buffer[POINT_BYTE_LEN]; 
-    memset(buffer, 0, POINT_BYTE_LEN); 
-
-    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-    std::string ecp_str(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN);
+    std::string ecp_str(POINT_BYTE_LEN, '0');   
+    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, 
+                       reinterpret_cast<unsigned char *>(&ecp_str[0]), POINT_BYTE_LEN, nullptr);
     return std::move(ecp_str); 
 }
 
@@ -300,6 +302,7 @@ ECPoint CreateECPoint(const BigInt& x, const BigInt& y)
     ECPoint ecp_result(x, y);
     if (!ecp_result.IsValid()) {
         std::cerr << "ECGroup::CreateECPoint(x,y) - The point is not valid." << std::endl;
+        exit(EXIT_FAILURE);
     }
     return std::move(ecp_result);
 }
@@ -363,21 +366,51 @@ std::vector<ECPoint> ECPointVectorAdd(std::vector<ECPoint> &vec_A, std::vector<E
     }
     size_t LEN = vec_A.size();
     std::vector<ECPoint> vec_result(LEN); 
-    #pragma omp parallel for
+    
     for (auto i = 0; i < vec_A.size(); i++) {
+        vec_result[i] = vec_A[i] + vec_B[i]; 
+    }
+    return std::move(vec_result);
+}
+
+/* g[i] = g[i]+h[i] */ 
+std::vector<ECPoint> ThreadSafeECPointVectorAdd(std::vector<ECPoint> &vec_A, std::vector<ECPoint> &vec_B)
+{
+    if (vec_A.size()!= vec_B.size()) {
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    size_t LEN = vec_A.size();
+    std::vector<ECPoint> vec_result(LEN); 
+    
+    #pragma OMP
+    for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i].ThreadSafeAdd(vec_B[i]); 
     }
     return std::move(vec_result);
 }
+
 
 /* vec_result[i] = vec_A[i] * a */ 
 inline std::vector<ECPoint> ECPointVectorScalar(std::vector<ECPoint> &vec_A, BigInt &a)
 {
     size_t LEN = vec_A.size();
     std::vector<ECPoint> vec_result(LEN);  
+
+    for (auto i = 0; i < LEN; i++) {
+        vec_result[i] = vec_A[i] * a;  
+    }
+    return std::move(vec_result);  
+}
+
+/* vec_result[i] = vec_A[i] * a */ 
+inline std::vector<ECPoint> ThreadSafeECPointVectorScalar(std::vector<ECPoint> &vec_A, BigInt &a)
+{
+    size_t LEN = vec_A.size();
+    std::vector<ECPoint> vec_result(LEN);  
+
     #pragma omp parallel for
     for (auto i = 0; i < LEN; i++) {
-        //result[i] = vec_A[i] * c; 
         vec_result[i] = vec_A[i].ThreadSafeMul(a);  
     }
     return std::move(vec_result);  
@@ -395,8 +428,25 @@ inline std::vector<ECPoint> ECPointVectorProduct(std::vector<ECPoint> &vec_A, st
     size_t LEN = vec_A.size(); 
     std::vector<ECPoint> vec_result(LEN);
 
+    for (auto i = 0; i < LEN; i++) {
+        vec_result[i] = vec_A[i] * vec_a[i];  
+    } 
+    return std::move(vec_result);  
+}
+
+/* result[i] = A[i]*a[i] */ 
+inline std::vector<ECPoint> ThreadSafeECPointVectorProduct(std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
+{
+    if (vec_A.size() != vec_a.size()) {
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    } 
+
+    size_t LEN = vec_A.size(); 
+    std::vector<ECPoint> vec_result(LEN);
+
     #pragma omp parallel for
-    for (auto i = 0; i < vec_A.size(); i++) {
+    for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i].ThreadSafeMul(vec_a[i]);  
     } 
     return std::move(vec_result);  
@@ -407,6 +457,9 @@ inline std::vector<ECPoint> ECPointVectorProduct(std::vector<ECPoint> &vec_A, st
 std::vector<ECPoint> GenRandomECPointVector(size_t LEN)
 {
     std::vector<ECPoint> vec_result(LEN); 
+    #ifdef OMP
+    #pragma omp parallel for
+    #endif
     for(auto i = 0; i < LEN; i++){ 
         vec_result[i] = GenRandomGenerator(); 
     }
@@ -438,14 +491,6 @@ void PrintECPointVector(std::vector<ECPoint> &vec_A, std::string note)
 
 
 /* customized hash for ECPoint class */
-// namespace std{
-//     template <> struct hash<ECPoint>{
-//         std::size_t operator()(const ECPoint& A) const
-//         { 
-//             return std::hash<std::string>{}(A.ToByteString());
-//         }
-//     };
-// }
 
 class ECPointHash{
 public:

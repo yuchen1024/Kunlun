@@ -21,33 +21,23 @@ static size_t POINT_BYTE_LEN; // the byte length of ec point in compressed form
 void ECGroup_Initialize(int curve_id){
     group = EC_GROUP_new_by_curve_name(curve_id);
     // If this fails, this is usually due to an invalid curve id.
-    if (group == nullptr) {
-        std::cerr << "EC Group: Could not create group." << OpenSSLErrorString();
-    }
+    CRYPTO_CHECK(group !=nullptr);
 
     generator = EC_GROUP_get0_generator(group);
 
     order = BN_new(); 
-    if (EC_GROUP_get_order(group, order, bn_ctx) != 1) {
-        std::cerr << "EC Group: Could not get order." << OpenSSLErrorString();
-    }
+    CRYPTO_CHECK(EC_GROUP_get_order(group, order, bn_ctx) == 1);
 
     cofactor = BN_new(); 
-    if (EC_GROUP_get_cofactor(group, cofactor, bn_ctx) != 1) {
-        std::cerr << "ECGroup: Could not get cofactor." << OpenSSLErrorString();
-    }
+    CRYPTO_CHECK(EC_GROUP_get_cofactor(group, cofactor, bn_ctx) == 1); 
 
     curve_params_p = BN_new(); 
     curve_params_a = BN_new();
     curve_params_b = BN_new(); 
-    if (EC_GROUP_get_curve_GFp(group, curve_params_p, curve_params_a, curve_params_b, bn_ctx) != 1) {
-        std::cerr << "ECGroup: Could not get params." << OpenSSLErrorString();
-    }
+    CRYPTO_CHECK(EC_GROUP_get_curve_GFp(group, curve_params_p, curve_params_a, curve_params_b, bn_ctx) == 1); 
 
     size_t rounds = 100; 
-    if(BN_is_prime_ex(curve_params_p, rounds, bn_ctx, nullptr) == 0) {
-        std::cerr << "ECGroup: p is not prime." << OpenSSLErrorString();
-    }
+    CRYPTO_CHECK(BN_is_prime_ex(curve_params_p, rounds, bn_ctx, nullptr) == 1);
 
     curve_params_q = BN_new(); 
     BN_rshift(curve_params_q, curve_params_p, 1); // p_minus_one_over_two = (p-1)/2
@@ -61,12 +51,7 @@ void ECGroup_Initialize(int curve_id){
     EC_GROUP_precompute_mult((EC_GROUP*) group, bn_ctx); // pre-compute the table of g     
     
     #ifdef PRECOMPUTE_ENABLE
-    if(EC_GROUP_have_precompute_mult((EC_GROUP*) group)){ 
-        std::cout << "precompute enable" << std::endl;
-    } 
-    else{
-        std::cout << "precompute disable" << std::endl;
-    } 
+    EC_GROUP_have_precompute_mult((EC_GROUP*) group); 
     #endif
 }
 

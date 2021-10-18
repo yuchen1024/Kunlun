@@ -60,6 +60,9 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	std::vector<block> vec_Y1(LEN); 
 
 	// send m0 and m1
+	#ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
 	for(auto i = 0 ; i < LEN; ++i) {
 		vec_K0[i] = vec_pk0[i] * vec_r[i];
 		vec_K1[i] = vec_Z[i] - vec_K0[i];
@@ -80,7 +83,9 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
 	std::vector<ECPoint> vec_X(LEN); 
 	std::vector<ECPoint> vec_pk0(LEN);
 
-
+    #ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
 	for(auto i = 0; i < LEN; i++){
 		vec_sk[i] = GenRandomBigIntLessThan(order);
 	}
@@ -90,6 +95,9 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
 	io.ReceiveECPoints(vec_X.data(), LEN);
 
 	// send pk0[i]
+	#ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
 	for(auto i = 0; i < LEN; i++) {
 		if(vec_selection_bit[i] == 1){
 			vec_pk0[i] = C - pp.g * vec_sk[i]; 
@@ -107,12 +115,19 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
 	io.ReceiveBlocks(vec_Y0.data(), LEN);
 	io.ReceiveBlocks(vec_Y1.data(), LEN); 
 
+    #ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
 	for(auto i = 0; i < LEN; i++)
 	{
 		vec_K[i] = vec_X[i]* vec_sk[i];
 	}
 
+
 	// decrypt with Kb[i]
+    #ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
 	for(auto i = 0; i < LEN; i++) {
 		if(vec_selection_bit[i] == 0) vec_result[i] = vec_Y0[i] ^ Hash::ECPointToBlock(vec_K[i]);
 		else vec_result[i] = vec_Y1[i] ^ Hash::ECPointToBlock(vec_K[i]);

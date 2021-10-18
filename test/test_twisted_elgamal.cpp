@@ -126,7 +126,7 @@ int main()
 {  
     Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
-
+    
     std::ios::sync_with_stdio(false);
 
     PrintSplitLine('-'); 

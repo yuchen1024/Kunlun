@@ -39,15 +39,20 @@ void Sender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     BigInt k1 = GenRandomBigIntLessThan(order);
     std::vector<ECPoint> vec_Fk1_X(LEN);
     
+    #ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
     for(auto i = 0; i < LEN; i++){
-        vec_Fk1_X[i] = Hash::StringToECPoint(Block::ToString(vec_X[i])); 
-        vec_Fk1_X[i] = vec_Fk1_X[i] * k1; // H(y_i)^k2
+        vec_Fk1_X[i] = Hash::BlockToECPoint(vec_X[i]) * k1; // H(x_i)^k1
     }
     io.SendECPoints(vec_Fk1_X.data(), LEN); 
 
     std::cout <<"wcPRF-based PSU [step 2]: Sender ===> F_k1(x_i) ===> Receiver" << std::endl;
 
     std::vector<ECPoint> vec_Fk1k2_Y(LEN);
+    #ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
     for(auto i = 0; i < LEN; i++){
         vec_Fk1k2_Y[i] = vec_Fk2_Y[i] * k1; 
     }
@@ -57,10 +62,13 @@ void Sender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     std::cout <<"wcPRF-based PSU [step 2]: Sender ===> Permutation(F_k1k2(y_i)) ===> Receiver" << std::endl;
 
     // send vec_X via one-sided OT
-    std::vector<block> vec_dummy(LEN);
-    for(auto i = 0; i < LEN; i++){
-        vec_dummy[i] = Block::zero_block; 
-    } 
+    std::vector<block> vec_dummy(LEN, Block::zero_block);
+    // #ifdef THREAD_SAFE
+    //     #pragma omp parallel for
+    // #endif
+    // for(auto i = 0; i < LEN; i++){
+    //     vec_dummy[i] = Block::zero_block; 
+    // } 
 
     IKNPOTE::PP ote_pp; 
     IKNPOTE::Setup(ote_pp); 
@@ -74,10 +82,11 @@ void Receiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::uno
     BigInt k2 = GenRandomBigIntLessThan(order);
     std::vector<ECPoint> vec_Fk2_Y(LEN);
 
-    //#pragma omp parallel for
+    #ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
     for(auto i = 0; i < LEN; i++){
-        vec_Fk2_Y[i] = Hash::StringToECPoint(Block::ToString(vec_Y[i])); 
-        vec_Fk2_Y[i] = vec_Fk2_Y[i] * k2; // H(y_i)^k2
+        vec_Fk2_Y[i] = Hash::BlockToECPoint(vec_Y[i]) * k2; // H(y_i)^k2
     }
     io.SendECPoints(vec_Fk2_Y.data(), LEN); 
 
@@ -97,6 +106,9 @@ void Receiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::uno
     std::vector<ECPoint> vec_Fk2k1_X(LEN); 
     // compute the selection bit vector
     std::vector<uint8_t> vec_selection_bit(LEN); 
+    #ifdef THREAD_SAFE
+        #pragma omp parallel for
+    #endif
     for(auto i = 0; i < LEN; i++){ 
         vec_Fk2k1_X[i] = vec_Fk1_X[i]* k2; 
         if(S.find(vec_Fk2k1_X[i]) == S.end()) vec_selection_bit[i] = 1;  
@@ -141,7 +153,7 @@ void PipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
    
     ECPoint Fk1_X; 
     for(auto i = 0; i < LEN; i++){
-        Fk1_X = Hash::StringToECPoint(Block::ToString(vec_X[i])) * k1; // H(y_i)^k2
+        Fk1_X = Hash::BlockToECPoint(vec_X[i]) * k1; // H(y_i)^k2
         io.SendECPoint(Fk1_X); 
     }   
     std::cout <<"wcPRF-based PSU [step 2]: Sender ===> F_k1(x_i) ===> Receiver" << std::endl;
@@ -161,7 +173,7 @@ void PipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, 
     ECPoint Fk2_Y;
 
     for(auto i = 0; i < LEN; i++){
-        Fk2_Y = Hash::StringToECPoint(Block::ToString(vec_Y[i])) * k2; // H(y_i)^k2
+        Fk2_Y = Hash::BlockToECPoint(vec_Y[i]) * k2; // H(y_i)^k2
         io.SendECPoint(Fk2_Y); 
     }
     
@@ -202,9 +214,99 @@ void PipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, 
 
     std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X, Y)" << std::endl;    
 }
+ 
 
+void ParallelPipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
+{
+    // first act as sender in base OT
+    BigInt k1 = GenRandomBigIntLessThan(order);
 
+    std::vector<ECPoint> vec_Fk1k2_Y(LEN);
+    std::vector<ECPoint> vec_Fk2_Y(LEN);
+
+    io.ReceiveECPoints(vec_Fk2_Y.data(), LEN);
+
+    #pragma omp parallel for
+    for(auto i = 0; i < LEN; i++){
+        vec_Fk1k2_Y[i] = vec_Fk2_Y[i].ThreadSafeMul(k1); 
+    }
+
+    // permutation
+    std::random_shuffle(vec_Fk1k2_Y.begin(), vec_Fk1k2_Y.end());
+    io.SendECPoints(vec_Fk1k2_Y.data(), LEN); 
+    std::cout <<"wcPRF-based PSU [step 2]: Sender ===> Permutation(F_k1k2(y_i)) ===> Receiver" << std::endl;
+   
+    std::vector<ECPoint> vec_Fk1_X(LEN); 
+    #pragma omp parallel for
+    for(auto i = 0; i < LEN; i++){
+        vec_Fk1_X[i] = Hash::ThreadSafeBlockToECPoint(vec_X[i]).ThreadSafeMul(k1); // H(y_i)^k2
+    }   
+    io.SendECPoints(vec_Fk1_X.data(), LEN); 
+    std::cout <<"wcPRF-based PSU [step 2]: Sender ===> F_k1(x_i) ===> Receiver" << std::endl;
+
+    // send vec_X via one-sided OT
+    IKNPOTE::PP ote_pp; 
+    IKNPOTE::Setup(ote_pp); 
+    IKNPOTE::OnesidedSend(io, ote_pp, vec_X, LEN); 
+    std::cout <<"wcPRF-based PSU [step 3]: Sender ===> (X notin Y) ===> Receiver" << std::endl;
+}
+
+     
+void ParallelPipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::unordered_set<std::string> &unionXY)
+{
+    // first act as sender in base OT
+    BigInt k2 = GenRandomBigIntLessThan(order);
+    std::vector <ECPoint> vec_Fk2_Y(LEN);
+    #pragma omp parallel for
+    for(auto i = 0; i < LEN; i++){
+        vec_Fk2_Y[i] = Hash::ThreadSafeBlockToECPoint(vec_Y[i]).ThreadSafeMul(k2); // H(y_i)^k2
+    }
+
+    io.SendECPoints(vec_Fk2_Y.data(), LEN); 
     
+    std::cout <<"wcPRF-based PSU [step 1]: Receiver ===> F_k2(y_i) ===> Sender" << std::endl;
+
+    std::vector<ECPoint> vec_Fk1k2_Y(LEN);
+    io.ReceiveECPoints(vec_Fk1k2_Y.data(), LEN); 
+
+    std::unordered_set<ECPoint, ECPointHash> S;
+    for(auto i = 0; i < LEN; i++){
+        S.insert(vec_Fk1k2_Y[i]); 
+    }
+
+    std::vector<ECPoint> vec_Fk2k1_X(LEN); 
+    std::vector<ECPoint> vec_Fk1_X(LEN); 
+
+    // compute the selection bit vector
+    std::vector<uint8_t> vec_selection_bit(LEN);
+
+    io.ReceiveECPoints(vec_Fk1_X.data(), LEN);  
+
+    #pragma omp parallel for
+    for(auto i = 0; i < LEN; i++){ 
+        vec_Fk2k1_X[i] = vec_Fk1_X[i].ThreadSafeMul(k2); 
+    }
+    for(auto i = 0; i < LEN; i++){
+        if(S.find(vec_Fk2k1_X[i]) == S.end()) vec_selection_bit[i] = 1;  
+        else vec_selection_bit[i] = 0;
+    }
+    std::cout <<"wcPRF-based PSU [step 3]: Receiver ===> selection vector ===> Sender" << std::endl;
+    // receiver vec_X via one-sided OT
+    std::vector<block> vec_X; 
+    IKNPOTE::PP ote_pp; 
+    IKNPOTE::Setup(ote_pp); 
+    IKNPOTE::OnesidedReceive(io, ote_pp, vec_X, vec_selection_bit, LEN); 
+
+    // compute the union
+    for(auto i = 0; i < LEN; i++)
+        unionXY.insert(Block::ToString(vec_Y[i]));
+
+    for(auto i = 0; i < vec_X.size(); i++) 
+        unionXY.insert(Block::ToString(vec_X[i]));
+
+    std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X, Y)" << std::endl;    
+}
+
 
 }
 #endif
