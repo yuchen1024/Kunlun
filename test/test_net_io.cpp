@@ -1,12 +1,8 @@
-#include "../io/net_io_channel.hpp"
-
-
-#include "../io/net_io_channel.hpp"
+#include "../io/net_io_stream_channel.hpp"
 
 void test_client()
 {
-	NetIO client;
-	client.SetupClient("127.0.0.1", 8080);
+	NetIO client("client", "127.0.0.1", 8080);
 
 	std::string message;
 
@@ -19,8 +15,7 @@ void test_client()
 
 void test_server()
 {
-	NetIO server; 
-  	server.SetupServer("", 8080); 
+	NetIO server("server", "", 8080); 
 	
 	std::string message;
 

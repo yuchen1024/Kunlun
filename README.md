@@ -33,11 +33,14 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - Requires: OpenSSL
 
 ## Install OpenSSL 3.0 (On MAC OS)
-
 ```
   $ git clone https://github.com/openssl/openssl.git
   $ ./config 
   $ make install
+```
+## Install Boost
+```
+  $ brew install boost
 ```
 
 ## Install OpenMP (On MAC OS)
@@ -99,6 +102,11 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * chou_orlandi_ot.hpp: another base OT
   * iknp_ote.hpp: IKNP OT extension
 
+- /psi
+  * dh-psi.hpp
+
+- /psu
+  * dh-psu.hpp
 
 ## Compile and Run
 ```

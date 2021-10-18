@@ -13,16 +13,16 @@ this hpp implements print functionality
 const static size_t LINE_LEN = 120;     // the length of split line
 
 
-std::string ToHex(const std::string& str, bool upper_case)
-{
-    std::ostringstream ret;
+// std::string ToHex(const std::string& str, bool upper_case)
+// {
+//     std::ostringstream ret;
 
-    for (std::string::size_type i = 0; i < str.length(); ++i)
-        ret << std::hex << std::setfill('0') << std::setw(2) 
-            << (upper_case ? std::uppercase : std::nouppercase) << (int)str[i];
+//     for (std::string::size_type i = 0; i < str.length(); ++i)
+//         ret << std::hex << std::setfill('0') << std::setw(2) 
+//             << (upper_case ? std::uppercase : std::nouppercase) << (int)str[i];
 
-    return ret.str();
-}
+//     return ret.str();
+// }
 
 /* print split line */
 void PrintSplitLine(char ch)
@@ -54,9 +54,6 @@ void PrintBitMatrix(uint8_t *M, size_t ROW_NUM, size_t COLUMN_NUM)
     memcpy(temp, M, ROW_NUM/8 * COLUMN_NUM);  
     uint8_t T[ROW_NUM*COLUMN_NUM]; 
     for(auto i = 0; i < ROW_NUM*COLUMN_NUM; i++){
-        // if(M[i/8] == 0) std::cout << 0 << " ";
-        // else std::cout << 1 << " "; 
-
         if((temp[i/8]&mask) == 0X80) T[i] = 1;
         else T[i] = 0; 
         temp[i/8] = temp[i/8] << 1;  

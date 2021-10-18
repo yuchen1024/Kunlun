@@ -53,6 +53,9 @@ public:
 
 	void SendString(char *data, size_t LEN);
 	void ReceiveString(char *data, size_t LEN); 
+
+	void SendString(std::string str);
+	void ReceiveString(std::string str); 
 		
 	~NetIO() {
 		close(this->connect_socket); 
@@ -252,6 +255,16 @@ void NetIO::SendString(char *data, size_t LEN)
 void NetIO::ReceiveString(char *data, size_t LEN) 
 {
 	ReceiveBytes(data, LEN);  
+}
+
+void NetIO::SendString(std::string str) 
+{
+	SendBytes(&str[0], str.size());
+}
+
+void NetIO::ReceiveString(std::string str) 
+{
+	ReceiveBytes(&str[0], str.size());  
 }
 
 void NetIO::SendECPoints(const ECPoint* A, size_t LEN) 
