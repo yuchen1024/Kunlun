@@ -56,7 +56,7 @@ inline std::vector<block> XOR(std::vector<block> &vec_a, std::vector<block> &vec
     for (auto i = 0; i < LEN; i++){
         vec_result[i] = vec_a[i] ^ vec_b[i];
     }
-    return std::move(vec_result);
+    return vec_result;
 }
 
 inline std::vector<block> FixXOR(std::vector<block> &vec_a, block &b) 
@@ -66,7 +66,7 @@ inline std::vector<block> FixXOR(std::vector<block> &vec_a, block &b)
     for (auto i = 0; i < LEN; i++){
         vec_result[i] = vec_a[i] ^ b;
     }
-    return std::move(vec_result); 
+    return vec_result; 
 }
 
 
@@ -96,7 +96,7 @@ inline std::string ToString(const block &var)
 {
     std::string str(16, '0'); 
     memcpy(&str[0], &var, 16);
-    return std::move(str); 
+    return str; 
 }
 
 // shrink 128*n bits into n block

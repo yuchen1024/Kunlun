@@ -63,12 +63,7 @@ void Sender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
 
     // send vec_X via one-sided OT
     std::vector<block> vec_dummy(LEN, Block::zero_block);
-    // #ifdef THREAD_SAFE
-    //     #pragma omp parallel for
-    // #endif
-    // for(auto i = 0; i < LEN; i++){
-    //     vec_dummy[i] = Block::zero_block; 
-    // } 
+
 
     IKNPOTE::PP ote_pp; 
     IKNPOTE::Setup(ote_pp); 
@@ -244,7 +239,7 @@ void ParallelPipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t
     io.SendECPoints(vec_Fk1_X.data(), LEN); 
     std::cout <<"wcPRF-based PSU [step 2]: Sender ===> F_k1(x_i) ===> Receiver" << std::endl;
 
-    // send vec_X via one-sided OT
+    //send vec_X via one-sided OT
     IKNPOTE::PP ote_pp; 
     IKNPOTE::Setup(ote_pp); 
     IKNPOTE::OnesidedSend(io, ote_pp, vec_X, LEN); 
@@ -306,6 +301,8 @@ void ParallelPipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size
 
     std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X, Y)" << std::endl;    
 }
+
+
 
 
 }

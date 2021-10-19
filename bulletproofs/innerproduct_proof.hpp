@@ -283,7 +283,7 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
         vec_a = {x_square, bn_1, x_inverse_square}; 
 
         //instance_sub.P = L * x_square + instance.P + R * x_inverse_square; 
-        instance_sub.P = std::move(ECPointVectorMul(vec_A, vec_a)); // Eq (31) P' = L^{x^2} P R^{x^{-2}}
+        instance_sub.P = ECPointVectorMul(vec_A, vec_a); // Eq (31) P' = L^{x^2} P R^{x^{-2}}
 
         // generate new witness
         Witness witness_sub; 
@@ -344,7 +344,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     std::move(vec_s.begin(), vec_s.end(), vec_a.begin()); // pp.vec_g, vec_s
     std::move(vec_s_inverse.begin(), vec_s_inverse.end(), vec_a.begin()+pp.VECTOR_LEN); 
-    vec_a[2*pp.VECTOR_LEN] = std::move(proof.a * proof.b); // LEFT = u^{ab}
+    vec_a[2*pp.VECTOR_LEN] = proof.a * proof.b; // LEFT = u^{ab}
 
     ECPoint LEFT = ECPointVectorMul(vec_A, vec_a); 
 
@@ -416,7 +416,7 @@ std::vector<BigInt> FastComputeVectorSS(std::vector<BigInt> &vec_x_square, std::
         vec_s[i] = (vec_s[i-(1<<k)] * vec_x_square[m-1-k]) % order; 
     }
 
-    return std::move(vec_s);    
+    return vec_s;    
 } 
 
 
@@ -466,7 +466,7 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
     std::move(vec_s_inverse.begin(), vec_s_inverse.end(), vec_a.begin()+pp.VECTOR_LEN); // pp.vec_h, vec_s_inverse
     std::move(vec_x_square.begin(), vec_x_square.end(), vec_a.begin()+2*pp.VECTOR_LEN); 
     std::move(vec_x_inverse_square.begin(), vec_x_inverse_square.end(), vec_a.begin()+2*pp.VECTOR_LEN+pp.LOG_VECTOR_LEN); 
-    vec_a[2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN] = std::move(proof.a * proof.b); // LEFT = u^{ab}   
+    vec_a[2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN] = (proof.a * proof.b); // LEFT = u^{ab}   
 
     for(auto i = 2*pp.VECTOR_LEN; i < 2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN; i++){
         vec_a[i] = -vec_a[i];

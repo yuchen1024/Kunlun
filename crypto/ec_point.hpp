@@ -131,8 +131,9 @@ ECPoint ECPoint::Mul(const BigInt& scalar) const {
         CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, bn_ctx));
     }
  
-    return std::move(result);
+    return result;
 }
+
 
 ECPoint ECPoint::ThreadSafeMul(const BigInt& scalar) const {
     ECPoint result;
@@ -143,47 +144,49 @@ ECPoint ECPoint::ThreadSafeMul(const BigInt& scalar) const {
     else{
         CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, nullptr));
     }
-    return std::move(result);
+    return result;
 }
+
+
 
 ECPoint ECPoint::Add(const ECPoint& other) const {  
 
     ECPoint result; 
     CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, other.point_ptr, bn_ctx)); 
-    return std::move(result); 
+    return result; 
 }
 
 ECPoint ECPoint::ThreadSafeAdd(const ECPoint& other) const {  
     ECPoint result; 
     CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, other.point_ptr, nullptr)); 
-    return std::move(result); 
+    return result; 
 }
 
 ECPoint ECPoint::Invert() const {
     // Create a copy of this.
     ECPoint result = (*this);  
     CRYPTO_CHECK(1 == EC_POINT_invert(group, result.point_ptr, bn_ctx)); 
-    return std::move(result); 
+    return result; 
 }
 
 ECPoint ECPoint::ThreadSafeInvert() const {
     // Create a copy of this.
     ECPoint result = (*this);  
     CRYPTO_CHECK(1 == EC_POINT_invert(group, result.point_ptr, nullptr)); 
-    return std::move(result); 
+    return result; 
 }
 
 
 ECPoint ECPoint::Sub(const ECPoint& other) const { 
     ECPoint result = other.Invert(); 
     CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, result.point_ptr, bn_ctx));
-    return std::move(result); 
+    return result; 
 }
 
 ECPoint ECPoint::ThreadSafeSub(const ECPoint& other) const { 
     ECPoint result = other.Invert(); 
     CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, result.point_ptr, nullptr)); 
-    return std::move(result); 
+    return result; 
 }
 
 void ECPoint::Clone(const ECPoint& other) const {
@@ -255,7 +258,7 @@ std::string ECPoint::ToByteString() const
     std::string result; 
     result.assign(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN);
 
-    return std::move(result); 
+    return result; 
 }
 
 std::string ECPoint::ThreadSafeToByteString() const
@@ -263,7 +266,7 @@ std::string ECPoint::ThreadSafeToByteString() const
     std::string ecp_str(POINT_BYTE_LEN, '0');   
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, 
                        reinterpret_cast<unsigned char *>(&ecp_str[0]), POINT_BYTE_LEN, nullptr);
-    return std::move(ecp_str); 
+    return ecp_str; 
 }
 
 /* convert an EC point to string */
@@ -304,21 +307,21 @@ ECPoint CreateECPoint(const BigInt& x, const BigInt& y)
         std::cerr << "ECGroup::CreateECPoint(x,y) - The point is not valid." << std::endl;
         exit(EXIT_FAILURE);
     }
-    return std::move(ecp_result);
+    return ecp_result;
 }
 
 ECPoint GenRandomGenerator()
 {
     BigInt bn_order(order); 
     ECPoint result = ECPoint(generator) * GenRandomBigIntBetween(bn_1, bn_order);
-    return std::move(result); 
+    return result; 
 }
 
 // Creates an ECPoint which is the identity.
 ECPoint GetPointAtInfinity(){
     ECPoint result;
     CRYPTO_CHECK(1 == EC_POINT_set_to_infinity(group, result.point_ptr));
-    return std::move(result);
+    return result;
 }
 
 
@@ -339,7 +342,7 @@ ECPoint ECPointVectorMul(std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a
     size_t LEN = vec_A.size(); 
     CRYPTO_CHECK(1 == EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, 
                  (const EC_POINT**)vec_A.data(), (const BIGNUM**)vec_a.data(), bn_ctx));
-    return std::move(result); 
+    return result; 
 }
 
 
@@ -353,7 +356,7 @@ inline ECPoint ThreadSafeECPointVectorMul(std::vector<ECPoint> &vec_A, std::vect
     size_t LEN = vec_A.size();
     CRYPTO_CHECK(1 == EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, 
                  (const EC_POINT**)vec_A.data(), (const BIGNUM**)vec_a.data(), nullptr));
-    return std::move(result); 
+    return result; 
 }
 
 
@@ -370,7 +373,7 @@ std::vector<ECPoint> ECPointVectorAdd(std::vector<ECPoint> &vec_A, std::vector<E
     for (auto i = 0; i < vec_A.size(); i++) {
         vec_result[i] = vec_A[i] + vec_B[i]; 
     }
-    return std::move(vec_result);
+    return vec_result;
 }
 
 /* g[i] = g[i]+h[i] */ 
@@ -387,7 +390,7 @@ std::vector<ECPoint> ThreadSafeECPointVectorAdd(std::vector<ECPoint> &vec_A, std
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i].ThreadSafeAdd(vec_B[i]); 
     }
-    return std::move(vec_result);
+    return vec_result;
 }
 
 
@@ -400,7 +403,7 @@ inline std::vector<ECPoint> ECPointVectorScalar(std::vector<ECPoint> &vec_A, Big
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i] * a;  
     }
-    return std::move(vec_result);  
+    return vec_result;  
 }
 
 /* vec_result[i] = vec_A[i] * a */ 
@@ -413,7 +416,7 @@ inline std::vector<ECPoint> ThreadSafeECPointVectorScalar(std::vector<ECPoint> &
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i].ThreadSafeMul(a);  
     }
-    return std::move(vec_result);  
+    return vec_result;  
 }
 
 
@@ -431,7 +434,7 @@ inline std::vector<ECPoint> ECPointVectorProduct(std::vector<ECPoint> &vec_A, st
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i] * vec_a[i];  
     } 
-    return std::move(vec_result);  
+    return vec_result;  
 }
 
 /* result[i] = A[i]*a[i] */ 
@@ -449,7 +452,7 @@ inline std::vector<ECPoint> ThreadSafeECPointVectorProduct(std::vector<ECPoint> 
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i].ThreadSafeMul(vec_a[i]);  
     } 
-    return std::move(vec_result);  
+    return vec_result;  
 }
 
 
@@ -463,7 +466,7 @@ std::vector<ECPoint> GenRandomECPointVector(size_t LEN)
     for(auto i = 0; i < LEN; i++){ 
         vec_result[i] = GenRandomGenerator(); 
     }
-    return std::move(vec_result);
+    return vec_result;
 }
 
 

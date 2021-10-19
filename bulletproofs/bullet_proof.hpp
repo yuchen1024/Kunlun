@@ -46,7 +46,7 @@ std::vector<BigInt> GenBigIntPowerVector(size_t LEN, const BigInt &a)
     {
         vec_result[i] = (vec_result[i-1] * a) % order; // result[i] = result[i-1]*a % order
     }
-    return std::move(vec_result); 
+    return vec_result; 
 }
 
 void PrintProof(Proof &proof)
@@ -424,9 +424,9 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     std::move(vec_rr.begin(), vec_rr.end(), vec_a.begin()+ip_pp.VECTOR_LEN); 
      
     vec_a[2*ip_pp.VECTOR_LEN] = bn_1; 
-    vec_a[2*ip_pp.VECTOR_LEN+1] = std::move(x); // LEFT = A+S^x
-    vec_a[2*ip_pp.VECTOR_LEN+2] = std::move(proof.mu.ModNegate(order)); 
-    vec_a[2*ip_pp.VECTOR_LEN+3] = std::move(proof.tx); 
+    vec_a[2*ip_pp.VECTOR_LEN+1] = x; // LEFT = A+S^x
+    vec_a[2*ip_pp.VECTOR_LEN+2] = proof.mu.ModNegate(order); 
+    vec_a[2*ip_pp.VECTOR_LEN+3] = proof.tx; 
 
     ip_instance.P = ECPointVectorMul(vec_A, vec_a);  // set P_new = P h^{-u} U^<l, r>   
 

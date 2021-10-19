@@ -35,6 +35,7 @@ void test_psu(std::string party, size_t LEN)
         unionXY.insert(Block::ToString(vec_Y[i])); 
     }
 
+    //PSU::TestParallelPipelineSender(pp, vec_X, LEN);
 
     if(party == "sender"){
         // std::cout << "the len = " << LEN << std::endl; 
