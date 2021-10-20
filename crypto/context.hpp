@@ -1,3 +1,8 @@
+/*
+** Modified from the following project
+** 1. https://github.com/google/private-join-and-compute
+*/
+
 #ifndef CRYPTO_CONTEXT_HPP_
 #define CRYPTO_CONTEXT_HPP_
 

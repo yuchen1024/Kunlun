@@ -1,3 +1,8 @@
+/*
+** Modified from the following project
+** 1. https://github.com/emp-ot/
+*/
+
 #ifndef KUNLUN_IO_NPOT_HPP__
 #define KUNLUN_IO_NPOT_HPP__
 

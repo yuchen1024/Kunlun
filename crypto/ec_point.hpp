@@ -1,3 +1,9 @@
+/*
+** Modified from the following two projects
+** 1. https://github.com/emp-toolkit/
+** 2. https://github.com/google/private-join-and-compute
+*/
+
 #ifndef KUNLUN_EC_POINT_HPP_
 #define KUNLUN_EC_POINT_HPP_
 

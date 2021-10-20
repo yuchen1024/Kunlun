@@ -1,3 +1,8 @@
+/*
+** Modified from the following project
+** 1. https://github.com/emp-toolkit/
+*/
+
 #ifndef KUNLUN_CRYPTO_PRG_HPP_
 #define KUNLUN_CRYPTO_PRG_HPP_
 
@@ -75,7 +80,7 @@ std::vector<block> GenRandomBlocks(Seed &seed, size_t LEN)
     AES::ECBEnc(seed.aes_key, temp_block, REMAIN_LEN);
     memcpy(vec_b.data()+(LEN/AES_BATCH_SIZE)*AES_BATCH_SIZE, temp_block, REMAIN_LEN*sizeof(block));
 
-    return std::move(vec_b); 
+    return vec_b; 
 }
 
 
@@ -88,7 +93,7 @@ std::vector<uint8_t> GenRandomBytes(Seed &seed, size_t LEN) {
 
     memcpy(vec_b.data(), vec_a.data(), LEN); 
 
-    return std::move(vec_b); 
+    return vec_b; 
 }
 
 // generate a random bool vector: each byte represent a bit in a sparse way
@@ -99,7 +104,7 @@ std::vector<uint8_t> GenRandomBits(Seed &seed, size_t LEN)
     for(auto i = 0; i < LEN; i++){
         vec_b[i] = vec_b[i] & 1;
     }
-    return std::move(vec_b); 
+    return vec_b; 
 }
 
 // generate a random bit matrix (store in column vector)
@@ -118,7 +123,7 @@ std::vector<uint8_t> GenRandomBitMatrix(Seed &seed, size_t ROW_NUM, size_t COLUM
         //PrintBytes(temp_column.data(), ROW_NUM/8); 
         memcpy(T.data()+i*ROW_NUM/8, random_column.data(), ROW_NUM/8);  
     }
-    return std::move(T);
+    return T;
 }
 }
 

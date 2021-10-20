@@ -28,7 +28,7 @@ std::string StringToHex(std::string input)
 {
     std::string result; 
     boost::algorithm::hex(input.begin(), input.end(), std::back_inserter(result));
-    return std::move(result); 
+    return result; 
 }
   
 #endif

@@ -133,7 +133,7 @@ int main()
     std::cout << "Twisted ElGamal PKE test begins >>>>>>" << std::endl; 
 
 
-    size_t MSG_LEN = 32; 
+    size_t MSG_LEN = 40; 
     size_t TRADEOFF_NUM = 7; 
     size_t DEC_THREAD_NUM = 8; 
     size_t TEST_NUM = 10000;  

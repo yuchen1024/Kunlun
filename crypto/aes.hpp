@@ -1,3 +1,8 @@
+/*
+** Modified from the following project
+** 1. https://github.com/emp-toolkit/
+*/
+
 #ifndef KUNLUN_AES_HPP_
 #define KUNLUN_AES_HPP_
 

@@ -37,7 +37,7 @@ BigInt StringToBigInt(const std::string& input){
 
     BigInt result; 
     BN_bin2bn(digest, SHA256_DIGEST_LENGTH, result.bn_ptr);
-    return std::move(result); 
+    return result; 
 }
 
 ECPoint StringToECPoint(const std::string& input) 
@@ -65,7 +65,7 @@ ECPoint StringToECPoint(const std::string& input)
         x = StringToBigInt(x.ToByteString()); 
     }
 
-    return std::move(ecp_result);
+    return ecp_result;
 }
 
 
@@ -133,7 +133,7 @@ inline ECPoint BlockToECPoint(const block &var)
     BN_free(ax); 
     //BN_CTX_free(temp_bn_ctx); 
    
-    return std::move(ecp_result);
+    return ecp_result;
 }
 
 // fast block to ecpoint hash using low level openssl code
@@ -177,7 +177,7 @@ inline ECPoint ThreadSafeBlockToECPoint(const block &var)
     BN_free(ax); 
     BN_CTX_free(temp_bn_ctx); 
    
-    return std::move(ecp_result);
+    return ecp_result;
 }
 
 /* map an EC point to another EC point, used in pp generation */
@@ -199,7 +199,7 @@ ECPoint ECPointToECPoint(ECPoint &g)
            && EC_POINT_is_at_infinity(group, h.point_ptr) == 0) break;
         else ecp_trypoint = ecp_trypoint + g; 
     } 
-    return std::move(h); 
+    return h; 
 }
 
 }

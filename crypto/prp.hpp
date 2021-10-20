@@ -1,5 +1,11 @@
+/*
+** Modified from the following project
+** 1. https://github.com/emp-toolkit/
+*/
+
 #ifndef KUNLUN_PRP_HPP_
 #define KUNLUN_PRP_HPP_
+
 #include "emp-tool/utils/block.h"
 #include "emp-tool/utils/constants.h"
 #include "emp-tool/utils/aes.h"

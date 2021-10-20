@@ -1,3 +1,8 @@
+/*
+** Modified from the following project
+** 1. https://github.com/emp-ot/
+*/
+
 #ifndef EMP_NETWORK_IO_STREAM_CHANNEL
 #define EMP_NETWORK_IO_STREAM_CHANNEL
 

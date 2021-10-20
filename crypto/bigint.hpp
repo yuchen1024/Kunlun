@@ -1,3 +1,9 @@
+/*
+** Modified from the following two projects
+** 1. https://github.com/emp-toolkit/
+** 2. https://github.com/google/private-join-and-compute
+*/
+
 #ifndef KUNLUN_CRYPTO_BIGINT_HPP_
 #define KUNLUN_CRYPTO_BIGINT_HPP_
 
@@ -240,7 +246,7 @@ BigInt::~BigInt(){
 uint64_t ToInt64(const BigInt& a)
 {
     uint64_t result = BN_get_word(a.bn_ptr);
-    return std::move(result);
+    return result;
 }
 
 // Creates a new BigInt object from a bytes string.
