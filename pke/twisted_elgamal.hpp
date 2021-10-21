@@ -117,10 +117,12 @@ void Setup(PP &pp, size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_THREAD_NUM)
 void Initialize(PP &pp)
 {
     std::cout << "initialize Twisted ElGamal PKE >>>" << std::endl; 
+
+    CheckDlogParameters(pp.MSG_LEN, pp.TRADEOFF_NUM, pp.DEC_THREAD_NUM); 
+ 
+    std::string keytable_filename = GetKeyTableFileName(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM);     
     /* generate babystep table */
-    if(!FileExist(keytable_filename))
-    {
-        // generate and serialize the babystep table
+    if(FileExist(keytable_filename) == false){
         if(pp.DEC_THREAD_NUM > 1){
             ParallelBuildSerializeKeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, pp.DEC_THREAD_NUM, keytable_filename);
         }
@@ -128,11 +130,10 @@ void Initialize(PP &pp)
             BuildSerializeKeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, keytable_filename);
         }
     }
+    
     // load the table from file 
     DeserializeKeyTableBuildHashMap(keytable_filename, pp.MSG_LEN, pp.TRADEOFF_NUM); 
 }
-
-
 
 /* KeyGen algorithm */ 
 void KeyGen(const PP &pp, KP &keypair)

@@ -8,11 +8,15 @@ this hpp implements DLOG algorithm
 #define PKE_CALCULATE_DLOG_HPP_
 
 /* 
-    Shanks algorithm for DLOG problem: given (g, h) find x \in [0, n = 2^RANGE_LEN) s.t. g^x = h 
-    g^{j*giantstep_size + i} = g^x; giantstep_num = n/giantstep_size
+** Shanks algorithm for DLOG problem: given (g, h) find x \in [0, n = 2^RANGE_LEN) s.t. g^x = h 
+** g^{j*giantstep_size + i} = g^x; giantstep_num = n/giantstep_size
+** babystep keytable size = 2^(RANGE_LEN/2+TRADEOFF_NUM)
+** giantstep num/loop     = 2^(RANGE_LEN/2-TRADEOFF_NUM)
 */
 
+#include <iostream>
 #include "../crypto/ec_point.hpp"
+#include "../crypto/hash.hpp"
 
 class naivehash{
 public:
@@ -28,6 +32,37 @@ std::unordered_map<size_t, size_t, naivehash> int2index_map;
 
 // add mutex lock will severely harm the performance
 // std::mutex bn_ctx_mutex;
+
+
+void CheckDlogParameters(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM)
+{
+    if (!IsPowerOfTwo(THREAD_NUM)){
+        std::cerr << "THREAD_NUM must be a power of 2" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (RANGE_LEN/2 < TRADEOFF_NUM){
+        std::cerr << "TRADEOFF_NUM is too aggressive" << std::endl;
+        exit(EXIT_FAILURE);   
+    }
+
+    if (pow(2, RANGE_LEN/2+TRADEOFF_NUM) < THREAD_NUM){
+        std::cerr << "THREAD_NUM is too large" << std::endl;
+        exit(EXIT_FAILURE);   
+    }
+}
+
+std::string GetKeyTableFileName(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM)
+{
+    std::string str_base = std::to_string(2);
+    std::string str_exp  = std::to_string(RANGE_LEN/2+TRADEOFF_NUM);
+    // use 8-byte hash value as unique id of g 
+    std::string str_suffix = FormatToHexString(Hash::ECPointToString(g));
+    str_suffix = str_suffix.substr(0,16);
+
+    std::string keytable_filename  = str_suffix + "-babystephashkey(" + str_base + "^" + str_exp + ").table"; 
+    return keytable_filename; 
+}
 
 /* 
 * parallel implementation
@@ -56,27 +91,28 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
 */
 
 void ParallelBuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, 
-                                    size_t DEC_THREAD_NUM, std::string keytable_filename)
+                                    size_t THREAD_NUM, std::string keytable_filename)
 {
-    std::cout << "babystep hashkey table does not exist, begin to build and serialize >>>" << std::endl;
+    
+    std::cout << keytable_filename << " does not exist, begin to build and serialize >>>" << std::endl;
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep num = giantstep size
 
-    if (BABYSTEP_NUM%DEC_THREAD_NUM != 0)
+    if (BABYSTEP_NUM%THREAD_NUM != 0)
     {
         std::cout << "thread assignment fails" << std::endl; 
         exit(EXIT_FAILURE); 
     }
-    size_t SLICED_BABYSTEP_NUM = BABYSTEP_NUM/DEC_THREAD_NUM; 
+    size_t SLICED_BABYSTEP_NUM = BABYSTEP_NUM/THREAD_NUM; 
 
-    std::vector<ECPoint> startpoint(DEC_THREAD_NUM); 
-    std::vector<size_t> startindex(DEC_THREAD_NUM); 
+    std::vector<ECPoint> startpoint(THREAD_NUM); 
+    std::vector<size_t> startindex(THREAD_NUM); 
 
     #ifdef THREAD_SAFE
     #pragma omp parallel// NEW ADD
     #endif
-    for (auto i = 0; i < DEC_THREAD_NUM; i++){
+    for (auto i = 0; i < THREAD_NUM; i++){
         startindex[i] = i * SLICED_BABYSTEP_NUM; 
         startpoint[i] = g * BigInt(startindex[i]);
     } 
@@ -89,8 +125,8 @@ void ParallelBuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOF
         exit(EXIT_FAILURE); 
     } 
 
-    std::vector<std::thread> build_task(DEC_THREAD_NUM);
-    for(auto i = 0; i < DEC_THREAD_NUM; i++){ 
+    std::vector<std::thread> build_task(THREAD_NUM);
+    for(auto i = 0; i < THREAD_NUM; i++){ 
         build_task[i] = std::thread(BuildSlicedKeyTable, g, startpoint[i], 
                                     startindex[i], SLICED_BABYSTEP_NUM, buffer);
         build_task[i].join(); 
@@ -124,7 +160,7 @@ void ParallelBuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOF
 
 void BuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::string keytable_filename)
 {
-    std::cout << "babystep hashkey table does not exist, begin to build and serialize >>>" << std::endl;
+    std::cout << keytable_filename << " does not exist, begin to build and serialize >>>" << std::endl;
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep num = giantstep size
@@ -177,7 +213,7 @@ void BuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, s
 /* deserialize keytable and build hashmap */
 void DeserializeKeyTableBuildHashMap(std::string keytable_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM)
 {   
-    std::cout << "babystep table already exists, begin to load and build the hashmap >>>" << std::endl; 
+    std::cout << keytable_filename << " already exists, begin to load and build the hashmap >>>" << std::endl; 
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); 
@@ -268,7 +304,7 @@ void SearchSlicedRange(ECPoint ecp_searchanchor, ECPoint ecp_giantstep, size_t S
 
 // compute x = log_g h
 bool ParallelShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, 
-                        size_t TRADEOFF_NUM, size_t DEC_THREAD_NUM, BigInt &x)
+                        size_t TRADEOFF_NUM, size_t THREAD_NUM, BigInt &x)
 {
     size_t BABYSTEP_NUM  = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep_num = giantstep_size
     size_t GIANTSTEP_NUM = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
@@ -277,29 +313,29 @@ bool ParallelShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN,
     ECPoint ecp_giantstep = g * BigInt(BABYSTEP_NUM); // set giantstep = g^babystep_num
     ecp_giantstep = ecp_giantstep.Invert();
  
-    if(GIANTSTEP_NUM%DEC_THREAD_NUM != 0)
+    if(GIANTSTEP_NUM%THREAD_NUM != 0)
     {
         std::cerr << "thread assignment fails" << std::endl; 
         exit(EXIT_FAILURE); 
     }
-    size_t SLICED_GIANTSTEP_NUM = GIANTSTEP_NUM/DEC_THREAD_NUM; 
+    size_t SLICED_GIANTSTEP_NUM = GIANTSTEP_NUM/THREAD_NUM; 
 
 
     ECPoint ecp_slicedrange = ecp_giantstep * BigInt(SLICED_GIANTSTEP_NUM);
 
     /* begin to search */
-    std::vector<size_t> i_index(DEC_THREAD_NUM); 
-    std::vector<size_t> j_index(DEC_THREAD_NUM);
+    std::vector<size_t> i_index(THREAD_NUM); 
+    std::vector<size_t> j_index(THREAD_NUM);
 
     // initialize searchpoint vector
-    std::vector<ECPoint> ecp_vec_searchanchor(DEC_THREAD_NUM);
+    std::vector<ECPoint> ecp_vec_searchanchor(THREAD_NUM);
      
     ecp_vec_searchanchor[0] = h;
-    for (auto i = 1; i < DEC_THREAD_NUM; i++){
+    for (auto i = 1; i < THREAD_NUM; i++){
         ecp_vec_searchanchor[i] = ecp_vec_searchanchor[i-1] + ecp_slicedrange;         
     }
     
-    std::vector<int> FIND(DEC_THREAD_NUM, 0); 
+    std::vector<int> FIND(THREAD_NUM, 0); 
     bool PARALLEL_FIND = false; 
 
     // check if the hash map is empty
@@ -309,19 +345,19 @@ bool ParallelShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN,
         exit (EXIT_FAILURE);
     }
 
-    std::vector<std::thread> search_task(DEC_THREAD_NUM);
-    for(auto i = 0; i < DEC_THREAD_NUM; i++){ 
+    std::vector<std::thread> search_task(THREAD_NUM);
+    for(auto i = 0; i < THREAD_NUM; i++){ 
         search_task[i] = std::thread(SearchSlicedRange, ecp_vec_searchanchor[i], 
                                      ecp_giantstep, SLICED_GIANTSTEP_NUM, 
                                      std::ref(i_index[i]), std::ref(j_index[i]), 
                                      std::ref(FIND[i]), std::ref(PARALLEL_FIND));
     }
 
-    for(auto i = 0; i < DEC_THREAD_NUM; i++){ 
+    for(auto i = 0; i < THREAD_NUM; i++){ 
         search_task[i].join(); 
     }    
 
-    for(auto i = 0; i < DEC_THREAD_NUM; i++)
+    for(auto i = 0; i < THREAD_NUM; i++)
     { 
         if(FIND[i] == 1)
         {

@@ -38,10 +38,6 @@ If the above two issues get solved, the performance of Kunlun will be better.
   $ ./config 
   $ make install
 ```
-## Install Boost
-```
-  $ brew install boost
-```
 
 ## Install OpenMP (On MAC OS)
 ```

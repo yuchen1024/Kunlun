@@ -23,12 +23,25 @@ inline bool FileExist(const std::string& filename)
 }
 
 
-// strings converted from unsigned char[] may not printable, convert them to hex form to easy debug
-std::string StringToHex(std::string input)
+std::string FormatToHexString(std::string byte_str)
 {
-    std::string result; 
-    boost::algorithm::hex(input.begin(), input.end(), std::back_inserter(result));
-    return result; 
+    std::string hex_str;
+    std::stringstream ss;
+
+    for (const auto &item : byte_str) {
+        ss << std::hex << int(item);
+    }
+    hex_str = ss.str();
+
+    // format to uppercase
+    for (auto & c: hex_str) c = toupper(c);
+    return hex_str;
+}
+
+// A simple trick to decide if x = 2^n for n > 0 and x > 0
+bool IsPowerOfTwo(size_t x)
+{
+    return (x != 0) && ((x & (x - 1)) == 0);
 }
   
 #endif

@@ -23,5 +23,3 @@ this file includes commonly used head files
 #include <bitset>
 #include <omp.h>
 #include <assert.h>
-
-#include <boost/algorithm/hex.hpp>

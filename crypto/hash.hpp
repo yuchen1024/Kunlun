@@ -75,6 +75,16 @@ block ECPointToBlock(const ECPoint &A)
     return StringToBlock(str_input);  
 }
 
+std::string ECPointToString(const ECPoint &A) 
+{ 
+    unsigned char buffer[POINT_BYTE_LEN];
+    unsigned char digest[HASH_OUTPUT_LEN]; 
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+    SHA256(buffer, POINT_BYTE_LEN, digest);
+    std::string str(reinterpret_cast<char *>(digest), HASH_OUTPUT_LEN); 
+    return str; 
+}
+
 
 block BlocksToBlock(const std::vector<block> &input)
 {

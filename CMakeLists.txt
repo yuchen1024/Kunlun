@@ -46,6 +46,9 @@ TARGET_LINK_LIBRARIES(test_misc ${OPENSSL_LIBRARIES} -lomp)
 ADD_EXECUTABLE(test_twisted_elgamal test/test_twisted_elgamal.cpp)
 TARGET_LINK_LIBRARIES(test_twisted_elgamal ${OPENSSL_LIBRARIES} -lomp)
 
+ADD_EXECUTABLE(test_calculate_dlog test/test_calculate_dlog.cpp)
+TARGET_LINK_LIBRARIES(test_calculate_dlog ${OPENSSL_LIBRARIES} -lomp)
+
 # nike
 ADD_EXECUTABLE(test_nizk_plaintext_equality test/test_nizk_plaintext_equality.cpp)
 TARGET_LINK_LIBRARIES(test_nizk_plaintext_equality ${OPENSSL_LIBRARIES} -lomp)
