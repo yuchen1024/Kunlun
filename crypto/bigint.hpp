@@ -638,6 +638,24 @@ std::vector<BigInt> BigIntVectorModProduct(std::vector<BigInt> &vec_a, std::vect
     return vec_result; 
 }
 
+
+/* c[i] = a[i]*b[i] */ 
+std::vector<BigInt> BigIntVectorProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+{
+    if (vec_a.size() != vec_b.size()) {
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    size_t LEN = vec_a.size(); 
+
+    std::vector<BigInt> vec_result(LEN);
+    for (auto i = 0; i < vec_a.size(); i++) {
+        vec_result[i] = vec_a[i] * vec_b[i]; 
+    }
+    return vec_result; 
+}
+
+
 /* compute the inverse of a[i] */ 
 std::vector<BigInt> BigIntVectorModInverse(std::vector<BigInt> &vec_a)
 {
@@ -703,6 +721,22 @@ BigInt BigIntVectorModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigIn
         result += vec_a[i] * vec_b[i]; // product = (vec_a[i]*vec_b[i]) mod order
     }
     result = result % BigInt(order);
+    return result; 
+}
+
+/* sum_i^n a[i]*b[i] */
+BigInt BigIntVectorInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+{
+    BigInt result = bn_0; 
+
+    if (vec_a.size() != vec_b.size()){
+        std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    } 
+
+    for (auto i = 0; i < vec_a.size(); i++) {
+        result += vec_a[i] * vec_b[i]; // product = (vec_a[i]*vec_b[i]) mod order
+    }
     return result; 
 }
 

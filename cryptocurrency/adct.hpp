@@ -707,7 +707,7 @@ bool VerifyCTx(PP &pp, CTx &newCTx)
     Bullet::Instance bullet_instance;
     bullet_instance.C = {newCTx.transfer_ct.Y, newCTx.refresh_sender_updated_balance_ct.Y};
 
-    V4 = Bullet::Verify(bullet_pp, bullet_instance, transcript_str, newCTx.bullet_right_solvent_proof); 
+    V4 = Bullet::FastVerify(bullet_pp, bullet_instance, transcript_str, newCTx.bullet_right_solvent_proof); 
 
     #ifdef DEMO
         if (V4) std::cout << "range proofs for transfer amount and updated balance accept" << std::endl; 

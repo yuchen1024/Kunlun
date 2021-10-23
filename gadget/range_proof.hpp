@@ -87,17 +87,6 @@ void GetPlaintextKnowledgePPfromGadgetPP(PP &pp, PlaintextKnowledge::PP &ptknowl
     ptknowledge_pp.h = pp.h; 
 }
 
-// /* 
-//     the default range size is LARGE_LEN, the exact range size is SMALL_LEN 
-//     this function get the difference
-// */
-// BigInt Get_Range_Size_Diff(size_t &LARGE_LEN, size_t &SMALL_LEN)
-// {
-//     BigInt large_range_size = BigInt(uint64_t(pow(2, LARGE_LEN))); 
-//     BigInt small_range_size = BigInt(uint64_t(pow(2, SMALL_LEN))); 
-//     BigInt range_size_diff = large_range_size - small_range_size;
-//     return range_size_diff; 
-// }
 
 /* adjust Bullet instance 
 * this is equivalent to show: 
@@ -216,7 +205,7 @@ bool Verify(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
 
     AdjustBulletInstance(bullet_pp, LEFT_BOUND, RIGHT_BOUND, bullet_instance);  
 
-    V2 = Bullet::Verify(bullet_pp, bullet_instance, transcript_str, proof.bullet_proof);
+    V2 = Bullet::FastVerify(bullet_pp, bullet_instance, transcript_str, proof.bullet_proof);
 
     return V1 && V2; 
 
@@ -323,7 +312,7 @@ bool Verify(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
 
     AdjustBulletInstance(bullet_pp, LEFT_BOUND, RIGHT_BOUND, bullet_instance); 
 
-    V3 = Bullet::Verify(bullet_pp, bullet_instance, transcript_str, proof.bullet_proof); 
+    V3 = Bullet::FastVerify(bullet_pp, bullet_instance, transcript_str, proof.bullet_proof); 
 
     return V1 && V2 && V3; 
 }

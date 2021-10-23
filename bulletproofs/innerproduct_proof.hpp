@@ -152,6 +152,11 @@ void ComputeVectorSS(std::vector<BigInt> &vec_s, std::vector<BigInt> &vec_x, std
 /* (Protocol 2 on pp.15) */
 void Setup(PP &pp, size_t VECTOR_LEN, bool INITIAL_FLAG)
 {
+    if(IsPowerOfTwo(VECTOR_LEN)==false){
+        std::cerr << "VECTOR_LEN must be power of 2" << std::endl; 
+        exit(EXIT_FAILURE); 
+    }
+
     pp.VECTOR_LEN = VECTOR_LEN;
     pp.LOG_VECTOR_LEN = log2(VECTOR_LEN);  
 
@@ -171,6 +176,11 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
     if (pp.vec_g.size()!=pp.vec_h.size()) 
     {
         std::cerr << "vector size does not match!" << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+
+    if(IsPowerOfTwo(pp.VECTOR_LEN)==false){
+        std::cerr << "VECTOR_LEN must be power of 2" << std::endl; 
         exit(EXIT_FAILURE); 
     }
 
@@ -212,11 +222,9 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
         BigInt cL = BigIntVectorModInnerProduct(vec_aL, vec_bR); // Eq (21)        
         BigInt cR = BigIntVectorModInnerProduct(vec_aR, vec_bL); // Eq (22)
 
-
         // compute L, R
         std::vector<ECPoint> vec_A(2*n+1); 
         std::vector<BigInt> vec_a(2*n+1);
-
 
         std::copy(vec_gR.begin(), vec_gR.end(), vec_A.begin());
         std::copy(vec_hL.begin(), vec_hL.end(), vec_A.begin() + n);
@@ -304,6 +312,11 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
 /* Check if PI is a valid proof for inner product statement (G1^w = H1 and G2^w = H2) */
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {
+    if(IsPowerOfTwo(pp.VECTOR_LEN)==false){
+        std::cerr << "VECTOR_LEN must be power of 2" << std::endl; 
+        exit(EXIT_FAILURE); 
+    }
+
     bool Validity;
 
     // auto start_time = std::chrono::steady_clock::now(); // start to count the time
@@ -423,6 +436,12 @@ std::vector<BigInt> FastComputeVectorSS(std::vector<BigInt> &vec_x_square, std::
 // this is the optimized verifier algorithm
 bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {
+    if(IsPowerOfTwo(pp.VECTOR_LEN)==false){
+        std::cerr << "VECTOR_LEN must be power of 2" << std::endl; 
+        exit(EXIT_FAILURE); 
+    }
+
+
     bool Validity;
 
     // recover the challenge
@@ -435,7 +454,7 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
     {  
         transcript_str += proof.vec_L[i].ToByteString() + proof.vec_R[i].ToByteString(); 
         vec_x[i] = Hash::StringToBigInt(transcript_str); // reconstruct the challenge
-
+        //vec_x[i].Print();
         vec_x_square[i] = vec_x[i].ModSquare(order); 
         vec_x_inverse[i] = vec_x[i].ModInverse(order);  
         vec_x_inverse_square[i] = vec_x_inverse[i].ModSquare(order); 
@@ -446,12 +465,8 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
     std::vector<BigInt> vec_a(2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN+1); 
 
     // compute scalar for g and h
-    //std::vector<BigInt> vec_s(pp.VECTOR_LEN, bn_1); // initialize every vec_s[i] = bn_1
-    std::vector<BigInt> vec_s_inverse(pp.VECTOR_LEN); 
-
     std::vector<BigInt> vec_s = FastComputeVectorSS(vec_x_square, vec_x_inverse); // page 15: the s vector
-    
-    vec_s_inverse = BigIntVectorModInverse(vec_s);  // the s^{-1} vector
+    std::vector<BigInt> vec_s_inverse = BigIntVectorModInverse(vec_s);  // the s^{-1} vector
     vec_s = BigIntVectorScalar(vec_s, proof.a); 
     vec_s_inverse = BigIntVectorScalar(vec_s_inverse, proof.b); 
 
@@ -471,6 +486,7 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
     for(auto i = 2*pp.VECTOR_LEN; i < 2*pp.VECTOR_LEN+2*pp.LOG_VECTOR_LEN; i++){
         vec_a[i] = -vec_a[i];
     }
+
     
     ECPoint LEFT = ECPointVectorMul(vec_A, vec_a);  
 

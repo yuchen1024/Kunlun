@@ -339,7 +339,7 @@ bool IsSquare(const BigInt& q) {
 // ecpoint vector operations
 
 // mul exp operations
-ECPoint ECPointVectorMul(std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a){
+ECPoint ECPointVectorMul(const std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a){
     if (vec_A.size()!=vec_a.size()){
         std::cerr << "vector size does not match" << std::endl; 
         exit(EXIT_FAILURE);
@@ -351,8 +351,15 @@ ECPoint ECPointVectorMul(std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a
     return result; 
 }
 
+// mul exp operations
+ECPoint ECPointVectorMul(const std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a, size_t start_index, size_t end_index){
+    std::vector<ECPoint> subvec_A(vec_A.begin()+start_index, vec_A.begin()+end_index);
+    std::vector<BigInt>  subvec_a(vec_a.begin()+start_index, vec_a.begin()+end_index);
+    return ECPointVectorMul(subvec_A, subvec_a); 
+}
 
-inline ECPoint ThreadSafeECPointVectorMul(std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
+
+inline ECPoint ThreadSafeECPointVectorMul(const std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
 {
     if (vec_A.size()!=vec_a.size()){
         std::cerr << "vector size does not match" << std::endl; 
@@ -427,7 +434,7 @@ inline std::vector<ECPoint> ThreadSafeECPointVectorScalar(std::vector<ECPoint> &
 
 
 /* result[i] = A[i]*a[i] */ 
-inline std::vector<ECPoint> ECPointVectorProduct(std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
+inline std::vector<ECPoint> ECPointVectorProduct(const std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
 {
     if (vec_A.size() != vec_a.size()) {
         std::cerr << "vector size does not match!" << std::endl;
@@ -444,7 +451,7 @@ inline std::vector<ECPoint> ECPointVectorProduct(std::vector<ECPoint> &vec_A, st
 }
 
 /* result[i] = A[i]*a[i] */ 
-inline std::vector<ECPoint> ThreadSafeECPointVectorProduct(std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
+inline std::vector<ECPoint> ThreadSafeECPointVectorProduct(const std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
 {
     if (vec_A.size() != vec_a.size()) {
         std::cerr << "vector size does not match!" << std::endl;
@@ -476,7 +483,7 @@ std::vector<ECPoint> GenRandomECPointVector(size_t LEN)
 }
 
 
-void SerializeECPointVector(std::vector<ECPoint> &vec_A, std::ofstream &fout)
+void SerializeECPointVector(const std::vector<ECPoint> &vec_A, std::ofstream &fout)
 {
     for(auto i = 0; i < vec_A.size(); i++) fout << vec_A[i];  
 }
@@ -488,7 +495,7 @@ void DeserializeECPointVector(std::vector<ECPoint> &vec_A, std::ifstream &fin)
 
 
 // print an EC Point vector
-void PrintECPointVector(std::vector<ECPoint> &vec_A, std::string note)
+void PrintECPointVector(const std::vector<ECPoint> &vec_A, std::string note)
 { 
     for (auto i = 0; i < vec_A.size(); i++)
     {

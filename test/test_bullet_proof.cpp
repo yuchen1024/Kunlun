@@ -73,13 +73,25 @@ void test_bulletproof_boundary(size_t RANGE_LEN, size_t AGG_NUM, std::string BOU
     auto running_time = end_time - start_time;
     std::cout << "proof generation takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-
+    
+    PrintSplitLine('-'); 
+    
     start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
     Bullet::Verify(pp, instance, transcript_str, proof);
     end_time = std::chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     std::cout << "proof verification takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
+    
+    start_time = std::chrono::steady_clock::now(); // start to count the time
+    transcript_str = ""; 
+    Bullet::FastVerify(pp, instance, transcript_str, proof);
+    end_time = std::chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    std::cout << "fast proof verification takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
     PrintSplitLine('-'); 
@@ -115,12 +127,22 @@ void test_bulletproof(size_t RANGE_LEN, size_t AGG_NUM, bool STATEMENT_FLAG)
     std::cout << "proof generation takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
+    PrintSplitLine('-'); 
     start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
     Bullet::Verify(pp, instance, transcript_str, proof);
     end_time = std::chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     std::cout << "proof verification takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
+    start_time = std::chrono::steady_clock::now(); // start to count the time
+    transcript_str = ""; 
+    Bullet::FastVerify(pp, instance, transcript_str, proof);
+    end_time = std::chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    std::cout << "fast proof verification takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
     PrintSplitLine('-'); 
@@ -136,10 +158,13 @@ int main()
 
     size_t RANGE_LEN = 32; // range size
     size_t AGG_NUM = 2;  // number of sub-argument
-    test_bulletproof(RANGE_LEN, AGG_NUM, true);
+
     test_bulletproof_boundary(RANGE_LEN, AGG_NUM, "LEFT");
     test_bulletproof_boundary(RANGE_LEN, AGG_NUM, "RIGHT");
+
     test_bulletproof(RANGE_LEN, AGG_NUM, false);
+    test_bulletproof(RANGE_LEN, AGG_NUM, true);
+
 
 
     ECGroup_Finalize(); 

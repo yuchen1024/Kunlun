@@ -74,8 +74,6 @@ int main()
 {
     Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);   
-
-    // std::cout << "hehe" << std::endl; 
     
     test_innerproduct_proof();
 
