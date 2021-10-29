@@ -7,11 +7,9 @@
 #ifndef KUNLUN_EC_POINT_HPP_
 #define KUNLUN_EC_POINT_HPP_
 
-#include "std.inc"
-#include "openssl.inc"
 #include "ec_group.hpp"
 #include "bigint.hpp"
-#include "../common/routines.hpp"
+#include "../utility/routines.hpp"
 
 
 class BigInt;
@@ -523,8 +521,3 @@ auto ECPoint_Lexical_Compare = [](ECPoint A, ECPoint B){
 
 
 #endif  // KUNLUN_EC_POINT_HPP_
-
-
-
-
-

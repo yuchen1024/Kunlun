@@ -2,14 +2,14 @@
 this hpp implements NIZKPoK for three twisited ElGamal ciphertexts 
 (randomness reuse) encrypt the same message 
 ***********************************************************************************/
-#ifndef NIZK_PTEQ_HPP_
-#define NIZK_PTEQ_HPP_
+#ifndef KUNLUN_NIZK_PTEQ_HPP_
+#define KUNLUN_NIZK_PTEQ_HPP_
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/bigint.hpp"
 #include "../crypto/hash.hpp"
-#include "../common/routines.hpp"
-#include "../common/print.hpp"
+#include "../utility/routines.hpp"
+#include "../utility/print.hpp"
 
 namespace PlaintextEquality{
 

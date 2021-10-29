@@ -4,8 +4,8 @@ this hpp implements DLOG algorithm
 * @author     This file is part of PGC, developed by Yu Chen
 * @copyright  MIT license (see LICENSE file)
 *****************************************************************************/
-#ifndef PKE_CALCULATE_DLOG_HPP_
-#define PKE_CALCULATE_DLOG_HPP_
+#ifndef KUNLUN_CALCULATE_DLOG_HPP_
+#define KUNLUN_CALCULATE_DLOG_HPP_
 
 /* 
 ** Shanks algorithm for DLOG problem: given (g, h) find x \in [0, n = 2^RANGE_LEN) s.t. g^x = h 

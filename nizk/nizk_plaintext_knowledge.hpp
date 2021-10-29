@@ -1,13 +1,13 @@
 /****************************************************************************
 this hpp implements NIZKPoK for twisted ElGamal ciphertext 
 *****************************************************************************/
-#ifndef NIZK_PTKE_HPP_
-#define NIZK_PTKE_HPP_
+#ifndef KUNLUN_NIZK_PTKE_HPP_
+#define KUNLUN_NIZK_PTKE_HPP_
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
-#include "../common/print.hpp"
-#include "../common/routines.hpp"
+#include "../utility/print.hpp"
+#include "../utility/routines.hpp"
 
 
 namespace PlaintextKnowledge{

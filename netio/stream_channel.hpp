@@ -3,8 +3,8 @@
 ** 1. https://github.com/emp-ot/
 */
 
-#ifndef EMP_NETWORK_IO_STREAM_CHANNEL
-#define EMP_NETWORK_IO_STREAM_CHANNEL
+#ifndef KUNLUN_NET_IO_STREAM_CHANNEL
+#define KUNLUN_NET_IO_STREAM_CHANNEL
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -13,8 +13,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h> // Include this header file for using socket feature
 
+#include "../include/std.inc"
 #include "../crypto/constants.h"
-#include "../crypto/std.inc"
 #include "../crypto/ec_point.hpp"
 #include "../crypto/block.hpp"
 

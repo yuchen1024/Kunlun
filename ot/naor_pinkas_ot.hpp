@@ -3,14 +3,14 @@
 ** 1. https://github.com/emp-ot/
 */
 
-#ifndef KUNLUN_IO_NPOT_HPP__
-#define KUNLUN_IO_NPOT_HPP__
+#ifndef KUNLUN_NP_OT_HPP__
+#define KUNLUN_NP_OT_HPP__
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
 #include "../crypto/prg.hpp"
 #include "../crypto/block.hpp"
-#include "../io/net_io_stream_channel.hpp"
+#include "../netio/stream_channel.hpp"
 
 /*
  * Noar Pinkas OT

@@ -7,8 +7,8 @@
 #ifndef KUNLUN_CRYPTO_BIGINT_HPP_
 #define KUNLUN_CRYPTO_BIGINT_HPP_
 
-#include "std.inc"
-#include "openssl.inc"
+#include "../include/std.inc"
+#include "../include/openssl.inc"
 #include "context.hpp"
 
 // wrapper class for openssl BIGNUM

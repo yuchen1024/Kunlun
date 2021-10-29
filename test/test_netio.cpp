@@ -1,4 +1,4 @@
-#include "../io/net_io_stream_channel.hpp"
+#include "../netio/stream_channel.hpp"
 
 void test_client()
 {

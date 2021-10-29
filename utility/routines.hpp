@@ -4,8 +4,8 @@ this hpp implements some routine algorithms
 * @author     This file is part of Kunlun, developed by Yu Chen
 * @copyright  MIT license (see LICENSE file)
 *****************************************************************************/
-#ifndef COMMON_ROUTINES_HPP_
-#define COMMON_ROUTINES_HPP_
+#ifndef KUNLUN_UTILITY_ROUTINES_HPP_
+#define KUNLUN_UTILITY_ROUTINES_HPP_
 
 #include <iostream>
 #include <fstream>

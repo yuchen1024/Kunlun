@@ -5,12 +5,12 @@ this hpp implements twisted ElGamal PKE scheme
 * @paper      https://eprint.iacr.org/2019/319
 * @copyright  MIT license (see LICENSE file)
 *****************************************************************************/
-#ifndef PKE_TWISTED_ELGAMAL_HPP_
-#define PKE_TWISTED_ELGAMAL_HPP_
+#ifndef KUNLUN_TWISTED_ELGAMAL_HPP_
+#define KUNLUN_TWISTED_ELGAMAL_HPP_
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
-#include "../common/routines.hpp"
+#include "../utility/routines.hpp"
 #include "calculate_dlog.hpp"
 
 // babystep hashkey table: crucial for implement Shanks algorithm

@@ -1,9 +1,8 @@
-#ifndef CRYPTO_EC_GROUP_HPP_
-#define CRYPTO_EC_GROUP_HPP_
+#ifndef KUNLUN_CRYPTO_EC_GROUP_HPP_
+#define KUNLUN_CRYPTO_EC_GROUP_HPP_
 
 #define PRECOMPUTE_ENABLE
 
-#include "openssl.inc"
 #include "context.hpp"
 
 static EC_GROUP *group;

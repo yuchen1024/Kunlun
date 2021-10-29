@@ -6,9 +6,10 @@
 #ifndef KUNLUN_PRP_HPP_
 #define KUNLUN_PRP_HPP_
 
-#include "emp-tool/utils/block.h"
-#include "emp-tool/utils/constants.h"
-#include "emp-tool/utils/aes.h"
+#include "block.hpp"
+#include "aes.hpp"
+#include "constants.h"
+
 
 /*
  * When the key is public, we usually need to model AES with this public key as a random permutation.

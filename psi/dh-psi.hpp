@@ -5,7 +5,7 @@
 #include "../crypto/hash.hpp"
 #include "../crypto/prg.hpp"
 #include "../crypto/block.hpp"
-#include "../io/net_io_stream_channel.hpp"
+#include "../netio/stream_channel.hpp"
 #include "../ot/iknp_ote.hpp"
 
 /*

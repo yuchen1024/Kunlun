@@ -1,6 +1,6 @@
 //#define DEBUG
 #include "../pke/calculate_dlog.hpp"
-#include "../common/print.hpp"
+#include "../utility/print.hpp"
 
 
 void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, size_t TEST_NUM)

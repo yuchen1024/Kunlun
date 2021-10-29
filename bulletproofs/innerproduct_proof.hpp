@@ -6,8 +6,8 @@ this hpp implements the inner product proof system
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
-#include "../common/print.hpp"
-#include "../common/routines.hpp"
+#include "../utility/print.hpp"
+#include "../utility/routines.hpp"
 
 namespace InnerProduct{
 // define the structure of InnerProduct Proof

@@ -1,13 +1,13 @@
 /****************************************************************************
 this hpp implements NIZKPoK for discrete logarithm equality 
 *****************************************************************************/
-#ifndef NIZK_DLOGEQ_HPP_
-#define NIZK_DLOGEQ_HPP_
+#ifndef KUNLUN_NIZK_DLOGEQ_HPP_
+#define KUNLUN_NIZK_DLOGEQ_HPP_
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
-#include "../common/print.hpp"
-#include "../common/routines.hpp"
+#include "../utility/print.hpp"
+#include "../utility/routines.hpp"
 
 namespace DLOGEquality{
 

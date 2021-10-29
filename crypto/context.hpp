@@ -6,8 +6,8 @@
 #ifndef CRYPTO_CONTEXT_HPP_
 #define CRYPTO_CONTEXT_HPP_
 
-#include "std.inc"
-#include "openssl.inc"
+#include "../include/std.inc"
+#include "../include/openssl.inc"
 
 
 // this define means every implementation should be thread safe w.r.t. bn_ctx

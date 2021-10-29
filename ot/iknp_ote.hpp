@@ -5,8 +5,7 @@
 #include "../crypto/hash.hpp"
 #include "../crypto/prg.hpp"
 #include "../crypto/block.hpp"
-#include "../io/net_io_stream_channel.hpp"
-#include "../ot/naor_pinkas_ot.hpp"
+#include "naor_pinkas_ot.hpp"
 
 /*
  * IKNP OT Extension

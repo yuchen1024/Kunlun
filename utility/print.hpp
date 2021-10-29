@@ -4,11 +4,10 @@ this hpp implements print functionality
 * @author     This file is part of Kunlun, developed by Yu Chen
 * @copyright  MIT license (see LICENSE file)
 *****************************************************************************/
-#ifndef COMMOM_PRINT_HPP_
-#define COMMOM_PRINT_HPP_
+#ifndef KUNLUN_UTILITY_PRINT_HPP_
+#define KUNLUN_UTILITY_PRINT_HPP_
 
 #include <iostream>
-#include "../crypto/block.hpp"
 
 const static size_t LINE_LEN = 120;     // the length of split line
 
@@ -39,12 +38,6 @@ void PrintBytes(uint8_t* A, size_t LEN)
     std::cout << std::endl;
 }
 
-void PrintBlocks(block* var, size_t LEN) 
-{
-    for(auto i = 0; i< LEN; i++){
-        std::cout << var[i] << std::endl; 
-    }
-}
 
 void PrintBitMatrix(uint8_t *M, size_t ROW_NUM, size_t COLUMN_NUM)
 {

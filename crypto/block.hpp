@@ -325,6 +325,13 @@ inline void empBitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64
         OUTPUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
 }
 
+void PrintBlocks(block* var, size_t LEN) 
+{
+    for(auto i = 0; i< LEN; i++){
+        std::cout << var[i] << std::endl; 
+    }
+}
+
 // inline void SetBlockBit(block &a, size_t i) 
 // {
 //     block mask = GenMaskBlock(i); 

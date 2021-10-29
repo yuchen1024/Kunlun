@@ -3,7 +3,7 @@
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
-#include "../io/net_io_channel.hpp"
+#include "../netio/stream_channel.hpp"
 
 /*
  * Chou Orlandi OT

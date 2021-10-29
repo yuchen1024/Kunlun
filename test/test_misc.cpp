@@ -1,9 +1,9 @@
 //#define DEBUG
 #include "../crypto/ec_point.hpp"
-#include "../common/print.hpp"
 #include "../crypto/prg.hpp"
 #include "../crypto/hash.hpp"
 
+#include "../utility/print.hpp"
 void benchmark_ecc(size_t TEST_NUM)
 {
     PrintSplitLine('-'); 

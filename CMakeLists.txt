@@ -21,8 +21,8 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
 
 
 # netio
-ADD_EXECUTABLE(test_net_io test/test_net_io.cpp)
-TARGET_LINK_LIBRARIES(test_net_io ${OPENSSL_LIBRARIES} -lomp)
+ADD_EXECUTABLE(test_netio test/test_netio.cpp)
+TARGET_LINK_LIBRARIES(test_netio ${OPENSSL_LIBRARIES} -lomp)
 
 # ot
 ADD_EXECUTABLE(test_naor_pinkas_ot test/test_naor_pinkas_ot.cpp)

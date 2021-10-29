@@ -1,6 +1,6 @@
 //#define DEBUG
 #include "../pke/twisted_elgamal.hpp"
-#include "../common/print.hpp"
+#include "../utility/print.hpp"
 
 
 void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_THREAD_NUM, size_t TEST_NUM)

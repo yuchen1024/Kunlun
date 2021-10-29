@@ -1,8 +1,8 @@
 /****************************************************************************
 this hpp implements the ADCT functionality 
 *****************************************************************************/
-#ifndef CRYPTOCURRENCY_ADCT_HPP_
-#define CRYPTOCURRENCY_ADCT_HPP_
+#ifndef KUNLUN_CRYPTOCURRENCY_ADCT_HPP_
+#define KUNLUN_CRYPTOCURRENCY_ADCT_HPP_
 
 #include "../pke/twisted_elgamal.hpp"        // implement Twisted ElGamal  
 #include "../nizk/nizk_plaintext_equality.hpp" // NIZKPoK for plaintext equality

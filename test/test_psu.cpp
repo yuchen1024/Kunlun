@@ -41,7 +41,7 @@ void test_psu(std::string party, size_t LEN)
         // std::cout << "the len = " << LEN << std::endl; 
 
         auto start_time = std::chrono::steady_clock::now(); 
-        NetIO server("server", "127.0.0.1", 8080); 
+        NetIO server("server", "", 8080); 
         PSU::ParallelPipelineSender(server, pp, vec_X, LEN);
         auto end_time = std::chrono::steady_clock::now(); 
         auto running_time = end_time - start_time;
@@ -52,7 +52,7 @@ void test_psu(std::string party, size_t LEN)
     if(party == "receiver")
     {
         auto start_time = std::chrono::steady_clock::now(); 
-        NetIO client("client", "127.0.0.1", 8080); 
+        NetIO client("client", "192.168.0.12", 8080); 
         PSU::ParallelPipelineReceiver(client, pp, vec_Y, LEN, unionXY_prime); 
         auto end_time = std::chrono::steady_clock::now(); 
         auto running_time = end_time - start_time;

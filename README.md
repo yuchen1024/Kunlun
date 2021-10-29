@@ -53,7 +53,11 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 - /build
 
-- /common: dependent files
+- /include
+  * std.inc: standard header files
+  * openssl.inc: openssl header files
+
+- /utility: dependent files
   * routines.hpp: related routine algorithms 
   * print.hpp: print info for debug
 
@@ -68,8 +72,6 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * prg.hpp: implement PRG associated algorithms
   * prp.hpp: implement PRP using AES
   * block.hpp: __m128i related algorithms (necessary for exploiting SSE)
-  * std.inc: standard header files
-  * openssl.inc: openssl header files
 
 - /pke: public key encryption schemes
   * twisted_elgamal.hpp
@@ -90,8 +92,8 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - /cryptocurrency
   * adct.hpp: the ADCT system 
 
-- /io
-  * net_io_stream_channel.hpp: basic network socket functionality for OT
+- /netio
+  * stream_channel.hpp: basic network socket functionality for OT
 
 - /ot
   * naor_pinkas_ot.hpp: one base OT
@@ -228,4 +230,21 @@ This library is licensed under the [MIT License](LICENSE).
 
 * thread vector is more efficient than thread array: I don't know the reason why
 * add mutex to lock bn_ctx will severely harm the performance of multi thread 
+
+---
+
+## How to test the speed of socket communication?
+
+1. install iperf3 via the following command
+```
+brew install iperf3
+```
+
+2. open it in two terminals (perhaps on two computers)
+```
+iperf3 -s
+iperf3 -c [IP Address of first Mac]
+```
+
+See more information via https://www.macobserver.com/tmo/answers/how-to-test-speed-home-network-iperf
 
