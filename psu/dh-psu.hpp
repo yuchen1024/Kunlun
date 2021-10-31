@@ -7,6 +7,7 @@
 #include "../crypto/block.hpp"
 #include "../netio/stream_channel.hpp"
 #include "../ot/iknp_ote.hpp"
+#include "../filter/bloom_filter.hpp"
 
 /*
 ** implement PSU based on weak commutative PSU
@@ -18,11 +19,17 @@ struct PP
 {
     bool malicious = false;
     ECPoint g;  
+    double desired_false_positive_probability; 
+    std::string filter_type; // shuffle, bloom, cuckoo
+    size_t statistical_security_parameter; // default=40 
 };
 
-void Setup(PP &pp)
+void Setup(PP &pp, std::string filter_type, size_t lambda)
 {
     pp.g = ECPoint(generator); 
+    pp.statistical_security_parameter = lambda; 
+    pp.filter_type = filter_type; 
+    pp.desired_false_positive_probability = 1/pow(2, pp.statistical_security_parameter/2);
 }
 
 void GetNPOTPP(PP &pp, NPOT::PP &pp_npot)
@@ -221,23 +228,43 @@ void ParallelPipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t
 
     io.ReceiveECPoints(vec_Fk2_Y.data(), LEN);
 
+    std::vector<ECPoint> vec_Fk1_X(LEN); 
+    #pragma omp parallel for
+    for(auto i = 0; i < LEN; i++){
+        vec_Fk1_X[i] = Hash::ThreadSafeBlockToECPoint(vec_X[i]).ThreadSafeMul(k1); // H(y_i)^k2
+    }   
+    io.SendECPoints(vec_Fk1_X.data(), LEN);
+     
+    std::cout <<"wcPRF-based PSU [step 2]: Sender ===> F_k1(x_i) ===> Receiver"; 
+    std::cout << " [" << POINT_BYTE_LEN*LEN << " bytes]" << std::endl;
+
     #pragma omp parallel for
     for(auto i = 0; i < LEN; i++){
         vec_Fk1k2_Y[i] = vec_Fk2_Y[i].ThreadSafeMul(k1); 
     }
 
     // permutation
-    std::random_shuffle(vec_Fk1k2_Y.begin(), vec_Fk1k2_Y.end());
-    io.SendECPoints(vec_Fk1k2_Y.data(), LEN); 
-    std::cout <<"wcPRF-based PSU [step 2]: Sender ===> Permutation(F_k1k2(y_i)) ===> Receiver" << std::endl;
-   
-    std::vector<ECPoint> vec_Fk1_X(LEN); 
-    #pragma omp parallel for
-    for(auto i = 0; i < LEN; i++){
-        vec_Fk1_X[i] = Hash::ThreadSafeBlockToECPoint(vec_X[i]).ThreadSafeMul(k1); // H(y_i)^k2
-    }   
-    io.SendECPoints(vec_Fk1_X.data(), LEN); 
-    std::cout <<"wcPRF-based PSU [step 2]: Sender ===> F_k1(x_i) ===> Receiver" << std::endl;
+    if(pp.filter_type == "shuffle"){
+        std::random_shuffle(vec_Fk1k2_Y.begin(), vec_Fk1k2_Y.end());
+        io.SendECPoints(vec_Fk1k2_Y.data(), LEN); 
+        std::cout <<"wcPRF-based PSU [step 2]: Sender ===> Permutation(F_k1k2(y_i)) ===> Receiver"; 
+        std::cout << " [" << POINT_BYTE_LEN*LEN << " bytes]" << std::endl;
+    }
+
+    // generate and send bloom filter
+    if(pp.filter_type == "bloom"){
+        BloomFilter<uint32_t> filter(vec_Fk1k2_Y.size(), pp.desired_false_positive_probability);
+        filter.insert(vec_Fk1k2_Y);
+         
+        io.SendInteger(filter.object_size);
+
+        char *buffer = new char[filter.object_size]; 
+        filter.writeobject(buffer);
+        io.SendBytes(buffer, filter.object_size); 
+        std::cout <<"wcPRF-based PSU [step 2]: Sender ===> BloomFilter(F_k1k2(y_i)) ===> Receiver";
+        std::cout << " [" << filter.object_size << " bytes]" << std::endl;
+        delete[] buffer; 
+    } 
 
     //send vec_X via one-sided OT
     IKNPOTE::PP ote_pp; 
@@ -259,32 +286,52 @@ void ParallelPipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size
 
     io.SendECPoints(vec_Fk2_Y.data(), LEN); 
     
-    std::cout <<"wcPRF-based PSU [step 1]: Receiver ===> F_k2(y_i) ===> Sender" << std::endl;
-
-    std::vector<ECPoint> vec_Fk1k2_Y(LEN);
-    io.ReceiveECPoints(vec_Fk1k2_Y.data(), LEN); 
-
-    std::unordered_set<ECPoint, ECPointHash> S;
-    for(auto i = 0; i < LEN; i++){
-        S.insert(vec_Fk1k2_Y[i]); 
-    }
+    std::cout <<"wcPRF-based PSU [step 1]: Receiver ===> F_k2(y_i) ===> Sender";
+    std::cout << " [" << POINT_BYTE_LEN*LEN << " bytes]" << std::endl;
 
     std::vector<ECPoint> vec_Fk2k1_X(LEN); 
     std::vector<ECPoint> vec_Fk1_X(LEN); 
 
-    // compute the selection bit vector
-    std::vector<uint8_t> vec_selection_bit(LEN);
 
     io.ReceiveECPoints(vec_Fk1_X.data(), LEN);  
-
     #pragma omp parallel for
     for(auto i = 0; i < LEN; i++){ 
         vec_Fk2k1_X[i] = vec_Fk1_X[i].ThreadSafeMul(k2); 
     }
-    for(auto i = 0; i < LEN; i++){
-        if(S.find(vec_Fk2k1_X[i]) == S.end()) vec_selection_bit[i] = 1;  
-        else vec_selection_bit[i] = 0;
+
+    // compute the selection bit vector
+    std::vector<uint8_t> vec_selection_bit(LEN);
+
+    if(pp.filter_type == "shuffle"){
+        std::vector<ECPoint> vec_Fk1k2_Y(LEN);
+        io.ReceiveECPoints(vec_Fk1k2_Y.data(), LEN);
+        std::unordered_set<ECPoint, ECPointHash> S;
+        for(auto i = 0; i < LEN; i++){
+            S.insert(vec_Fk1k2_Y[i]); 
+        }
+        for(auto i = 0; i < LEN; i++){
+            if(S.find(vec_Fk2k1_X[i]) == S.end()) vec_selection_bit[i] = 1;  
+            else vec_selection_bit[i] = 0;
+        }
     }
+
+    if(pp.filter_type == "bloom"){
+        BloomFilter<uint32_t> filter; 
+        io.ReceiveInteger(filter.object_size);
+
+        char *buffer = new char[filter.object_size]; 
+        io.ReceiveBytes(buffer, filter.object_size);
+          
+        filter.readobject(buffer);  
+        delete[] buffer; 
+
+        #pragma omp parallel for
+        for(auto i = 0; i < LEN; i++){
+            if(filter.contain(vec_Fk2k1_X[i]) == false) vec_selection_bit[i] = 1;  
+            else vec_selection_bit[i] = 0;
+        }
+    } 
+     
     std::cout <<"wcPRF-based PSU [step 3]: Receiver ===> selection vector ===> Sender" << std::endl;
     // receiver vec_X via one-sided OT
     std::vector<block> vec_X; 
@@ -299,9 +346,8 @@ void ParallelPipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size
     for(auto i = 0; i < vec_X.size(); i++) 
         unionXY.insert(Block::ToString(vec_X[i]));
 
-    std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X, Y)" << std::endl;    
+    std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X,Y)" << std::endl;    
 }
-
 
 
 

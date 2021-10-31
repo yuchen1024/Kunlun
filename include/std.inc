@@ -20,6 +20,12 @@ this file includes commonly used head files
 #include <atomic> 
 #include <iomanip>
 #include <functional>
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <iterator>
+#include <limits>
 #include <bitset>
 #include <omp.h>
 #include <assert.h>

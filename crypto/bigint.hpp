@@ -153,8 +153,6 @@ public:
 
     inline BigInt& operator<<=(int n) { return *this = *this << n; }
 
-
-
     // serialization and deserialization 
 
     void FromByteString(const std::string& str); 

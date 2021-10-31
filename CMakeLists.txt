@@ -24,6 +24,10 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
 ADD_EXECUTABLE(test_netio test/test_netio.cpp)
 TARGET_LINK_LIBRARIES(test_netio ${OPENSSL_LIBRARIES} -lomp)
 
+# filter
+ADD_EXECUTABLE(test_bloom_filter test/test_bloom_filter.cpp)
+TARGET_LINK_LIBRARIES(test_bloom_filter ${OPENSSL_LIBRARIES} -lomp)
+
 # ot
 ADD_EXECUTABLE(test_naor_pinkas_ot test/test_naor_pinkas_ot.cpp)
 TARGET_LINK_LIBRARIES(test_naor_pinkas_ot ${OPENSSL_LIBRARIES} -lomp)

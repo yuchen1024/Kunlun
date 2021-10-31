@@ -38,8 +38,8 @@ public:
 	void SendDataInternal(const void *data, size_t LEN); 
 	void ReceiveDataInternal(const void *data, size_t LEN); 
 
-	void SendBytes(const void* data, size_t LEN);  
-	void ReceiveBytes(void* data, size_t LEN); 
+	void SendBytes(const void *data, size_t LEN);  
+	void ReceiveBytes(void *data, size_t LEN); 
 
 	void SendBlocks(const block* data, size_t LEN);
 	void ReceiveBlocks(block* data, size_t LEN);  
@@ -61,7 +61,13 @@ public:
 
 	void SendString(std::string str);
 	void ReceiveString(std::string str); 
-		
+
+	template <typename T>
+	void SendInteger(const T &n);
+
+	template <typename T>
+	void ReceiveInteger(T &n);
+
 	~NetIO() {
 		close(this->connect_socket); 
 		if(IS_SERVER == true){
@@ -232,16 +238,6 @@ void NetIO::ReceiveBlocks(block* data, size_t LEN)
 	ReceiveBytes(data, LEN*sizeof(block));
 }
 
-void NetIO::SendBlock(const block &a) 
-{
-	SendBytes(&a, sizeof(block));
-}
-
-void NetIO::ReceiveBlock(block &a) 
-{
-	ReceiveBytes(&a, sizeof(block));
-}
-
 void NetIO::SendBits(uint8_t *data, size_t LEN) 
 {
 	SendBytes(data, LEN);
@@ -307,6 +303,38 @@ void NetIO::ReceiveECPoint(ECPoint &A)
 	EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
 }
 
+// T could be any built-in data type, such as block or int
+template <typename T>
+void NetIO::SendInteger(const T &n)
+{
+	SendBytes(&n, sizeof(T));
+}
+template <typename T>
+void NetIO::ReceiveInteger(T &n)
+{
+	ReceiveBytes(&n, sizeof(T));
+}
+
+
+void NetIO::SendBlock(const block &a) 
+{
+	SendBytes(&a, sizeof(block));
+}
+
+void NetIO::ReceiveBlock(block &a) 
+{
+	ReceiveBytes(&a, sizeof(block));
+}
+
+// void NetIO::SendInt64(const size_t &n)
+// {
+// 	SendBytes(&n, sizeof(size_t)); 
+// }
+
+// void NetIO::ReceiveInt64(size_t &n)
+// {
+// 	ReceiveBytes(&n, sizeof(size_t)); 
+// }
 
 
 #endif  //NETWORK_IO_CHANNEL
