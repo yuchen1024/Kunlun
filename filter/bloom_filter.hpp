@@ -15,6 +15,7 @@ Modified from https://github.com/ArashPartow/bloom
 //00000001 00000010 00000100 00001000 00010000 00100000 01000000 10000000
 static const uint8_t bit_mask[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
+#define BloomHash AdhocHash // an alternative choice is MurmurHash3 
 
 /*
   Note:A distinct hash function need not be implementation-wise distinct. 
@@ -55,7 +56,7 @@ std::vector<uint_type> GenUniqueSaltVector(uint_type hash_num, uint_type random_
       std::copy(predefined_salt, predefined_salt + predefined_salt_num, std::back_inserter(vec_salt));
       srand(random_seed);
       while (vec_salt.size() < hash_num){
-         uint_type current_salt = static_cast<uint_type>(rand()) * static_cast<uint_type>(rand());
+         uint_type current_salt = rand() * rand();
          if (0 == current_salt) continue;
          if (vec_salt.end() == std::find(vec_salt.begin(), vec_salt.end(), current_salt)){
             vec_salt.emplace_back(current_salt);
@@ -66,11 +67,14 @@ std::vector<uint_type> GenUniqueSaltVector(uint_type hash_num, uint_type random_
    return vec_salt; 
 }
 
+
 template <typename uint_type>
-inline uint_type AdhocHash(uint_type salt, const unsigned char* input, size_t LEN)
+inline uint_type AdhocHash(uint_type salt, const void* input, size_t LEN)
 {
+   const uint8_t* itr = static_cast<const uint8_t*>(input);
+
    uint_type digest = salt; 
-   const unsigned char* itr = input;
+
    uint_type loop = 0;
    size_t REMAINING_LEN = LEN; 
    uint32_t a, b, c;
@@ -138,7 +142,7 @@ public:
       random_seed = static_cast<uint_type>(0xA5A5A5A55A5A5A5A * 0xA5A5A5A5 + 1); 
       vec_salt = GenUniqueSaltVector(hash_num, random_seed);   
       table_size = static_cast<uint_type>(projected_element_num * (-1.44 * log2(desired_false_positive_probability)));
-      bit_table.resize(table_size/8, static_cast<uint8_t>(0x00));
+      bit_table.resize(table_size/8, static_cast<uint8_t>(0x00)); // naive implementation
       
       inserted_element_num = 0; 
 
@@ -148,13 +152,13 @@ public:
    ~BloomFilter() {}; 
 
 
-   inline void insert(const uint8_t* input, size_t LEN)
+   inline void insert(const void* input, size_t LEN)
    {
       size_t bit_index = 0;
       for (auto i = 0; i < hash_num; i++){
-         bit_index = AdhocHash(vec_salt[i], input, LEN) % table_size;
-         //bit_index = MurmurHash3(vec_salt[i], input, LEN) % table_size;
-         bit_table[bit_index / 8] |= bit_mask[bit_index % 8];
+         bit_index = BloomHash(vec_salt[i], input, LEN) % table_size;
+         //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
+         bit_table[bit_index >> 3] |= bit_mask[bit_index & 0x07]; // more efficient implementation
       }
       inserted_element_num++;
    }
@@ -162,19 +166,19 @@ public:
    template <typename T> // Note: T must be a C++ POD type.
    inline void insert(const T& t)
    {
-      insert(reinterpret_cast<uint8_t*>(&t), sizeof(T));
+      insert(&t, sizeof(T));
    }
 
    inline void insert(const std::string& str)
    {
-      insert(reinterpret_cast<const uint8_t*>(str.data()), str.size());
+      insert(str.data(), str.size());
    }
 
    inline void insert(const ECPoint &A)
    {
       unsigned char buffer[POINT_BYTE_LEN]; 
       EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-      insert(reinterpret_cast<const uint8_t*>(buffer), POINT_BYTE_LEN);
+      insert(buffer, POINT_BYTE_LEN);
    }
 
    inline void insert(const std::vector<ECPoint> &vec_A)
@@ -184,14 +188,14 @@ public:
       for(auto i = 0; i < num; i++){
          EC_POINT_point2oct(group, vec_A[i].point_ptr, POINT_CONVERSION_COMPRESSED, 
                             buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, nullptr);
-         insert(reinterpret_cast<const uint8_t*>(buffer+i*POINT_BYTE_LEN), POINT_BYTE_LEN);
+         insert(buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN);
       }
       delete[] buffer; 
    }
 
    inline void insert(const char* data, const std::size_t& LEN)
    {
-      insert(reinterpret_cast<const uint8_t*>(data), LEN);
+      insert(data, LEN);
    }
 
    template <typename InputIterator>
@@ -215,16 +219,15 @@ public:
          insert(c[i]); 
    }
 
-   inline bool contain(const uint8_t* input, size_t LEN) const
+   inline bool contain(const void* input, size_t LEN) const
    {
       size_t bit_index = 0;
       size_t local_bit_index = 0; 
       for(auto i = 0; i < vec_salt.size(); i++)
       {
-         bit_index = AdhocHash(vec_salt[i], input, LEN) % table_size; 
-         //bit_index = MurmurHash3(vec_salt[i], input, LEN) % table_size;
-         local_bit_index = bit_index % 8;
-         if ((bit_table[bit_index/8] & bit_mask[local_bit_index]) != bit_mask[local_bit_index]) 
+         bit_index = BloomHash(vec_salt[i], input, LEN) % table_size; 
+         local_bit_index = bit_index & 0x07;
+         if ((bit_table[bit_index >> 3] & bit_mask[local_bit_index]) != bit_mask[local_bit_index]) 
             return false;
       }
       return true;
@@ -233,24 +236,24 @@ public:
    template <typename T>
    inline bool contain(const T& t) const
    {
-      return contain(reinterpret_cast<uint8_t*>(&t), sizeof(T));
+      return contain(&t, sizeof(T));
    }
 
    inline bool contain(const std::string& str) const
    {
-      return contain(reinterpret_cast<const uint8_t*>(str.data()), str.size());
+      return contain(str.data(), str.size());
    }
 
    inline bool contain(const ECPoint& A) const
    {
       unsigned char buffer[POINT_BYTE_LEN]; 
       EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-      return contain(reinterpret_cast<const uint8_t*>(buffer), POINT_BYTE_LEN);
+      return contain(buffer, POINT_BYTE_LEN);
    }
 
    inline bool contain(const char* data, size_t LEN) const
    {
-      return contain(reinterpret_cast<const uint8_t*>(data), LEN);
+      return contain(data, LEN);
    }
 
    inline void clear()

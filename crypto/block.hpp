@@ -285,7 +285,7 @@ inline void empBitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64
     if (rr == ROW_NUM) return;
 
     // The remainder is a block of 8x(16n+8) bits (n may be 0).
-    //  Do a PAIR of 8x8 blocks in each step:
+    // Do a PAIR of 8x8 blocks in each step:
     if ((COLUMN_NUM%8 == 0 && COLUMN_NUM%16 != 0) || (ROW_NUM%8 == 0 && ROW_NUM%16 != 0)) {
         // The fancy optimizations in the else-branch don't work if the above if-condition
         // holds, so we use the simpler non-simd variant for that case.
