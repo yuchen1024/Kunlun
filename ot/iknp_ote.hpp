@@ -20,6 +20,8 @@
 
 const static size_t BASE_LEN = 128; // the default length of base OT
 
+namespace IKNPOTE{
+
 // check if the parameters are legal
 void CheckParameters(size_t ROW_NUM, size_t COLUMN_NUM)
 {
@@ -28,8 +30,6 @@ void CheckParameters(size_t ROW_NUM, size_t COLUMN_NUM)
         exit(EXIT_FAILURE); 
     }
 }
-
-namespace IKNPOTE{
 
 struct PP
 {
@@ -56,6 +56,8 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     ** receiver then send encryptions of the original column and shared column under k0 and k1 respectively
     */
 
+	auto start_time = std::chrono::steady_clock::now(); 
+
     // prepare to receive a secret shared matrix Q from receiver
     size_t ROW_NUM = EXTEND_LEN;   // set row num as the length of long ot
     size_t COLUMN_NUM = BASE_LEN;  // set column num as the length of base ot
@@ -74,10 +76,9 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     NPOT::PP pp_npot; 
     GetNPOTPP(pp, pp_npot); 
     NPOT::Receive(io, pp_npot, vec_K, vec_selection_bit, BASE_LEN);
-    #ifdef DEBUG
-        PrintSplitLine('*'); 
-        std::cout << "IKNP OTE: sender obliviuosly get "<< BASE_LEN << " number of keys from receiver" << std::endl; 
-    #endif
+
+    std::cout << "IKNP OTE [step 1]: Sender obliviuosly get " << BASE_LEN 
+              << " number of keys from Receiver via base OT" << std::endl; 
     /* 
     ** invoke base OT BASE_LEN times to obtain a matrix Q
     ** after receiving the key, begin to receive ciphertexts
@@ -111,7 +112,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     }   
 
     #ifdef DEBUG
-        std::cout << "IKNP OTE: sender obliviuosly get "<< BASE_LEN << " pair of ciphertexts from receiver" << std::endl; 
+        std::cout << "IKNP OTE: Sender obliviuosly get "<< BASE_LEN << " pair of ciphertexts from Receiver" << std::endl; 
     #endif
     
 
@@ -120,7 +121,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     empBitMatrixTranspose(Q.data(), ROW_NUM, COLUMN_NUM, Q_tanspose.data());  
 
     #ifdef DEBUG
-        std::cout << "IKNP OTE: sender transposes matrix Q" << std::endl; 
+        std::cout << "IKNP OTE: Sender transposes matrix Q" << std::endl; 
     #endif
 
     // generate dense representation of selection block
@@ -144,16 +145,22 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     io.SendBlocks(vec_outer_C0.data(), ROW_NUM); 
     io.SendBlocks(vec_outer_C1.data(), ROW_NUM);
 
-    #ifdef DEBUG
-        std::cout << "IKNP OTE: sender sends "<< ROW_NUM << " pair of ciphertexts to receiver" << std::endl; 
-        PrintSplitLine('*'); 
-    #endif
+    
+    std::cout << "IKNP OTE [step 3]: Sender ===> (vec_C0, vec_C1) ===> Receiver" 
+              << "[" << ROW_NUM*16*2 << " bytes]" << std::endl; 
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "IKNP OTE: Sender side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vector<uint8_t> &vec_selection_bit, size_t EXTEND_LEN)
 {
     // first act as sender in base OT
-    
+    auto start_time = std::chrono::steady_clock::now(); 
+
+
     // prepare a random matrix
     size_t ROW_NUM = EXTEND_LEN; 
     size_t COLUMN_NUM = BASE_LEN; 
@@ -173,10 +180,8 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
     GetNPOTPP(pp, pp_npot); 
     NPOT::Send(io, pp_npot, vec_K0, vec_K1, BASE_LEN); 
 
-    #ifdef DEBUG
-        PrintSplitLine('*'); 
-        std::cout << "IKNP OTE: receiver sends "<< BASE_LEN << " number of keys to sender via base OT" << std::endl; 
-    #endif
+    std::cout << "IKNP OTE [step 1]: Receiver transmits "<< BASE_LEN << " number of keys to Sender via base OT" 
+              << std::endl; 
 
     // generate the dense representation of selection block
     std::vector<block> vec_selection_block(ROW_NUM/128); 
@@ -212,15 +217,14 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
         io.SendBlocks(vec_inner_C1.data(), ROW_NUM/128);
     }   
 
-    #ifdef DEBUG
-        std::cout << "IKNP OTE: receiver sends "<< COLUMN_NUM << " pair of ciphertexts to sender" << std::endl; 
-    #endif
+    std::cout << "IKNP OTE [step 2]: Receiver ===> 2 encrypted matrix ===> Sender" 
+              << " [" << COLUMN_NUM*ROW_NUM/128*16*2 << " bytes]" << std::endl; 
     
     std::vector<uint8_t> T_transpose(ROW_NUM/8 * COLUMN_NUM); 
     empBitMatrixTranspose(T.data(), ROW_NUM, COLUMN_NUM, T_transpose.data());
 
     #ifdef DEBUG
-        std::cout << "IKNP OTE: receiver transposes matrix T" << std::endl; 
+        std::cout << "IKNP OTE: Receiver transposes matrix T" << std::endl; 
     #endif
 
     std::vector<block> vec_outer_C0(ROW_NUM); 
@@ -231,7 +235,7 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
 
 
     #ifdef DEBUG
-        std::cout << "IKNP OTE: receiver get "<< ROW_NUM << " pair of ciphertexts from receiver" << std::endl; 
+        std::cout << "IKNP OTE: Receiver get "<< ROW_NUM << " pair of ciphertexts from Sender" << std::endl; 
     #endif
 
     for(auto i = 0; i < ROW_NUM; i++)
@@ -248,9 +252,16 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
     }   
 
     #ifdef DEBUG
-        std::cout << "IKNP OTE: receiver obtains "<< ROW_NUM << " number of messages from receiver" << std::endl; 
+        std::cout << "IKNP OTE: Receiver obtains "<< ROW_NUM << " number of messages from Sender" << std::endl; 
         PrintSplitLine('*'); 
     #endif
+
+    std::cout << "IKNP OTE [step 4]: Receiver obtains vec_m" << std::endl; 
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "IKNP OTE: Receiver side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LEN) 
@@ -260,7 +271,8 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     ** T is a tall matrix, to use base OT oblivious transfer T, 
     ** the sender first oblivous get 1-out-of-2 keys per column from receiver via base OT 
     ** receiver then send encryptions of the original column and shared column under k0 and k1 respectively
-    */
+    */	
+	auto start_time = std::chrono::steady_clock::now(); 
 
     // prepare to receive a secret shared matrix Q from receiver
     size_t ROW_NUM = EXTEND_LEN;   // set row num as the length of long ot
@@ -274,17 +286,15 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     // generate Phase 1 selection bit vector
     std::vector<uint8_t> vec_selection_bit(BASE_LEN);
     vec_selection_bit = GenRandomBits(seed, BASE_LEN); 
-    // for(auto i = 0; i < vec_selection_bit.size(); i++) vec_selection_bit[i] = 0; 
 
     // first receive 1-out-2 two keys from the receiver 
     std::vector<block> vec_K(BASE_LEN); 
     NPOT::PP pp_npot; 
     GetNPOTPP(pp, pp_npot); 
     NPOT::Receive(io, pp_npot, vec_K, vec_selection_bit, BASE_LEN);
-    #ifdef DEBUG
-        PrintSplitLine('*'); 
-        std::cout << "1-sided IKNP OTE: sender obliviuosly get "<< BASE_LEN << " number of keys from receiver" << std::endl; 
-    #endif
+
+    std::cout << "IKNP OTE [step 1]: Sender obliviuosly get "
+              << BASE_LEN << " number of keys from Receiver via base OT" << std::endl; 
     /* 
     ** invoke base OT BASE_LEN times to obtain a matrix Q
     ** after receiving the key, begin to receive ciphertexts
@@ -317,7 +327,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     }   
 
     #ifdef DEBUG
-        std::cout << "1-sided IKNP OTE: sender obliviuosly get "<< BASE_LEN << " pair of ciphertexts from receiver" << std::endl; 
+        std::cout << "IKNP OTE: Sender obliviuosly get "<< BASE_LEN << " pair of ciphertexts from Receiver" << std::endl; 
     #endif
     
 
@@ -326,13 +336,12 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     empBitMatrixTranspose(Q.data(), ROW_NUM, COLUMN_NUM, Q_tanspose.data());  
 
     #ifdef DEBUG
-        std::cout << "1-sided IKNP OTE: sender transposes matrix Q" << std::endl; 
+        std::cout << "IKNP OTE: Sender transposes matrix Q" << std::endl; 
     #endif
 
     // generate dense representation of selection block
     std::vector<block> vec_selection_block(BASE_LEN/128); 
     Block::FromSparseBits(vec_selection_bit.data(), BASE_LEN, vec_selection_block.data(), BASE_LEN/128); 
-
 
     // begin to transmit the real message
     block outer_C; 
@@ -345,11 +354,17 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
         io.SendBlock(outer_C); 
     }
 
+    std::cout << "IKNP OTE [step 3]: Sender ===> vec_C ===> Receiver" << " [" << ROW_NUM*16 << " bytes]" << std::endl;
 
     #ifdef DEBUG
-        std::cout << "1-side IKNP OTE: sender sends "<< ROW_NUM << " number of ciphertexts to receiver" << std::endl; 
+        std::cout << "IKNP OTE: Sender sends "<< ROW_NUM << " number of ciphertexts to receiver" << std::endl; 
         PrintSplitLine('*'); 
     #endif
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "IKNP OTE: Sender side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 // the size of vec_result = the hamming weight of vec_selection_bit
@@ -357,6 +372,7 @@ void OnesidedReceive(NetIO &io, PP &pp, std::vector<block> &vec_result, const st
 {
     // first act as sender in base OT
     
+    auto start_time = std::chrono::steady_clock::now(); 
     // prepare a random matrix
     size_t ROW_NUM = EXTEND_LEN; 
     size_t COLUMN_NUM = BASE_LEN; 
@@ -376,10 +392,7 @@ void OnesidedReceive(NetIO &io, PP &pp, std::vector<block> &vec_result, const st
     GetNPOTPP(pp, pp_npot); 
     NPOT::Send(io, pp_npot, vec_K0, vec_K1, BASE_LEN); 
 
-    #ifdef DEBUG
-        PrintSplitLine('*'); 
-        std::cout << "1-sided IKNP OTE: receiver sends "<< BASE_LEN << " number of keys to sender via base OT" << std::endl; 
-    #endif
+    std::cout << "IKNP OTE [step 1]: Receiver sends "<< BASE_LEN << " number of keys to Sender via base OT" << std::endl; 
 
     // generate the dense representation of selection block
     std::vector<block> vec_selection_block(ROW_NUM/128); 
@@ -414,24 +427,19 @@ void OnesidedReceive(NetIO &io, PP &pp, std::vector<block> &vec_result, const st
         io.SendBlocks(vec_inner_C0.data(), ROW_NUM/128); 
         io.SendBlocks(vec_inner_C1.data(), ROW_NUM/128);
     }   
-
-    #ifdef DEBUG
-        std::cout << "1-sided IKNP OTE: receiver sends "<< COLUMN_NUM << " pair of ciphertexts to sender" << std::endl; 
-    #endif
     
+    std::cout << "IKNP OTE [step 2]: Receiver ===> 2 encrypted matrix ===> Sender" 
+              << " [" << COLUMN_NUM*ROW_NUM/128*16*2 << " bytes]" << std::endl; 
+
     std::vector<uint8_t> T_transpose(ROW_NUM/8 * COLUMN_NUM); 
     empBitMatrixTranspose(T.data(), ROW_NUM, COLUMN_NUM, T_transpose.data());
 
     #ifdef DEBUG
-        std::cout << "1-sided IKNP OTE: receiver transposes matrix T" << std::endl; 
+        std::cout << "IKNP OTE: Receiver transposes matrix T" << std::endl; 
     #endif
 
     block outer_C; 
     
-    #ifdef DEBUG
-        std::cout << "1-sided IKNP OTE: receiver get "<< ROW_NUM << " number of ciphertexts from receiver" << std::endl; 
-    #endif
-
     for(auto i = 0; i < ROW_NUM; i++)
     {
         io.ReceiveBlock(outer_C);
@@ -445,9 +453,16 @@ void OnesidedReceive(NetIO &io, PP &pp, std::vector<block> &vec_result, const st
     }   
 
     #ifdef DEBUG
-        std::cout << "IKNP OTE: receiver obtains "<< ROW_NUM << " number of messages from receiver" << std::endl; 
+        std::cout << "IKNP OTE: Receiver get "<< ROW_NUM << " number of ciphertexts from Sender" << std::endl; 
         PrintSplitLine('*'); 
     #endif
+
+    std::cout << "IKNP OTE [step 4]: Receiver obtains vec_m" << std::endl; 
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "IKNP OTE: Receiver side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 }

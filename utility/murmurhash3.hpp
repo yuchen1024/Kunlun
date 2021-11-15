@@ -1,23 +1,18 @@
-//-----------------------------------------------------------------------------
-// MurmurHash3 was written by Austin Appleby, and is placed in the public
-// domain. The author hereby disclaims copyright to this source code.
-
-// Note - The x86 and x64 versions do _not_ produce the same results, as the
-// algorithms are optimized for their respective platforms. You can still
-// compile and run any of them on any platform, but your performance with the
-// non-native version will be less than optimal.
+/* 
+** MurmurHash3 was written by Austin Appleby, and is placed in the public domain. 
+** Add an unified interface
+*/
 
 #ifndef MURMURHASH3_HPP_
 #define MURMURHASH3_HPP_
 
+const static uint64_t fixed_salt = 0xAAAAAAAA;  
 
-void MurmurHash3_x86_32  ( const void * key, int len, uint32_t seed, void * out );
+void MurmurHash3_x86_32  (const void * key, int len, uint32_t seed, void * out);
 
-void MurmurHash3_x86_128 ( const void * key, int len, uint32_t seed, void * out );
+void MurmurHash3_x86_128 (const void * key, int len, uint32_t seed, void * out);
 
-void MurmurHash3_x64_128 ( const void * key, int len, uint32_t seed, void * out );
-
-
+void MurmurHash3_x64_128 (const void * key, int len, uint32_t seed, void * out);
 
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros
@@ -137,11 +132,19 @@ void MurmurHash3_x86_32 ( const void * key, int len,
 } 
 
 
-// the interface used by BloomFilter
+// interface used by Bloom Filter
 uint32_t MurmurHash3(uint32_t salt, const unsigned char* input, size_t LEN)
 {
     uint32_t digest; 
     MurmurHash3_x86_32 (input, static_cast<int>(LEN), salt, &digest); 
+    return digest; 
+}
+
+// interface used by Cuckoo Filter
+uint32_t MurmurHash3(const unsigned char* input, size_t LEN)
+{
+    uint32_t digest; 
+    MurmurHash3_x86_32 (input, static_cast<int>(LEN), fixed_salt, &digest); 
     return digest; 
 }
 
@@ -331,6 +334,57 @@ void MurmurHash3_x64_128 ( const void * key, const int len,
   ((uint64_t*)out)[1] = h2;
 }
 
-//-----------------------------------------------------------------------------
+/*
+** The following hash is modified from original bloom filter implementation.
+** we call it LiteMurmurhash 
+*/
+
+inline uint32_t LiteMurmurHash(uint32_t salt, const void* input, size_t LEN)
+{
+   const uint8_t* itr = static_cast<const uint8_t*>(input);
+
+   uint32_t digest = salt; 
+
+   uint32_t loop = 0;
+   size_t REMAINING_LEN = LEN; 
+   uint32_t a, b, c;
+   uint16_t d; 
+   uint8_t e; 
+   while (REMAINING_LEN >= 8){
+      a = *(reinterpret_cast<const uint32_t*>(itr)); itr += 4;
+      b = *(reinterpret_cast<const uint32_t*>(itr)); itr += 4;
+      digest ^= (digest << 7) ^ a * (digest >> 3) ^ (~((digest << 11) + (b ^ (digest >> 5))));
+      REMAINING_LEN -= 8;
+   }
+
+   if (REMAINING_LEN >= 4){
+      c = *(reinterpret_cast<const uint32_t*>(itr)); itr += 4;
+      if (loop & 0x01) digest ^=  (digest << 7) ^ b * (digest >> 3);
+      else digest ^= (~((digest << 11) + (c ^ (digest >> 5))));
+      ++loop;
+      REMAINING_LEN -= 4;
+   }
+
+   if (REMAINING_LEN >= 2){
+      d = *(reinterpret_cast<const uint16_t*>(itr)); itr += 2;
+      if (loop & 0x01) digest ^= (digest <<  7) ^  d * (digest >> 3);
+      else digest ^= (~((digest << 11) + (d ^ (digest >> 5))));
+      ++loop;
+      REMAINING_LEN -= 2;  
+   }
+
+   if (REMAINING_LEN == 1){
+      e = *(reinterpret_cast<const uint8_t*>(itr)); itr += 1;
+      digest += (e ^ (digest * 0xA5A5A5A5)) + loop;
+      REMAINING_LEN -= 1;  
+   }
+   
+   return digest;
+}
+
+inline uint32_t LiteMurmurHash(const void* input, size_t LEN)
+{ 
+    return LiteMurmurHash(fixed_salt, input, LEN);  
+}
 
 #endif

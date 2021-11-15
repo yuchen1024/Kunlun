@@ -1,7 +1,7 @@
 #define DEBUG
 #define OMP
 
-#include "../filter/bloom_filter.hpp"
+#include "../filter/cuckoo_filter.hpp"
 #include "../utility/print.hpp"
 
 template <class T, class Allocator, template <class,class> class Container>
@@ -12,7 +12,7 @@ bool ReadFileToContainer(std::string file_name, Container<T, Allocator>& contain
     if(!fin)
     {
         std::cerr << file_name << " open error" << std::endl;
-        exit(1); 
+        exit(EXIT_FAILURE); 
     }
     std::string str;
 
@@ -25,10 +25,10 @@ bool ReadFileToContainer(std::string file_name, Container<T, Allocator>& contain
 }
 
 
-void test_bloom_filter()
+void test_cuckoo_filter()
 {
     PrintSplitLine('-'); 
-    std::cout << "begin the test of bloom filter >>>" << std::endl;
+    std::cout << "begin the test of cuckoo filter >>>" << std::endl;
     PrintSplitLine('-'); 
 
     
@@ -36,7 +36,11 @@ void test_bloom_filter()
     ReadFileToContainer("word-list-extra-large.txt", word_list); 
     size_t projected_element_num = word_list.size();  
     double desired_false_positive_probability = 1/pow(2, 10);
-    BloomFilter filter(projected_element_num, desired_false_positive_probability);
+    CuckooFilter filter(projected_element_num, desired_false_positive_probability);
+
+    filter.PrintInfo();
+
+    //if(filter.Insert("cuckoo") == true) std::cout << "success" << std::endl; 
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     //filter.insert(word_list.begin(), word_list.end());    
@@ -46,10 +50,11 @@ void test_bloom_filter()
     std::cout << "insert #" << word_list.size() << " elements take "   
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;  
 
-    std::cout << "false positive probability = " << desired_false_positive_probability << std::endl;
-    std::cout << double(filter.table_size)/filter.inserted_element_num << " bit per element" << std::endl;
-    
+    filter.PrintInfo();
 
+    // std::cout << "false positive probability = " << desired_false_positive_probability << std::endl;
+    // std::cout << double(filter.table_size)/filter.inserted_element_num << " bit per element" << std::endl;
+    
     std::cout << "please type the string you want to check, and q to exit >>>" << std::endl; 
     std::string new_str;
     while(true){
@@ -63,17 +68,17 @@ void test_bloom_filter()
         }
     }
 
-    std::string filter_file_name = "filter-1.bloom"; 
+    std::string filter_file_name = "filter.cuckoo"; 
     filter.WriteObject(filter_file_name);
 
-    BloomFilter new_filter; 
-    new_filter.ReadObject(filter_file_name); 
+    CuckooFilter filter1; 
+    filter1.ReadObject(filter_file_name); 
 
     std::cout << "please type the string you want to check, and q to exit >>>" << std::endl; 
     while(true){
         std::getline(std::cin, new_str);
         if(new_str == "q") break;
-        if (filter.Contain(new_str) == true) {
+        if (filter1.Contain(new_str) == true) {
             std::cout << new_str <<" is in the set" << std::endl;
         } 
         else{
@@ -81,8 +86,29 @@ void test_bloom_filter()
         }
     }
 
+    char *buffer = new char[filter.ObjectSize()]; 
+    filter.WriteObject(buffer);
+
+    CuckooFilter filter2;
+    filter2.ReadObject(buffer);  
+
+    std::cout << "please type the string you want to check, and q to exit >>>" << std::endl; 
+    while(true){
+        std::getline(std::cin, new_str);
+        if(new_str == "q") break;
+        if (filter2.Contain(new_str) == true) {
+            std::cout << new_str <<" is in the set" << std::endl;
+        } 
+        else{
+            std::cout << new_str <<" is not in the set" << std::endl;
+        }
+    }
+
+    delete[] buffer;
+
+
     PrintSplitLine('-'); 
-    std::cout << "finish the test of bloom filter >>>" << std::endl;
+    std::cout << "finish the test of cuckoo filter >>>" << std::endl;
     PrintSplitLine('-'); 
 
 }
@@ -90,7 +116,7 @@ void test_bloom_filter()
 
 int main()
 { 
-    test_bloom_filter();
+    test_cuckoo_filter();
     
     return 0;
 }

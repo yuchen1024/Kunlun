@@ -28,6 +28,9 @@ TARGET_LINK_LIBRARIES(test_netio ${OPENSSL_LIBRARIES} -lomp)
 ADD_EXECUTABLE(test_bloom_filter test/test_bloom_filter.cpp)
 TARGET_LINK_LIBRARIES(test_bloom_filter ${OPENSSL_LIBRARIES} -lomp)
 
+ADD_EXECUTABLE(test_cuckoo_filter test/test_cuckoo_filter.cpp)
+TARGET_LINK_LIBRARIES(test_cuckoo_filter ${OPENSSL_LIBRARIES} -lomp)
+
 # ot
 ADD_EXECUTABLE(test_naor_pinkas_ot test/test_naor_pinkas_ot.cpp)
 TARGET_LINK_LIBRARIES(test_naor_pinkas_ot ${OPENSSL_LIBRARIES} -lomp)

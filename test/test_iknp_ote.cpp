@@ -1,30 +1,19 @@
-#define DEBUG
+//#define DEBUG
 
 #include "../ot/iknp_ote.hpp"
 
 void test_sender(IKNPOTE::PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec_m1, size_t EXTEND_LEN)
 {
-	auto start_time = std::chrono::steady_clock::now(); 
     NetIO server("server", "", 8080); 
 	IKNPOTE::Send(server, pp, vec_m0, vec_m1, EXTEND_LEN);
-    auto end_time = std::chrono::steady_clock::now(); 
-    auto running_time = end_time - start_time;
-    std::cout << "IKNP OTE sender side takes time = " 
-    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-
 }
 
 void test_receiver(IKNPOTE::PP &pp, std::vector<block> &vec_result_prime, 
 				   std::vector<uint8_t> &vec_selection_bit, size_t EXTEND_LEN)
 {
 	// receiver play the role of client 
-    auto start_time = std::chrono::steady_clock::now(); 
 	NetIO client("client", "127.0.0.1", 8080); 
 	IKNPOTE::Receive(client, pp, vec_result_prime, vec_selection_bit, EXTEND_LEN);
-    auto end_time = std::chrono::steady_clock::now(); 
-    auto running_time = end_time - start_time;
-    std::cout << "IKNP OTE receiver side takes time = " 
-    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 void test_iknp_ote(std::string& party, size_t EXTEND_LEN) 
@@ -43,12 +32,10 @@ void test_iknp_ote(std::string& party, size_t EXTEND_LEN)
 	std::vector<block> vec_m1 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
 	
 	std::vector<uint8_t> vec_selection_bit = PRG::GenRandomBits(seed, EXTEND_LEN);
-	//for(auto i = 0; i < EXTEND_LEN; i++) vec_selection_bit[i] = 0; 
 
 	for (auto i = 0; i < EXTEND_LEN; i++){
 		if(vec_selection_bit[i] == 0) vec_result[i] = vec_m0[i]; 
 		else vec_result[i] = vec_m1[i]; 
-		//PrintBlock(vec_result[i]); 
 	}
 
 	if (party == "receiver")
@@ -73,27 +60,17 @@ void test_iknp_ote(std::string& party, size_t EXTEND_LEN)
 
 void test_one_sided_sender(IKNPOTE::PP &pp, std::vector<block> &vec_m, size_t EXTEND_LEN)
 {
-    auto start_time = std::chrono::steady_clock::now(); 
     NetIO server("server", "", 8080); 
     IKNPOTE::OnesidedSend(server, pp, vec_m, EXTEND_LEN);
-    auto end_time = std::chrono::steady_clock::now(); 
-    auto running_time = end_time - start_time;
-    std::cout << "IKNP OTE sender side takes time = " 
-    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-
 }
 
 void test_one_sided_receiver(IKNPOTE::PP &pp, std::vector<block> &vec_result_prime, 
                              std::vector<uint8_t> &vec_selection_bit, size_t EXTEND_LEN)
 {
     // receiver play the role of client 
-    auto start_time = std::chrono::steady_clock::now(); 
+    
     NetIO client("client", "127.0.0.1", 8080); 
     IKNPOTE::OnesidedReceive(client, pp, vec_result_prime, vec_selection_bit, EXTEND_LEN);
-    auto end_time = std::chrono::steady_clock::now(); 
-    auto running_time = end_time - start_time;
-    std::cout << "IKNP OTE receiver side takes time = " 
-    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 void test_one_sided_iknp_ote(std::string& party, size_t EXTEND_LEN) 
@@ -153,7 +130,6 @@ int main()
 	
     auto start_time = std::chrono::steady_clock::now(); 
 	size_t EXTEND_LEN = size_t(pow(2, 10)); 
-	//size_t EXTEND_LEN = 1024*1024; 
 	std::cout << "The extend LEN = " << EXTEND_LEN << std::endl; 
 	test_iknp_ote(party, EXTEND_LEN);
 

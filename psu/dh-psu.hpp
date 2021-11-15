@@ -8,6 +8,7 @@
 #include "../netio/stream_channel.hpp"
 #include "../ot/iknp_ote.hpp"
 #include "../filter/bloom_filter.hpp"
+#include "../filter/cuckoo_filter.hpp"
 
 /*
 ** implement PSU based on weak commutative PSU
@@ -39,10 +40,11 @@ void GetNPOTPP(PP &pp, NPOT::PP &pp_npot)
 
 void Sender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
 {
+    auto start_time = std::chrono::steady_clock::now();  
+    
     std::vector<ECPoint> vec_Fk2_Y(LEN);
     io.ReceiveECPoints(vec_Fk2_Y.data(), LEN); 
 
-    // first act as sender in base OT
     BigInt k1 = GenRandomBigIntLessThan(order);
     std::vector<ECPoint> vec_Fk1_X(LEN);
     
@@ -76,11 +78,17 @@ void Sender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     IKNPOTE::Setup(ote_pp); 
     IKNPOTE::Send(io, ote_pp, vec_dummy, vec_X, LEN); 
     std::cout <<"wcPRF-based PSU [step 3]: Sender ===> (X notin Y) ===> Receiver" << std::endl;
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "wcPRF-based PSU: Sender side takes time = " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 void Receiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::unordered_set<std::string> &unionXY)
 {
-    // first act as sender in base OT
+    auto start_time = std::chrono::steady_clock::now(); 
+ 
     BigInt k2 = GenRandomBigIntLessThan(order);
     std::vector<ECPoint> vec_Fk2_Y(LEN);
 
@@ -133,12 +141,18 @@ void Receiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::uno
             unionXY.insert(str_block);
         }
     }
-    std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X, Y)" << std::endl;    
+    std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X, Y)" << std::endl;   
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "wcPRF-based PSU: Receiver side takes time = " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl; 
 }
 
 void PipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
 {
-    // first act as sender in base OT
+    auto start_time = std::chrono::steady_clock::now(); 
+
     BigInt k1 = GenRandomBigIntLessThan(order);
 
     std::vector<ECPoint> vec_Fk1k2_Y(LEN);
@@ -165,12 +179,18 @@ void PipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     IKNPOTE::Setup(ote_pp); 
     IKNPOTE::OnesidedSend(io, ote_pp, vec_X, LEN); 
     std::cout <<"wcPRF-based PSU [step 3]: Sender ===> (X notin Y) ===> Receiver" << std::endl;
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "wcPRF-based PSU: Sender side takes time = " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl; 
 }
 
      
 void PipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::unordered_set<std::string> &unionXY)
 {
-    // first act as sender in base OT
+    auto start_time = std::chrono::steady_clock::now(); 
+    
     BigInt k2 = GenRandomBigIntLessThan(order);
     ECPoint Fk2_Y;
 
@@ -214,13 +234,19 @@ void PipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, 
     for(auto i = 0; i < vec_X.size(); i++) 
         unionXY.insert(Block::ToString(vec_X[i]));
 
-    std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X, Y)" << std::endl;    
+    std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X, Y)" << std::endl;   
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "wcPRF-based PSU: Receiver side takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl; 
 }
  
 
 void ParallelPipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
 {
-    // first act as sender in base OT
+    auto start_time = std::chrono::steady_clock::now(); 
+
     BigInt k1 = GenRandomBigIntLessThan(order);
 
     std::vector<ECPoint> vec_Fk1k2_Y(LEN);
@@ -253,16 +279,34 @@ void ParallelPipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t
 
     // generate and send bloom filter
     if(pp.filter_type == "bloom"){
-        BloomFilter<uint32_t> filter(vec_Fk1k2_Y.size(), pp.desired_false_positive_probability);
-        filter.insert(vec_Fk1k2_Y);
-         
-        io.SendInteger(filter.object_size);
+        BloomFilter filter(vec_Fk1k2_Y.size(), pp.desired_false_positive_probability);
+        filter.Insert(vec_Fk1k2_Y);
+        size_t filter_size = filter.ObjectSize(); 
+        io.SendInteger(filter_size);
 
-        char *buffer = new char[filter.object_size]; 
-        filter.writeobject(buffer);
-        io.SendBytes(buffer, filter.object_size); 
+        char *buffer = new char[filter_size]; 
+        filter.WriteObject(buffer);
+        io.SendBytes(buffer, filter_size); 
         std::cout <<"wcPRF-based PSU [step 2]: Sender ===> BloomFilter(F_k1k2(y_i)) ===> Receiver";
-        std::cout << " [" << filter.object_size << " bytes]" << std::endl;
+        std::cout << " [" << filter_size << " bytes]" << std::endl;
+        delete[] buffer; 
+    } 
+
+    // generate and send cuckoo filter
+    if(pp.filter_type == "cuckoo"){
+        CuckooFilter filter(vec_Fk1k2_Y.size(), pp.desired_false_positive_probability);
+        if(filter.Insert(vec_Fk1k2_Y) == false){
+            std::cerr << "cuckoo filter insert fails" << std::endl;
+            exit(EXIT_FAILURE); 
+        }
+        size_t filter_size = filter.ObjectSize(); 
+        io.SendInteger(filter_size);
+
+        char *buffer = new char[filter_size]; 
+        filter.WriteObject(buffer);
+        io.SendBytes(buffer, filter_size); 
+        std::cout <<"wcPRF-based PSU [step 2]: Sender ===> CuckooFilter(F_k1k2(y_i)) ===> Receiver";
+        std::cout << " [" << filter.ObjectSize() << " bytes]" << std::endl;
         delete[] buffer; 
     } 
 
@@ -270,13 +314,19 @@ void ParallelPipelineSender(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t
     IKNPOTE::PP ote_pp; 
     IKNPOTE::Setup(ote_pp); 
     IKNPOTE::OnesidedSend(io, ote_pp, vec_X, LEN); 
-    std::cout <<"wcPRF-based PSU [step 3]: Sender ===> (X notin Y) ===> Receiver" << std::endl;
+    std::cout <<"wcPRF-based PSU [step 3]: Sender ===> (X notin Y) ===> Receiver" << std::endl; 
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "wcPRF-based PSU: Sender side takes time = " 
+        << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
      
 void ParallelPipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN, std::unordered_set<std::string> &unionXY)
 {
-    // first act as sender in base OT
+    auto start_time = std::chrono::steady_clock::now(); 
+    
     BigInt k2 = GenRandomBigIntLessThan(order);
     std::vector <ECPoint> vec_Fk2_Y(LEN);
     #pragma omp parallel for
@@ -316,18 +366,38 @@ void ParallelPipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size
     }
 
     if(pp.filter_type == "bloom"){
-        BloomFilter<uint32_t> filter; 
-        io.ReceiveInteger(filter.object_size);
+        BloomFilter filter; 
+        size_t filter_size = filter.ObjectSize();
+        io.ReceiveInteger(filter_size);
 
-        char *buffer = new char[filter.object_size]; 
-        io.ReceiveBytes(buffer, filter.object_size);
+        char *buffer = new char[filter_size]; 
+        io.ReceiveBytes(buffer, filter_size);
           
-        filter.readobject(buffer);  
+        filter.ReadObject(buffer);  
         delete[] buffer; 
 
         #pragma omp parallel for
         for(auto i = 0; i < LEN; i++){
-            if(filter.contain(vec_Fk2k1_X[i]) == false) vec_selection_bit[i] = 1;  
+            if(filter.Contain(vec_Fk2k1_X[i]) == false) vec_selection_bit[i] = 1;  
+            else vec_selection_bit[i] = 0;
+        }
+    } 
+
+    if(pp.filter_type == "cuckoo"){
+        CuckooFilter filter; 
+
+        size_t filter_size; 
+        io.ReceiveInteger(filter_size);
+
+        char *buffer = new char[filter_size]; 
+        io.ReceiveBytes(buffer, filter_size);
+          
+        filter.ReadObject(buffer);  
+        delete[] buffer; 
+
+        #pragma omp parallel for
+        for(auto i = 0; i < LEN; i++){
+            if(filter.Contain(vec_Fk2k1_X[i]) == false) vec_selection_bit[i] = 1;  
             else vec_selection_bit[i] = 0;
         }
     } 
@@ -347,6 +417,11 @@ void ParallelPipelineReceiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size
         unionXY.insert(Block::ToString(vec_X[i]));
 
     std::cout <<"wcPRF-based PSU [step 4]: Receiver computes union(X,Y)" << std::endl;    
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "wcPRF-based PSU: Receiver side takes time = " 
+        << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 

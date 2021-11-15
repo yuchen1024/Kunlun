@@ -31,7 +31,9 @@ void Setup(PP &pp)
 }
 
 void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector<block> &vec_m1, size_t LEN)
-{
+{	
+	auto start_time = std::chrono::steady_clock::now(); 
+
 	if(vec_m0.size()!=LEN || vec_m1.size()!=LEN){
 		std::cerr << "size does not match" << std::endl; 
 	} 
@@ -57,6 +59,9 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	io.SendECPoints(&C, 1);
 	io.SendECPoints(vec_X.data(), LEN); 
 
+	std::cout <<"Naor-Pinkas OT [step 1]: Sender ===> (C, vec_X) ===> Receiver";
+    std::cout << " [" << POINT_BYTE_LEN*(LEN+1) << " bytes]" << std::endl;
+
 	io.ReceiveECPoints(vec_pk0.data(), LEN); 
 
 	std::vector<ECPoint> vec_K0(LEN); // session key
@@ -65,9 +70,6 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	std::vector<block> vec_Y1(LEN); 
 
 	// send m0 and m1
-	#ifdef THREAD_SAFE
-        #pragma omp parallel for
-    #endif
 	for(auto i = 0 ; i < LEN; ++i) {
 		vec_K0[i] = vec_pk0[i] * vec_r[i];
 		vec_K1[i] = vec_Z[i] - vec_K0[i];
@@ -76,10 +78,20 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	}
 	io.SendBlocks(vec_Y0.data(), LEN);
 	io.SendBlocks(vec_Y1.data(), LEN);
+
+	std::cout <<"Naor-Pinkas OT [step 3]: Sender ===> (vec_Y0, vec_Y1) ===> Receiver";
+    std::cout << " [" << POINT_BYTE_LEN*LEN*2 << " bytes]" << std::endl;
+
+	auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "Naor-Pinkas OT: Sender side takes time " 
+	          << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
 void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vector<uint8_t> &vec_selection_bit, size_t LEN)
-{
+{	
+	auto start_time = std::chrono::steady_clock::now(); 
+
 	if(vec_result.size()!=LEN || vec_selection_bit.size()!=LEN){
 		std::cerr << "size does not match" << std::endl; 
 	}
@@ -88,9 +100,6 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
 	std::vector<ECPoint> vec_X(LEN); 
 	std::vector<ECPoint> vec_pk0(LEN);
 
-    #ifdef THREAD_SAFE
-        #pragma omp parallel for
-    #endif
 	for(auto i = 0; i < LEN; i++){
 		vec_sk[i] = GenRandomBigIntLessThan(order);
 	}
@@ -100,9 +109,6 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
 	io.ReceiveECPoints(vec_X.data(), LEN);
 
 	// send pk0[i]
-	#ifdef THREAD_SAFE
-        #pragma omp parallel for
-    #endif
 	for(auto i = 0; i < LEN; i++) {
 		if(vec_selection_bit[i] == 1){
 			vec_pk0[i] = C - pp.g * vec_sk[i]; 
@@ -112,6 +118,9 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
 	}
 	io.SendECPoints(vec_pk0.data(), LEN);
 
+	std::cout <<"Naor-Pinkas OT [step 2]: Receiver ===> vec_pk0 ===> Sender";
+    std::cout << " [" << POINT_BYTE_LEN*LEN << " bytes]" << std::endl;
+
 	// compute Kb[i]
 	std::vector<ECPoint> vec_K(LEN); 
 	std::vector<block> vec_Y0(LEN); 
@@ -120,23 +129,23 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
 	io.ReceiveBlocks(vec_Y0.data(), LEN);
 	io.ReceiveBlocks(vec_Y1.data(), LEN); 
 
-    #ifdef THREAD_SAFE
-        #pragma omp parallel for
-    #endif
 	for(auto i = 0; i < LEN; i++)
 	{
 		vec_K[i] = vec_X[i]* vec_sk[i];
 	}
 
-
 	// decrypt with Kb[i]
-    #ifdef THREAD_SAFE
-        #pragma omp parallel for
-    #endif
 	for(auto i = 0; i < LEN; i++) {
 		if(vec_selection_bit[i] == 0) vec_result[i] = vec_Y0[i] ^ Hash::ECPointToBlock(vec_K[i]);
 		else vec_result[i] = vec_Y1[i] ^ Hash::ECPointToBlock(vec_K[i]);
 	}
+
+	std::cout <<"Naor-Pinkas OT [step 4]: Receiver obtains vec_m" << std::endl;
+
+	auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "Naor-Pinkas OT: Receiver side takes time " 
+	          << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 }
 #endif

@@ -20,7 +20,8 @@ void GenPSUTestSet(std::vector<block> &vec_X, std::vector<block> &vec_Y, size_t 
 void test_psu(std::string party, size_t LEN) 
 {
     PSU::PP pp; 
-    PSU::Setup(pp, "bloom", 40); 
+    //PSU::Setup(pp, "bloom", 40); // 40 is the statistical parameter
+    PSU::Setup(pp, "cuckoo", 40); // 40 is the statistical parameter
 
     std::vector<block> vec_X; 
     std::vector<block> vec_Y;
@@ -37,23 +38,16 @@ void test_psu(std::string party, size_t LEN)
 
     if(party == "sender"){
         NetIO server("server", "", 8080);
-        auto start_time = std::chrono::steady_clock::now();  
+        
         PSU::ParallelPipelineSender(server, pp, vec_X, LEN);
-        auto end_time = std::chrono::steady_clock::now(); 
-        auto running_time = end_time - start_time;
-        std::cout << "PSU takes time= " 
-        << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
     }
 
     if(party == "receiver")
     {
         NetIO client("client", "192.168.0.12", 8080); 
-        auto start_time = std::chrono::steady_clock::now(); 
+       
         PSU::ParallelPipelineReceiver(client, pp, vec_Y, LEN, unionXY_prime); 
-        auto end_time = std::chrono::steady_clock::now(); 
-        auto running_time = end_time - start_time;
-        std::cout << "PSU takes time= " 
-        << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
 
         std::cout << "unionXY size = " << unionXY.size() << std::endl;
         std::cout << "unionXY' size = " << unionXY_prime.size() << std::endl;

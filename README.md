@@ -230,6 +230,7 @@ This library is licensed under the [MIT License](LICENSE).
 
 * thread vector is more efficient than thread array: I don't know the reason why
 * add mutex to lock bn_ctx will severely harm the performance of multi thread 
+* void* type pointer allow you to determine the exact type later and provide a unified interface
 
 ---
 

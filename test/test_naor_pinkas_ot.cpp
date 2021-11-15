@@ -31,7 +31,6 @@ void test_naor_pinkas_ot(std::string& party, size_t LEN) {
 	for (auto i = 0; i < LEN; i++){
 		if(vec_selection_bit[i] == 0) vec_result[i] = vec_m0[i]; 
 		else vec_result[i] = vec_m1[i]; 
-		//PrintBlock(vec_result[i]); 
 	}
 
 	if (party == "receiver")
@@ -41,7 +40,6 @@ void test_naor_pinkas_ot(std::string& party, size_t LEN) {
 		for (auto i = 0; i < LEN; i++){
 			if(vec_selection_bit[i] == 0) vec_result[i] = vec_m0[i]; 
 			else vec_result[i] = vec_m1[i]; 
-			//PrintBlock(vec_result_prime[i]); 
 		}
 
 		if(Block::Compare(vec_result, vec_result_prime, LEN) == true){
