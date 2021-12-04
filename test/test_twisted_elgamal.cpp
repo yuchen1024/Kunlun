@@ -14,12 +14,12 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
     std::cout << "TEST_NUM = " << TEST_NUM << std::endl;
     PrintSplitLine('-'); 
 
-    TwistedElGamal::PP pp; 
-    TwistedElGamal::Setup(pp, MSG_LEN, TRADEOFF_NUM, DEC_THREAD_NUM);
+    TwistedElGamal::PP pp = TwistedElGamal::Setup(MSG_LEN, TRADEOFF_NUM, DEC_THREAD_NUM);
     TwistedElGamal::Initialize(pp); 
     PrintSplitLine('-'); 
 
-    TwistedElGamal::KP keypair[TEST_NUM];       // keypairs
+    ECPoint pk[TEST_NUM];                      // pk
+    BigInt sk[TEST_NUM];                       // sk
     BigInt m[TEST_NUM];                        // messages  
     BigInt m_prime[TEST_NUM];                  // decrypted messages
     BigInt k[TEST_NUM];                        // scalars
@@ -39,7 +39,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
     auto start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        TwistedElGamal::KeyGen(pp, keypair[i]); 
+        std::tie(pk[i], sk[i]) = TwistedElGamal::KeyGen(pp); 
     }
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -50,7 +50,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        TwistedElGamal::Enc(pp, keypair[i].pk, m[i], CT[i]);
+        CT[i] = TwistedElGamal::Enc(pp, pk[i], m[i]);
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -61,7 +61,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        TwistedElGamal::ReEnc(pp, keypair[i].pk, keypair[i].sk, CT[i], r_new[i], CT_new[i]); 
+        CT_new[i] = TwistedElGamal::ReEnc(pp, pk[i], sk[i], CT[i], r_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -72,7 +72,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        TwistedElGamal::Dec(pp, keypair[i].sk, CT_new[i], m_prime[i]); 
+        m_prime[i] = TwistedElGamal::Dec(pp, sk[i], CT_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -90,7 +90,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        TwistedElGamal::HomoAdd(CT_result[i], CT[i], CT_new[i]); 
+        CT_result[i] = TwistedElGamal::HomoAdd(CT[i], CT_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -101,7 +101,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        TwistedElGamal::HomoSub(CT_result[i], CT[i], CT_new[i]); 
+        CT_result[i] = TwistedElGamal::HomoSub(CT[i], CT_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -112,7 +112,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        TwistedElGamal::ScalarMul(CT_result[i], CT[i], k[i]); 
+        CT_result[i] = TwistedElGamal::ScalarMul(CT[i], k[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;

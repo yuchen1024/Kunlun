@@ -11,7 +11,8 @@ void GenRandomBulletInstanceWitness(Bullet::PP &pp, Bullet::Instance &instance, 
 
     BigInt bn_range_size = bn_2.ModExp(exp, order); // 2^exp 
     std::cout << "range = [" << 0 << "," << BN_bn2hex(bn_range_size.bn_ptr) <<")" << std::endl; 
-    for(auto i = 0; i < pp.AGG_NUM; i++)
+    size_t n = instance.C.size();
+    for(auto i = 0; i < n; i++)
     {
         witness.r[i] = GenRandomBigIntLessThan(order);
         witness.v[i] = GenRandomBigIntLessThan(order); 
@@ -30,8 +31,8 @@ void GenBoundaryBulletInstanceWitness(Bullet::PP &pp, Bullet::Instance &instance
     BigInt exp = BigInt(pp.RANGE_LEN);
     if (BOUNDARY_FLAG == "LEFT") std::cout << "generate left boundary" << std::endl;
     else std::cout << "generate right boundary" << std::endl;
-
-    for(auto i = 0; i < pp.AGG_NUM; i++)
+    size_t n = instance.C.size();
+    for(auto i = 0; i < n; i++)
     {
         witness.r[i] = GenRandomBigIntLessThan(order);
         if (BOUNDARY_FLAG == "LEFT"){
@@ -45,16 +46,15 @@ void GenBoundaryBulletInstanceWitness(Bullet::PP &pp, Bullet::Instance &instance
     PrintBigIntVector(witness.v, "witness.v"); 
 }
 
-void test_bulletproof_boundary(size_t RANGE_LEN, size_t AGG_NUM, std::string BOUNDARY_FLAG)
+void test_bulletproof_boundary(size_t RANGE_LEN, size_t MAX_AGG_NUM, std::string BOUNDARY_FLAG)
 {
-    Bullet::PP pp; 
-    Bullet::Setup(pp, RANGE_LEN, AGG_NUM);
+    Bullet::PP pp = Bullet::Setup(RANGE_LEN, MAX_AGG_NUM);
 
     Bullet::Instance instance; 
-    instance.C.resize(AGG_NUM); 
+    instance.C.resize(MAX_AGG_NUM); 
     Bullet::Witness witness; 
-    witness.r.resize(AGG_NUM);
-    witness.v.resize(AGG_NUM);
+    witness.r.resize(MAX_AGG_NUM);
+    witness.v.resize(MAX_AGG_NUM);
     Bullet::Proof proof; 
     
 
@@ -99,16 +99,15 @@ void test_bulletproof_boundary(size_t RANGE_LEN, size_t AGG_NUM, std::string BOU
 }
 
 
-void test_bulletproof(size_t RANGE_LEN, size_t AGG_NUM, bool STATEMENT_FLAG)
+void test_bulletproof(size_t RANGE_LEN, size_t MAX_AGG_NUM, bool STATEMENT_FLAG)
 {
-    Bullet::PP pp; 
-    Bullet::Setup(pp, RANGE_LEN, AGG_NUM);
+    Bullet::PP pp = Bullet::Setup(RANGE_LEN, MAX_AGG_NUM);
 
     Bullet::Instance instance; 
-    instance.C.resize(AGG_NUM); 
+    instance.C.resize(MAX_AGG_NUM); 
     Bullet::Witness witness; 
-    witness.r.resize(AGG_NUM);
-    witness.v.resize(AGG_NUM);
+    witness.r.resize(MAX_AGG_NUM);
+    witness.v.resize(MAX_AGG_NUM);
     Bullet::Proof proof; 
 
     PrintSplitLine('-'); 
@@ -157,13 +156,13 @@ int main()
     ECGroup_Initialize(NID_X9_62_prime256v1);   
 
     size_t RANGE_LEN = 32; // range size
-    size_t AGG_NUM = 2;  // number of sub-argument
+    size_t MAX_AGG_NUM = 4;  // number of sub-argument
 
-    test_bulletproof_boundary(RANGE_LEN, AGG_NUM, "LEFT");
-    test_bulletproof_boundary(RANGE_LEN, AGG_NUM, "RIGHT");
+    test_bulletproof_boundary(RANGE_LEN, MAX_AGG_NUM, "LEFT");
+    test_bulletproof_boundary(RANGE_LEN, MAX_AGG_NUM, "RIGHT");
 
-    test_bulletproof(RANGE_LEN, AGG_NUM, false);
-    test_bulletproof(RANGE_LEN, AGG_NUM, true);
+    test_bulletproof(RANGE_LEN, MAX_AGG_NUM, false);
+    test_bulletproof(RANGE_LEN, MAX_AGG_NUM, true);
 
 
 

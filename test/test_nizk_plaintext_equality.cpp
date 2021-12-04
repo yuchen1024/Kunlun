@@ -17,27 +17,22 @@ void GenRandomTripleEncInstanceWitness(PlaintextEquality::PP &pp, PlaintextEqual
     witness.r = GenRandomBigIntLessThan(order);
     witness.v = GenRandomBigIntLessThan(order); 
 
-    instance.pk1 = GenRandomGenerator();
-    instance.pk2 = GenRandomGenerator();
-    instance.pk3 = GenRandomGenerator();
+    instance.vec_pk.resize(3);
+    for(auto i = 0; i < instance.vec_pk.size(); i++){ 
+        instance.vec_pk[i] = GenRandomGenerator();
+    }
+
 
     TwistedElGamal::PP enc_pp; 
     enc_pp.g = pp.g; 
     enc_pp.h = pp.h; 
-    TwistedElGamal::MRCT ct; 
-
-    std::vector<ECPoint> vec_pk{instance.pk1, instance.pk2, instance.pk3};
      
-    TwistedElGamal::Enc(enc_pp, vec_pk, witness.v, witness.r, ct); 
+    instance.ct = TwistedElGamal::Enc(enc_pp, instance.vec_pk, witness.v, witness.r); 
     
-    instance.X1 = ct.X[0]; 
-    instance.X2 = ct.X[1]; 
-    instance.X3 = ct.X[2]; 
-    instance.Y = ct.Y; 
 
     if(flag == false){
         ECPoint noisy = GenRandomGenerator();
-        instance.Y = instance.Y + noisy;
+        instance.ct.Y = instance.ct.Y + noisy;
     } 
 }
 
@@ -46,18 +41,17 @@ void test_nizk_plaintext_equality(bool flag)
     PrintSplitLine('-');  
     std::cout << "begin the test of NIZKPoK for plaintext equality >>>" << std::endl; 
 
-    PlaintextEquality::PP pp;   
-    PlaintextEquality::Setup(pp);
+    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(32, 7, 8); 
+    PlaintextEquality::PP pp = PlaintextEquality::Setup(pp_enc);
     PlaintextEquality::Instance instance; 
     PlaintextEquality::Witness witness; 
-    PlaintextEquality::Proof proof; 
 
     std::string transcript_str; 
 
     GenRandomTripleEncInstanceWitness(pp, instance, witness, flag); 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
-    PlaintextEquality::Prove(pp, instance, witness, transcript_str, proof); 
+    PlaintextEquality::Proof proof = PlaintextEquality::Prove(pp, instance, witness, transcript_str); 
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
     std::cout << "proof generation takes time = " 

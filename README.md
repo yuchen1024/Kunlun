@@ -60,6 +60,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - /utility: dependent files
   * routines.hpp: related routine algorithms 
   * print.hpp: print info for debug
+  * murmurhash3.hpp: add fast non-cryptographic hash
 
 - /crypto: C++ wrapper for OpenSSL
   * constant.h: define global constants
@@ -77,10 +78,15 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * twisted_elgamal.hpp
   * calculate_dlog.hpp
 
+- /signature
+  * accountable_ring_signature.hpp: implement accountable ring signature
+
 - /nizk: associated sigma protocol for twisted elgamal; obtained via Fiat-Shamir transform  
   * nizk_plaintext_equality.hpp: NIZKPoK for twisted ElGamal plaintext equality in 3-recipient mode
   * nizk_plaintext_knowledge.hpp: NIZKPoK for twisted ElGamal plaintext and randomness knowledge
   * nizk_dlog_equality.hpp: NIZKPoK for discrete logarithm equality
+  * nizk_dlog_knowledge.hpp: Schnorr protocol for dlog
+  * nizk_enc_relation.hpp: prove one-out-of-n ciphertexts is encryption of 0
 
 - /bulletproofs
   * bullet_proof.hpp: the aggregating logarithmic size bulletproofs
@@ -105,6 +111,10 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 - /psu
   * dh-psu.hpp
+
+- /filter
+  * bloom_filter.hpp
+  * cuckoo_filter.hpp
 
 ## Compile and Run
 ```

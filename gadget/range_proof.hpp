@@ -17,15 +17,18 @@ in the range [LEFT_BOUND, RIGHT_BOUND)
 
 namespace Gadget{
 struct PP{  
-    size_t RANGE_LEN; // the maximum coin value is 2^RANGE_LEN 
-    size_t LOG_RANGE_LEN; // this parameter will be used by Bulletproof
-    size_t AGG_NUM; 
-    size_t TRADEOFF_NUM; 
-    size_t DEC_THREAD_NUM; // used by twisted ElGamal
+    // size_t RANGE_LEN; // the maximum coin value is 2^RANGE_LEN 
+    // size_t LOG_RANGE_LEN; // this parameter will be used by Bulletproof
+    // size_t AGG_NUM; 
+    // size_t TRADEOFF_NUM; 
+    // size_t DEC_THREAD_NUM; // used by twisted ElGamal
 
-    ECPoint g, h, u; // used for inside innerproduct statement
-    std::vector<ECPoint> vec_g; 
-    std::vector<ECPoint> vec_h; // the pp of innerproduct part     
+    // ECPoint g, h, u; // used for inside innerproduct statement
+    // std::vector<ECPoint> vec_g; 
+    // std::vector<ECPoint> vec_h; // the pp of innerproduct part     
+    TwistedElGamal::PP enc_part; 
+    Bullet::PP bullet_part; 
+
 };
 
 struct Instance{
@@ -54,38 +57,38 @@ struct Proof_type2{
     Bullet::Proof bullet_proof;     
 };
 
-void GetEncPPfromGadgetPP(PP &pp, TwistedElGamal::PP &enc_pp)
-{
-    enc_pp.MSG_LEN = pp.RANGE_LEN;  
-    enc_pp.g = pp.g; 
-    enc_pp.h = pp.h;  
-    enc_pp.TRADEOFF_NUM = pp.TRADEOFF_NUM; 
-    enc_pp.DEC_THREAD_NUM = pp.DEC_THREAD_NUM; 
-}
+// void GetEncPPfromGadgetPP(PP &pp, TwistedElGamal::PP &enc_pp)
+// {
+//     enc_pp.MSG_LEN = pp.RANGE_LEN;  
+//     enc_pp.g = pp.g; 
+//     enc_pp.h = pp.h;  
+//     enc_pp.TRADEOFF_NUM = pp.TRADEOFF_NUM; 
+//     enc_pp.DEC_THREAD_NUM = pp.DEC_THREAD_NUM; 
+// }
 
-void GetBulletPPfromGadgetPP(PP &pp, Bullet::PP &bullet_pp)
-{
-    bullet_pp.RANGE_LEN = pp.RANGE_LEN; 
-    bullet_pp.LOG_RANGE_LEN = pp.LOG_RANGE_LEN; 
-    bullet_pp.AGG_NUM = pp.AGG_NUM; 
+// void GetBulletPPfromGadgetPP(PP &pp, Bullet::PP &bullet_pp)
+// {
+//     bullet_pp.RANGE_LEN = pp.RANGE_LEN; 
+//     bullet_pp.LOG_RANGE_LEN = pp.LOG_RANGE_LEN; 
+//     bullet_pp.AGG_NUM = pp.AGG_NUM; 
 
-    bullet_pp.g = pp.g; 
-    bullet_pp.h = pp.h;  
-    bullet_pp.u = pp.u; 
-    bullet_pp.vec_g = pp.vec_g; 
-    bullet_pp.vec_h = pp.vec_h; 
-}
+//     bullet_pp.g = pp.g; 
+//     bullet_pp.h = pp.h;  
+//     bullet_pp.u = pp.u; 
+//     bullet_pp.vec_g = pp.vec_g; 
+//     bullet_pp.vec_h = pp.vec_h; 
+// }
 
-void GetDLOGEqualityPPfromGadgetPP(PP &pp, DLOGEquality::PP &dlogeq_pp)
-{
-    dlogeq_pp.ss_reserve = "dummy";  
-}
+// void GetDLOGEqualityPPfromGadgetPP(PP &pp, DLOGEquality::PP &dlogeq_pp)
+// {
+//     dlogeq_pp.ss_reserve = "dummy";  
+// }
 
-void GetPlaintextKnowledgePPfromGadgetPP(PP &pp, PlaintextKnowledge::PP &ptknowledge_pp)
-{
-    ptknowledge_pp.g = pp.g; 
-    ptknowledge_pp.h = pp.h; 
-}
+// void GetPlaintextKnowledgePPfromGadgetPP(PP &pp, PlaintextKnowledge::PP &ptknowledge_pp)
+// {
+//     ptknowledge_pp.g = pp.g; 
+//     ptknowledge_pp.h = pp.h; 
+// }
 
 
 /* adjust Bullet instance 
@@ -121,50 +124,50 @@ bool CheckRange(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN)
     else return true;  
 } 
 
-void Setup(PP &pp, size_t& RANGE_LEN, size_t &AGG_NUM, size_t &TRADEOFF_NUM, size_t &DEC_THREAD_NUM)
+PP Setup(TwistedElGamal::PP &pp_enc, Bullet::PP &pp_bullet)
 {
-    pp.RANGE_LEN = RANGE_LEN; 
-    pp.LOG_RANGE_LEN = log2(RANGE_LEN);
-    pp.DEC_THREAD_NUM = DEC_THREAD_NUM; 
-    pp.TRADEOFF_NUM = TRADEOFF_NUM; 
-    pp.AGG_NUM = 2;
+    // pp.RANGE_LEN = RANGE_LEN; 
+    // pp.LOG_RANGE_LEN = log2(RANGE_LEN);
+    // pp.DEC_THREAD_NUM = DEC_THREAD_NUM; 
+    // pp.TRADEOFF_NUM = TRADEOFF_NUM; 
+    // pp.AGG_NUM = 2;
 
-    pp.g = generator; 
-    pp.h = Hash::StringToECPoint(pp.g.ToByteString()); 
-    pp.u = GenRandomGenerator();
+    // pp.g = generator; 
+    // pp.h = Hash::StringToECPoint(pp.g.ToByteString()); 
+    // pp.u = GenRandomGenerator();
 
-    pp.vec_g = GenRandomECPointVector(RANGE_LEN*AGG_NUM); 
-    pp.vec_h = GenRandomECPointVector(RANGE_LEN*AGG_NUM);
+    // pp.vec_g = GenRandomECPointVector(RANGE_LEN*AGG_NUM); 
+    // pp.vec_h = GenRandomECPointVector(RANGE_LEN*AGG_NUM);
+
+    PP pp;
+    pp.enc_part = pp_enc;
+    pp.bullet_part = pp_bullet;
+    return pp; 
 }
 
 
-void Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, 
-                   Witness_type1 &witness, std::string &transcript_str, Proof_type1 &proof)
+Proof_type1 Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, 
+                   Witness_type1 &witness, std::string &transcript_str)
 {
-    if (CheckRange(LEFT_BOUND, RIGHT_BOUND, pp.RANGE_LEN)==false)
+    Proof_type1 proof; 
+    if (CheckRange(LEFT_BOUND, RIGHT_BOUND, pp.bullet_part.RANGE_LEN)==false)
     {
         std::cerr << "the range is not valid" << std::endl;
         exit(EXIT_FAILURE);
     } 
-    TwistedElGamal::PP enc_pp; 
-    GetEncPPfromGadgetPP(pp, enc_pp);  
 
-    PlaintextKnowledge::PP ptke_pp; 
-    GetPlaintextKnowledgePPfromGadgetPP(pp, ptke_pp); 
+
+    PlaintextKnowledge::PP ptke_pp = PlaintextKnowledge::Setup(pp.enc_part); 
     PlaintextKnowledge::Instance ptke_instance;
     ptke_instance.pk = instance.pk; 
-    ptke_instance.X = instance.ct.X;
-    ptke_instance.Y = instance.ct.Y;
+    ptke_instance.ct = instance.ct;
 
     PlaintextKnowledge::Witness ptke_witness;
     ptke_witness.v = witness.m;
     ptke_witness.r = witness.r;
 
-    PlaintextKnowledge::Prove(ptke_pp, ptke_instance, ptke_witness, transcript_str, proof.ptke_proof);  
+    proof.ptke_proof = PlaintextKnowledge::Prove(ptke_pp, ptke_instance, ptke_witness, transcript_str);  
     
-
-    Bullet::PP bullet_pp; 
-    GetBulletPPfromGadgetPP(pp, bullet_pp); 
 
     Bullet::Instance bullet_instance; 
 
@@ -174,10 +177,12 @@ void Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
     bullet_witness.r = {witness.r, witness.r};
     bullet_witness.v = {witness.m, witness.m};
 
-    AdjustBulletInstance(bullet_pp, LEFT_BOUND, RIGHT_BOUND, bullet_instance); 
-    AdjustBulletWitness(bullet_pp, LEFT_BOUND, RIGHT_BOUND, bullet_witness); 
+    AdjustBulletInstance(pp.bullet_part, LEFT_BOUND, RIGHT_BOUND, bullet_instance); 
+    AdjustBulletWitness(pp.bullet_part, LEFT_BOUND, RIGHT_BOUND, bullet_witness); 
 
-    Bullet::Prove(bullet_pp, bullet_instance, bullet_witness, transcript_str, proof.bullet_proof);
+    Bullet::Prove(pp.bullet_part, bullet_instance, bullet_witness, transcript_str, proof.bullet_proof);
+
+    return proof; 
 }
 
 
@@ -185,27 +190,20 @@ bool Verify(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
                     std::string &transcript_str, Proof_type1 &proof)
 {
     bool V1, V2; 
-    TwistedElGamal::PP enc_pp; 
-    GetEncPPfromGadgetPP(pp, enc_pp);  
 
-    PlaintextKnowledge::PP ptke_pp; 
-    GetPlaintextKnowledgePPfromGadgetPP(pp, ptke_pp); 
+    PlaintextKnowledge::PP ptke_pp = PlaintextKnowledge::Setup(pp.enc_part); 
     PlaintextKnowledge::Instance ptke_instance;
     ptke_instance.pk = instance.pk; 
-    ptke_instance.X = instance.ct.X;
-    ptke_instance.Y = instance.ct.Y;
+    ptke_instance.ct = instance.ct;
 
     V1 = PlaintextKnowledge::Verify(ptke_pp, ptke_instance, transcript_str, proof.ptke_proof);  
-
-    Bullet::PP bullet_pp; 
-    GetBulletPPfromGadgetPP(pp, bullet_pp); 
 
     Bullet::Instance bullet_instance;  
     bullet_instance.C = {instance.ct.Y, instance.ct.Y}; 
 
-    AdjustBulletInstance(bullet_pp, LEFT_BOUND, RIGHT_BOUND, bullet_instance);  
+    AdjustBulletInstance(pp.bullet_part, LEFT_BOUND, RIGHT_BOUND, bullet_instance);  
 
-    V2 = Bullet::FastVerify(bullet_pp, bullet_instance, transcript_str, proof.bullet_proof);
+    V2 = Bullet::FastVerify(pp.bullet_part, bullet_instance, transcript_str, proof.bullet_proof);
 
     return V1 && V2; 
 
@@ -214,32 +212,27 @@ bool Verify(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
 void Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, 
                    Witness_type2 &witness, std::string &transcript_str, Proof_type2 &proof)
 {
-    if (CheckRange(LEFT_BOUND, RIGHT_BOUND, pp.RANGE_LEN)==false)
+    if (CheckRange(LEFT_BOUND, RIGHT_BOUND, pp.bullet_part.RANGE_LEN)==false)
     {
         std::cerr << "the range is not valid" << std::endl;
         exit(EXIT_FAILURE);
     } 
-
-    TwistedElGamal::PP enc_pp; 
-    GetEncPPfromGadgetPP(pp, enc_pp);
       
     if(int2index_map.empty() == true)
     {
         std::cout << "the hashmap is empty" << std::endl; 
-        TwistedElGamal::Initialize(enc_pp);
+        TwistedElGamal::Initialize(pp.enc_part);
     }
 
 
     BigInt r_star = GenRandomBigIntLessThan(order); 
-    TwistedElGamal::ReEnc(enc_pp, instance.pk, witness.sk, instance.ct, r_star, proof.refresh_ct); 
+    proof.refresh_ct = TwistedElGamal::ReEnc(pp.enc_part, instance.pk, witness.sk, instance.ct, r_star); 
 
-    BigInt m; 
-    TwistedElGamal::Dec(enc_pp, witness.sk, instance.ct, m); 
+    BigInt m = TwistedElGamal::Dec(pp.enc_part, witness.sk, instance.ct); 
 
-    DLOGEquality::PP dlogeq_pp; 
-    GetDLOGEqualityPPfromGadgetPP(pp, dlogeq_pp); 
+    DLOGEquality::PP dlogeq_pp = DLOGEquality::Setup();
     DLOGEquality::Instance dlogeq_instance;
-    dlogeq_instance.g1 = enc_pp.g; 
+    dlogeq_instance.g1 = pp.enc_part.g; 
     dlogeq_instance.h1 = instance.pk; 
     dlogeq_instance.g2 = proof.refresh_ct.Y - instance.ct.Y;  
     dlogeq_instance.h2 = proof.refresh_ct.X - instance.ct.X;
@@ -247,23 +240,19 @@ void Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
     DLOGEquality::Witness dlogeq_witness;
     dlogeq_witness.w = witness.sk;  
 
-    DLOGEquality::Prove(dlogeq_pp, dlogeq_instance, dlogeq_witness, transcript_str, proof.dlogeq_proof);  
+    proof.dlogeq_proof = DLOGEquality::Prove(dlogeq_pp, dlogeq_instance, dlogeq_witness, transcript_str);  
     
-    PlaintextKnowledge::PP ptke_pp; 
-    GetPlaintextKnowledgePPfromGadgetPP(pp, ptke_pp); 
+    PlaintextKnowledge::PP ptke_pp = PlaintextKnowledge::Setup(pp.enc_part); 
     PlaintextKnowledge::Instance ptke_instance; 
     ptke_instance.pk = instance.pk; 
-    ptke_instance.X = proof.refresh_ct.X; 
-    ptke_instance.Y = proof.refresh_ct.Y;
+    ptke_instance.ct = proof.refresh_ct; 
 
     PlaintextKnowledge::Witness ptke_witness; 
     ptke_witness.v = m; 
     ptke_witness.r = r_star; 
 
-    PlaintextKnowledge::Prove(ptke_pp, ptke_instance, ptke_witness, transcript_str, proof.ptke_proof); 
+    proof.ptke_proof = PlaintextKnowledge::Prove(ptke_pp, ptke_instance, ptke_witness, transcript_str); 
 
-    Bullet::PP bullet_pp; 
-    GetBulletPPfromGadgetPP(pp, bullet_pp); 
 
     Bullet::Instance bullet_instance; 
     bullet_instance.C = {proof.refresh_ct.Y, proof.refresh_ct.Y}; 
@@ -272,11 +261,11 @@ void Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
     bullet_witness.r = {r_star, r_star};
     bullet_witness.v = {m, m};
 
-    AdjustBulletInstance(bullet_pp, LEFT_BOUND, RIGHT_BOUND, bullet_instance); 
-    AdjustBulletWitness(bullet_pp, LEFT_BOUND, RIGHT_BOUND, bullet_witness);
+    AdjustBulletInstance(pp.bullet_part, LEFT_BOUND, RIGHT_BOUND, bullet_instance); 
+    AdjustBulletWitness(pp.bullet_part, LEFT_BOUND, RIGHT_BOUND, bullet_witness);
 
 
-    Bullet::Prove(bullet_pp, bullet_instance, bullet_witness, transcript_str, proof.bullet_proof);
+    Bullet::Prove(pp.bullet_part, bullet_instance, bullet_witness, transcript_str, proof.bullet_proof);
 }
 
 
@@ -285,34 +274,29 @@ bool Verify(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
 {
     bool V1, V2, V3; 
 
-    DLOGEquality::PP dlogeq_pp; 
-    GetDLOGEqualityPPfromGadgetPP(pp, dlogeq_pp); 
+    DLOGEquality::PP dlogeq_pp = DLOGEquality::Setup();
     DLOGEquality::Instance dlogeq_instance;
-    dlogeq_instance.g1 = pp.g; 
+    dlogeq_instance.g1 = pp.enc_part.g; 
     dlogeq_instance.h1 = instance.pk; 
     dlogeq_instance.g2 = proof.refresh_ct.Y - instance.ct.Y;  
     dlogeq_instance.h2 = proof.refresh_ct.X - instance.ct.X;
 
     V1 = DLOGEquality::Verify(dlogeq_pp, dlogeq_instance, transcript_str, proof.dlogeq_proof);   
 
-    PlaintextKnowledge::PP ptke_pp; 
-    GetPlaintextKnowledgePPfromGadgetPP(pp, ptke_pp); 
+    PlaintextKnowledge::PP ptke_pp = PlaintextKnowledge::Setup(pp.enc_part); 
     PlaintextKnowledge::Instance ptke_instance;
     ptke_instance.pk = instance.pk; 
-    ptke_instance.X = proof.refresh_ct.X; 
-    ptke_instance.Y = proof.refresh_ct.Y;
+    ptke_instance.ct = proof.refresh_ct; 
 
     V2 = PlaintextKnowledge::Verify(ptke_pp, ptke_instance, transcript_str, proof.ptke_proof); 
 
-    Bullet::PP bullet_pp; 
-    GetBulletPPfromGadgetPP(pp, bullet_pp); 
 
     Bullet::Instance bullet_instance; 
     bullet_instance.C = {proof.refresh_ct.Y, proof.refresh_ct.Y};
 
-    AdjustBulletInstance(bullet_pp, LEFT_BOUND, RIGHT_BOUND, bullet_instance); 
+    AdjustBulletInstance(pp.bullet_part, LEFT_BOUND, RIGHT_BOUND, bullet_instance); 
 
-    V3 = Bullet::FastVerify(bullet_pp, bullet_instance, transcript_str, proof.bullet_proof); 
+    V3 = Bullet::FastVerify(pp.bullet_part, bullet_instance, transcript_str, proof.bullet_proof); 
 
     return V1 && V2 && V3; 
 }

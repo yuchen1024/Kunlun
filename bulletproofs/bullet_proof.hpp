@@ -12,7 +12,7 @@ struct PP
 {
     size_t RANGE_LEN; 
     size_t LOG_RANGE_LEN; 
-    size_t AGG_NUM; // number of sub-argument (for now, we require m to be the power of 2)
+    size_t MAX_AGG_NUM; // number of sub-argument (for now, we require m to be the power of 2)
 
     ECPoint g, h;
     ECPoint u; // used for inside innerproduct statement
@@ -70,6 +70,15 @@ void SerializeProof(Proof &proof, std::ofstream &fout)
     InnerProduct::SerializeProof(proof.ip_proof, fout); 
 }
 
+std::string ProofToByteString(Proof &proof)
+{
+    std::string str;
+    str += proof.A.ToByteString() + proof.S.ToByteString() + proof.T1.ToByteString() + proof.T2.ToByteString();
+    str += proof.taux.ToByteString() + proof.mu.ToByteString() + proof.tx.ToByteString(); 
+    str += InnerProduct::ProofToByteString(proof.ip_proof);
+    return str;  
+}
+
 void DeserializeProof(Proof &proof, std::ifstream &fin)
 {
     fin >> proof.A >> proof.S >> proof.T1 >> proof.T2;
@@ -78,42 +87,77 @@ void DeserializeProof(Proof &proof, std::ifstream &fin)
 }
 
 
-void Setup(PP &pp, size_t &RANGE_LEN, size_t &AGG_NUM)
+PP Setup(size_t &RANGE_LEN, size_t &MAX_AGG_NUM)
 {
+    PP pp; 
     pp.RANGE_LEN = RANGE_LEN; 
     pp.LOG_RANGE_LEN = log2(RANGE_LEN); 
-    pp.AGG_NUM = AGG_NUM; 
+    pp.MAX_AGG_NUM = MAX_AGG_NUM; 
  
     pp.g = generator; 
     pp.h = Hash::StringToECPoint(pp.g.ToByteString()); 
     pp.u = GenRandomGenerator();
 
-    pp.vec_g = GenRandomECPointVector(RANGE_LEN*AGG_NUM);
-    pp.vec_h = GenRandomECPointVector(RANGE_LEN*AGG_NUM);
+    pp.vec_g = GenRandomECPointVector(RANGE_LEN*MAX_AGG_NUM);
+    pp.vec_h = GenRandomECPointVector(RANGE_LEN*MAX_AGG_NUM);
+
+    return pp; 
 }
 
+
+void SerializePP(PP &pp, std::ofstream &fout)
+{
+    fout.write((char *)(&pp.RANGE_LEN), sizeof(pp.RANGE_LEN));
+    fout.write((char *)(&pp.LOG_RANGE_LEN), sizeof(pp.LOG_RANGE_LEN)); 
+    fout.write((char *)(&pp.MAX_AGG_NUM), sizeof(pp.MAX_AGG_NUM)); 
+
+    fout << pp.g; 
+    fout << pp.h;
+    fout << pp.u; 
+    SerializeECPointVector(pp.vec_g, fout); 
+    SerializeECPointVector(pp.vec_h, fout); 
+}
+
+void DeserializePP(PP &pp, std::ifstream &fin)
+{
+    fin.read((char *)(&pp.RANGE_LEN), sizeof(pp.RANGE_LEN));
+    fin.read((char *)(&pp.LOG_RANGE_LEN), sizeof(pp.LOG_RANGE_LEN)); 
+    fin.read((char *)(&pp.MAX_AGG_NUM), sizeof(pp.MAX_AGG_NUM)); 
+
+    fin >> pp.g; 
+    fin >> pp.h;
+    fin >> pp.u;
+
+    pp.vec_g.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM);  
+    DeserializeECPointVector(pp.vec_g, fin); 
+    pp.vec_h.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM);  
+    DeserializeECPointVector(pp.vec_h, fin); 
+}
 
 // statement C = g^r h^v and v \in [0, 2^n-1]
 void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str, Proof &proof)
 { 
     auto start_time = std::chrono::steady_clock::now(); 
 
-    size_t l = pp.RANGE_LEN * pp.AGG_NUM; // l = mn
 
-    std::vector<BigInt> vec_aL(l);  
-    std::vector<BigInt> vec_aR(l);
+
+    size_t n = instance.C.size();
+    size_t LEN = pp.RANGE_LEN * n; // LEN = mn
+
+    std::vector<BigInt> vec_aL(LEN);  
+    std::vector<BigInt> vec_aR(LEN);
  
-    std::vector<BigInt> vec_1_power(l, bn_1); // vec_unary = 1^nm
+    std::vector<BigInt> vec_1_power(LEN, bn_1); // vec_unary = 1^nm
 
-    for (auto i = 0; i < pp.AGG_NUM; i++)
+    for (auto i = 0; i < n; i++)
     {
         for(auto j = 0; j < pp.RANGE_LEN; j++)
         {
             if(witness.v[i].GetTheNthBit(j) == 1){
-                vec_aL[i*pp.RANGE_LEN + j] = bn_1;  
+                vec_aL[i * pp.RANGE_LEN + j] = bn_1;  
             }
             else{
-                vec_aL[i*pp.RANGE_LEN + j] = bn_0; 
+                vec_aL[i * pp.RANGE_LEN + j] = bn_0; 
             } 
         }
     }
@@ -125,29 +169,28 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     // Eq (44) -- compute A = H^alpha g^aL h^aR (commitment to aL and aR)
     BigInt alpha = GenRandomBigIntLessThan(order); 
 
-    std::vector<ECPoint> vec_A(2*l+1); 
-    std::copy(pp.vec_g.begin(), pp.vec_g.end(), vec_A.begin()); 
-    std::copy(pp.vec_h.begin(), pp.vec_h.end(), vec_A.begin()+l); 
-    vec_A[2*l] = pp.h; 
+    std::vector<ECPoint> vec_A(2*LEN+1); 
+    std::copy(pp.vec_g.begin(), pp.vec_g.begin()+LEN, vec_A.begin()); 
+    std::copy(pp.vec_h.begin(), pp.vec_h.begin()+LEN, vec_A.begin()+LEN); 
+    vec_A[2*LEN] = pp.h; 
 
-    std::vector<BigInt> vec_a(2*l+1); 
-    std::copy(vec_aL.begin(), vec_aL.end(), vec_a.begin()); 
-    std::copy(vec_aR.begin(), vec_aR.end(), vec_a.begin()+l); 
-    vec_a[2*l] = alpha;
+    std::vector<BigInt> vec_a(2*LEN+1); 
+    std::copy(vec_aL.begin(), vec_aL.begin()+LEN, vec_a.begin()); 
+    std::copy(vec_aR.begin(), vec_aR.begin()+LEN, vec_a.begin()+LEN); 
+    vec_a[2*LEN] = alpha;
 
     proof.A = ECPointVectorMul(vec_A, vec_a); // Eq (44) 
 
-
     // pick sL, sR from Z_p^n (choose blinding vectors sL, sR)
-    std::vector<BigInt> vec_sL = GenRandomBigIntVectorLessThan(l, order); 
-    std::vector<BigInt> vec_sR = GenRandomBigIntVectorLessThan(l, order); 
+    std::vector<BigInt> vec_sL = GenRandomBigIntVectorLessThan(LEN, order); 
+    std::vector<BigInt> vec_sR = GenRandomBigIntVectorLessThan(LEN, order); 
     
     // Eq (47) compute S = H^alpha g^aL h^aR (commitment to sL and sR)
     BigInt rho = GenRandomBigIntLessThan(order); 
 
     std::copy(vec_sL.begin(), vec_sL.end(), vec_a.begin()); 
-    std::copy(vec_sR.begin(), vec_sR.end(), vec_a.begin()+l); 
-    vec_a[2*l] = rho; 
+    std::copy(vec_sR.begin(), vec_sR.end(), vec_a.begin()+LEN); 
+    vec_a[2*LEN] = rho; 
 
     proof.S = ECPointVectorMul(vec_A, vec_a); // Eq (47) 
 
@@ -157,7 +200,7 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
 
     BigInt y_inverse = y.ModInverse(order);
      
-    std::vector<BigInt> vec_y_inverse_power = GenBigIntPowerVector(l, y_inverse); // y^{-i+1}
+    std::vector<BigInt> vec_y_inverse_power = GenBigIntPowerVector(LEN, y_inverse); // y^{-i+1}
 
     transcript_str += proof.S.ToByteString(); 
     BigInt z = Hash::StringToBigInt(transcript_str);
@@ -165,9 +208,9 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     BigInt z_square = z.ModSquare(order);
     BigInt z_cubic = (z * z_square) % order;
     
-    std::vector<BigInt> vec_adjust_z_power(pp.AGG_NUM+1); // generate z^{j+1} j \in [n] 
+    std::vector<BigInt> vec_adjust_z_power(n+1); // generate z^{j+1} j \in [n] 
     vec_adjust_z_power[0] = z; 
-    for (auto j = 1; j <= pp.AGG_NUM; j++)
+    for (auto j = 1; j <= n; j++)
     {
         vec_adjust_z_power[j] = (z * vec_adjust_z_power[j-1]) % order; //pow(z, j+1, q); description below Eq (71)
     }  
@@ -175,26 +218,27 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     // prepare the vector polynomials
     
     // compute l(X) Eq (70)
-    std::vector<BigInt> vec_z_unary(l, z); // z \cdot 1^nm
+    std::vector<BigInt> vec_z_unary(LEN, z); // z \cdot 1^nm
 
     std::vector<BigInt> poly_ll0 = BigIntVectorModSub(vec_aL, vec_z_unary);  
-    std::vector<BigInt> poly_ll1(l); 
+    std::vector<BigInt> poly_ll1(LEN); 
     poly_ll1.assign(vec_sL.begin(), vec_sL.end()); 
 
     // compute r(X)     
-    std::vector<BigInt> vec_y_power = GenBigIntPowerVector(l, y); // y^nm
+    std::vector<BigInt> vec_y_power = GenBigIntPowerVector(LEN, y); // y^nm
     std::vector<BigInt> vec_zz_temp = BigIntVectorModAdd(vec_z_unary, vec_aR); // vec_t = aR + z1^nm
     std::vector<BigInt> poly_rr0 = BigIntVectorModProduct(vec_y_power, vec_zz_temp); // y^nm(aR + z1^nm)
     
     std::vector<BigInt> vec_short_2_power = GenBigIntPowerVector(pp.RANGE_LEN, bn_2); // 2^n
 
-    for (auto j = 1; j <= pp.AGG_NUM; j++)
+
+    for (auto j = 1; j <= n; j++)
     {
         for (auto i = 0; i < (j-1)*pp.RANGE_LEN; i++) 
             vec_zz_temp[i] = bn_0; 
         for (auto i = 0; i < pp.RANGE_LEN; i++) 
             vec_zz_temp[(j-1)*pp.RANGE_LEN+i] = vec_short_2_power[i]; 
-        for (auto i = 0; i < (pp.AGG_NUM-j)*pp.RANGE_LEN; i++) 
+        for (auto i = 0; i < (n-j)*pp.RANGE_LEN; i++) 
             vec_zz_temp[j*pp.RANGE_LEN+i] = bn_0;
 
         vec_zz_temp = BigIntVectorModScalar(vec_zz_temp, vec_adjust_z_power[j]); 
@@ -240,7 +284,7 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
  
     // compute taux
     proof.taux = (tau1 * x + tau2 * x_square) % order; //proof.taux = tau2*x_square + tau1*x; 
-    for (auto j = 1; j <= pp.AGG_NUM; j++)
+    for (auto j = 1; j <= n; j++)
     {
         proof.taux = (proof.taux + vec_adjust_z_power[j] * witness.r[j-1]) % order; 
     }
@@ -249,12 +293,14 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     proof.mu = (alpha + rho * x) % order; 
     
     // transmit llx and rrx via inner product proof
-    std::vector<ECPoint> vec_h_new = ThreadSafeECPointVectorProduct(pp.vec_h, vec_y_inverse_power); 
 
-    InnerProduct::PP ip_pp; 
-    InnerProduct::Setup(ip_pp, pp.RANGE_LEN*pp.AGG_NUM, false); 
-    ip_pp.vec_g = pp.vec_g; // ip_pp.vec_g = pp.vec_g
-    ip_pp.vec_h = vec_h_new;  // ip_pp.vec_h = vec_h_new  
+    InnerProduct::PP ip_pp = InnerProduct::Setup(LEN, false); 
+    ip_pp.vec_g.resize(LEN); 
+    std::copy(pp.vec_g.begin(), pp.vec_g.begin()+LEN, ip_pp.vec_g.begin()); // ip_pp.vec_g = pp.vec_g
+
+    ip_pp.vec_h.resize(LEN); 
+    std::copy(pp.vec_h.begin(), pp.vec_h.begin()+LEN, ip_pp.vec_h.begin()); 
+    ip_pp.vec_h = ThreadSafeECPointVectorProduct(ip_pp.vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new  
 
     transcript_str += x.ToByteString();  
     BigInt e = Hash::StringToBigInt(transcript_str);   
@@ -266,15 +312,15 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     InnerProduct::Instance ip_instance;
     ip_pp.u = pp.u * e; //ip_pp.u = u^e 
 
-    vec_A.resize(2*l+1); 
+    vec_A.resize(2*LEN+1); 
     std::copy(ip_pp.vec_g.begin(), ip_pp.vec_g.end(), vec_A.begin()); 
-    std::copy(ip_pp.vec_h.begin(), ip_pp.vec_h.end(), vec_A.begin()+l); 
-    vec_A[2*l] = ip_pp.u;
+    std::copy(ip_pp.vec_h.begin(), ip_pp.vec_h.end(), vec_A.begin()+LEN); 
+    vec_A[2*LEN] = ip_pp.u;
 
-    vec_a.resize(2*l+1); 
+    vec_a.resize(2*LEN+1); 
     std::copy(ip_witness.vec_a.begin(), ip_witness.vec_a.end(), vec_a.begin()); 
-    std::copy(ip_witness.vec_b.begin(), ip_witness.vec_b.end(), vec_a.begin()+l); 
-    vec_a[2*l] = proof.tx; 
+    std::copy(ip_witness.vec_b.begin(), ip_witness.vec_b.end(), vec_a.begin()+LEN); 
+    vec_a[2*LEN] = proof.tx; 
 
     ip_instance.P = ECPointVectorMul(vec_A, vec_a);  
  
@@ -311,23 +357,24 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     transcript_str += x.ToByteString(); 
     BigInt e = Hash::StringToBigInt(transcript_str);  // play the role of x_u
 
-    size_t LEN = pp.RANGE_LEN * pp.AGG_NUM; // l = nm 
+    size_t n = instance.C.size();
+    size_t LEN = pp.RANGE_LEN * n; // l = nm 
     std::vector<BigInt> vec_1_power(LEN, bn_1); // vec_unary = 1^nm
     std::vector<BigInt> vec_short_1_power(pp.RANGE_LEN, bn_1); 
     std::vector<BigInt> vec_2_power = GenBigIntPowerVector(LEN, bn_2);
     std::vector<BigInt> vec_short_2_power = GenBigIntPowerVector(pp.RANGE_LEN, bn_2);  
     std::vector<BigInt> vec_y_power = GenBigIntPowerVector(LEN, y); 
 
-    std::vector<BigInt> vec_adjust_z_power(pp.AGG_NUM+1); // generate z^{j+2} j \in [n]
+    std::vector<BigInt> vec_adjust_z_power(n+1); // generate z^{j+2} j \in [n]
     vec_adjust_z_power[0] = z; 
-    for (auto j = 1; j <= pp.AGG_NUM; j++)
+    for (auto j = 1; j <= n; j++)
     {
         vec_adjust_z_power[j] = (z * vec_adjust_z_power[j-1]) % order; 
     }  
 
     // compute sum_{j=1^m} z^{j+2}
     BigInt sum_z = bn_0; 
-    for (auto j = 1; j <= pp.AGG_NUM; j++)
+    for (auto j = 1; j <= n; j++)
     {
         sum_z += vec_adjust_z_power[j]; 
     }
@@ -350,14 +397,14 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     // the intermediate variables used to compute the right value
     std::vector<ECPoint> vec_A; 
     std::vector<BigInt> vec_a;
-    vec_A.resize(pp.AGG_NUM + 3); 
-    vec_a.resize(pp.AGG_NUM + 3);
+    vec_A.resize(n + 3); 
+    vec_a.resize(n + 3);
 
     std::copy(instance.C.begin(), instance.C.end(), vec_A.begin()); 
     std::copy(vec_adjust_z_power.begin()+1, vec_adjust_z_power.end(), vec_a.begin()); 
 
-    vec_A[pp.AGG_NUM] = pp.h, vec_A[pp.AGG_NUM+1] = proof.T1, vec_A[pp.AGG_NUM+2] = proof.T2;
-    vec_a[pp.AGG_NUM] = delta_yz, vec_a[pp.AGG_NUM+1] = x, vec_a[pp.AGG_NUM+2] = x_square;  
+    vec_A[n] = pp.h, vec_A[n+1] = proof.T1, vec_A[n+2] = proof.T2;
+    vec_a[n] = delta_yz, vec_a[n+1] = x, vec_a[n+2] = x_square;  
 
     ECPoint RIGHT = ECPointVectorMul(vec_A, vec_a);  // RIGHT = V^{z^2} h^{\delta_yz} T_1^x T_2^{x^2} 
 
@@ -366,14 +413,22 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
         std::cout << std::boolalpha << "Condition 1 (Aggregating Log Size BulletProof) = " << V1 << std::endl; 
     #endif
 
-    std::vector<BigInt> vec_y_inverse_power = GenBigIntPowerVector(LEN, y_inverse); // y^nm
-    std::vector<ECPoint> vec_h_new = ThreadSafeECPointVectorProduct(pp.vec_h, vec_y_inverse_power); 
+
+    // std::vector<ECPoint> vec_h_new = ThreadSafeECPointVectorProduct(pp.vec_h, vec_y_inverse_power); 
 
     //check Eq (66,67,68) using Inner Product Argument
-    InnerProduct::PP ip_pp; 
-    InnerProduct::Setup(ip_pp, LEN, false); 
-    ip_pp.vec_g = pp.vec_g;
-    ip_pp.vec_h = vec_h_new;  
+    InnerProduct::PP ip_pp = InnerProduct::Setup(LEN, false); 
+
+    ip_pp.vec_g.resize(LEN); 
+    std::copy(pp.vec_g.begin(), pp.vec_g.begin()+LEN, ip_pp.vec_g.begin()); // ip_pp.vec_g = pp.vec_g
+
+    ip_pp.vec_h.resize(LEN); 
+    std::copy(pp.vec_h.begin(), pp.vec_h.begin()+LEN, ip_pp.vec_h.begin()); 
+    std::vector<BigInt> vec_y_inverse_power = GenBigIntPowerVector(LEN, y_inverse); // y^nm
+    ip_pp.vec_h = ThreadSafeECPointVectorProduct(ip_pp.vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new  
+
+    // ip_pp.vec_g = pp.vec_g;
+    // ip_pp.vec_h = vec_h_new;  
 
     //InnerProduct_Proof ip_proof = proof.ip_proof;
     InnerProduct::Instance ip_instance;
@@ -395,7 +450,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     std::vector<BigInt> vec_rr = BigIntVectorModScalar(vec_y_power, z); // z y^nm
     std::vector<BigInt> temp_vec_zz; 
-    for(auto j = 1; j <= pp.AGG_NUM; j++)
+    for(auto j = 1; j <= n; j++)
     {
         temp_vec_zz = BigIntVectorModScalar(vec_2_power, vec_adjust_z_power[j]); 
         for(auto i = 0; i < pp.RANGE_LEN; i++)
@@ -457,7 +512,8 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
     transcript_str += x.ToByteString(); 
     BigInt e = Hash::StringToBigInt(transcript_str);  // play the role of x_u
 
-    size_t VECTOR_LEN = pp.RANGE_LEN * pp.AGG_NUM; 
+    size_t n = instance.C.size();
+    size_t VECTOR_LEN = pp.RANGE_LEN * n; 
 
     if(IsPowerOfTwo(VECTOR_LEN)==false){
         std::cerr << "VECTOR_LEN must be power of 2" << std::endl; 
@@ -470,15 +526,15 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
     std::vector<BigInt> vec_2_power = GenBigIntPowerVector(VECTOR_LEN, bn_2);
     std::vector<BigInt> vec_short_2_power = GenBigIntPowerVector(pp.RANGE_LEN, bn_2);  
     std::vector<BigInt> vec_y_power = GenBigIntPowerVector(VECTOR_LEN, y); 
-    std::vector<BigInt> vec_adjust_z_power(pp.AGG_NUM+1); // generate z^{j+2} j \in [n]
+    std::vector<BigInt> vec_adjust_z_power(n+1); // generate z^{j+2} j \in [n]
     vec_adjust_z_power[0] = z; 
-    for (auto j = 1; j <= pp.AGG_NUM; j++)
+    for (auto j = 1; j <= n; j++)
         vec_adjust_z_power[j] = (z * vec_adjust_z_power[j-1]) % order; 
 
 
     // compute sum_{j=1^m} z^{j+2}
     BigInt sum_z = bn_0; 
-    for (auto j = 1; j <= pp.AGG_NUM; j++)
+    for (auto j = 1; j <= n; j++)
         sum_z += vec_adjust_z_power[j]; 
     sum_z = (sum_z * z) % order;  
 
@@ -494,14 +550,14 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
 
 
     // the intermediate variables used to compute the right value
-    std::vector<ECPoint> vec_A(8+pp.AGG_NUM+2*VECTOR_LEN+2*LOG_VECTOR_LEN); 
-    std::vector<BigInt>  vec_a(8+pp.AGG_NUM+2*VECTOR_LEN+2*LOG_VECTOR_LEN);
+    std::vector<ECPoint> vec_A(8 + n + 2*VECTOR_LEN+2*LOG_VECTOR_LEN); 
+    std::vector<BigInt>  vec_a(8 + n + 2*VECTOR_LEN+2*LOG_VECTOR_LEN);
     
     size_t index_A = 0; 
     size_t index_a = 0; 
 
-    std::copy(instance.C.begin(), instance.C.end(), vec_A.begin()); index_A += pp.AGG_NUM;  
-    std::copy(vec_adjust_z_power.begin()+1, vec_adjust_z_power.end(), vec_a.begin()); index_a += pp.AGG_NUM;  
+    std::copy(instance.C.begin(), instance.C.end(), vec_A.begin()); index_A += n;  
+    std::copy(vec_adjust_z_power.begin()+1, vec_adjust_z_power.end(), vec_a.begin()); index_a += n;  
 
     vec_A[index_A]   = proof.T1; 
     vec_A[index_A+1] = proof.T2;
@@ -524,11 +580,14 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
 
     // continue to prepare for Eq (104)
     std::vector<BigInt> vec_y_inverse_power = GenBigIntPowerVector(VECTOR_LEN, y_inverse); // y^nm
-    std::vector<ECPoint> vec_h = ThreadSafeECPointVectorProduct(pp.vec_h, vec_y_inverse_power); // vec_h = vec_h_new  
+    std::vector<ECPoint> vec_h; 
+    vec_h.resize(VECTOR_LEN); 
+    std::copy(pp.vec_h.begin(), pp.vec_h.begin()+VECTOR_LEN, vec_h.begin()); 
+    vec_h = ThreadSafeECPointVectorProduct(vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new 
 
-    std::copy(pp.vec_g.begin(), pp.vec_g.end(), vec_A.begin()+index_A);
+    std::copy(pp.vec_g.begin(), pp.vec_g.begin()+VECTOR_LEN, vec_A.begin()+index_A);
     index_A += VECTOR_LEN;  
-    std::copy(vec_h.begin(), vec_h.end(), vec_A.begin()+index_A);
+    std::copy(vec_h.begin(), vec_h.begin()+VECTOR_LEN, vec_A.begin()+index_A);
     index_A += VECTOR_LEN; 
 
 
@@ -566,7 +625,7 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
 
     std::vector<BigInt> vec_rr = BigIntVectorModScalar(vec_y_power, z); // z y^nm
     std::vector<BigInt> temp_vec_zz; 
-    for(auto j = 1; j <= pp.AGG_NUM; j++){
+    for(auto j = 1; j <= n; j++){
         temp_vec_zz = BigIntVectorModScalar(vec_2_power, vec_adjust_z_power[j]); 
         for(auto i = 0; i < pp.RANGE_LEN; i++)
             vec_rr[(j-1)*pp.RANGE_LEN+i] = (vec_rr[(j-1)*pp.RANGE_LEN+i] + temp_vec_zz[i]) % order;            

@@ -17,7 +17,8 @@ this file includes commonly used head files
 #include <unordered_map>
 #include <unordered_set>
 #include <thread>
-#include <atomic> 
+#include <atomic>
+#include <tuple> 
 #include <iomanip>
 #include <functional>
 #include <algorithm>

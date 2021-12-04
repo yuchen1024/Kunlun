@@ -1,11 +1,6 @@
-/*
-** Modified from the following two projects
-** 1. https://github.com/emp-toolkit/
-** 2. https://github.com/google/private-join-and-compute
-*/
 
-#ifndef KUNLUN_CRYPTO_BIGINT_HPP_
-#define KUNLUN_CRYPTO_BIGINT_HPP_
+#ifndef CRYPTO_BIGINT_HPP_
+#define CRYPTO_BIGINT_HPP_
 
 #include "../include/std.inc"
 #include "../include/openssl.inc"
@@ -204,6 +199,10 @@ public:
     void Print() const; 
     
     void Print(std::string note) const; 
+
+    void PrintInDec(std::string note) const; 
+
+    void PrintInDec() const; 
 };
 
 // global bigint objects
@@ -513,11 +512,10 @@ BigInt GenPrime(int prime_length) {
     return result;
 }
 
-
 void BigInt::Print() const
 {
-    char *bn_str; 
-    bn_str = BN_bn2hex(this->bn_ptr);
+    char *bn_str;
+    bn_str = BN_bn2hex(this->bn_ptr);  
     // switch(mode){
     //     case 16: bn_str = BN_bn2hex(this->bn_ptr); break; 
     //     case 10: bn_str = BN_bn2dec(this->bn_ptr); break;
@@ -532,6 +530,24 @@ void BigInt::Print(std::string note) const
     this->Print();
 }
 
+void BigInt::PrintInDec(std::string note) const
+{
+    std::cout << note << " = "; 
+    char *bn_str;
+    bn_str = BN_bn2dec(this->bn_ptr);  
+
+    std::cout << bn_str << std::endl;
+    OPENSSL_free(bn_str);
+}
+
+void BigInt::PrintInDec() const
+{ 
+    char *bn_str;
+    bn_str = BN_bn2dec(this->bn_ptr);  
+
+    std::cout << bn_str;
+    OPENSSL_free(bn_str);
+}
 
 /* compute the jth bit of a big integer i (count from little endian to big endian) */
 int BigInt::GetTheNthBit(size_t j) const

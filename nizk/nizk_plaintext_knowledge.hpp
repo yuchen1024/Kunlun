@@ -8,6 +8,7 @@ this hpp implements NIZKPoK for twisted ElGamal ciphertext
 #include "../crypto/hash.hpp"
 #include "../utility/print.hpp"
 #include "../utility/routines.hpp"
+#include "../pke/twisted_elgamal.hpp"
 
 
 namespace PlaintextKnowledge{
@@ -22,8 +23,7 @@ struct PP
 struct Instance
 {
     ECPoint pk; 
-    ECPoint X; 
-    ECPoint Y; 
+    TwistedElGamal::CT ct; 
 };
 
 // structure of witness 
@@ -45,8 +45,8 @@ void PrintInstance(Instance &instance)
 {
     std::cout << "Plaintext Knowledge Instance >>> " << std::endl; 
     instance.pk.Print("instance.pk"); 
-    instance.X.Print("instance.X"); 
-    instance.Y.Print("instance.Y"); 
+    instance.ct.X.Print("instance.X"); 
+    instance.ct.Y.Print("instance.Y"); 
 } 
 
 void PrintWitness(Witness &witness)
@@ -65,7 +65,13 @@ void PrintProof(Proof &proof)
     proof.B.Print("proof.B"); 
     proof.z1.Print("proof.z1");
     proof.z2.Print("proof.z2"); 
-} 
+}
+
+std::string ProofToByteString(Proof &proof)
+{
+    std::string str = proof.A.ToByteString() + proof.B.ToByteString() + proof.z1.ToByteString() + proof.z2.ToByteString();
+    return str;  
+}
 
 void SerializeProof(Proof &proof, std::ofstream &fout)
 {
@@ -78,25 +84,29 @@ void DeserializeProof(Proof &proof, std::ifstream &fin)
 }
 
 /*  Setup algorithm */
-void Setup(PP &pp)
+PP Setup(TwistedElGamal::PP pp_enc)
 { 
-    pp.g = generator;
-    pp.h = Hash::StringToECPoint(pp.g.ToByteString()); 
+    PP pp;
+    pp.g = pp_enc.g;
+    pp.h = pp_enc.h; 
 
     #ifdef DEBUG
-    std::cout << "generate public parameters of NIZK for plaintext knowledge >>>" << std::endl; 
-    pp.g.Print("pp.g"); 
-    pp.h.Print("pp.h"); 
+        std::cout << "generate public parameters of NIZK for plaintext knowledge >>>" << std::endl; 
+        pp.g.Print("pp.g"); 
+        pp.h.Print("pp.h"); 
     #endif
+
+    return pp; 
 }
 
 
 
 // generate NIZK proof for C = Enc(pk, v; r) with witness (r, v)
-void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str,Proof &proof)
+Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str)
 {   
+    Proof proof;
     // initialize the transcript with instance 
-    transcript_str += instance.pk.ToByteString() + instance.X.ToByteString() + instance.Y.ToByteString(); 
+    transcript_str += instance.pk.ToByteString() + instance.ct.X.ToByteString() + instance.ct.Y.ToByteString(); 
     
     BigInt a = GenRandomBigIntLessThan(order); 
     proof.A = instance.pk * a; // A = pk^a
@@ -104,9 +114,9 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     BigInt b = GenRandomBigIntLessThan(order); 
 
 
-    std::vector<ECPoint> vec_A{pp.g, pp.h}; 
+    std::vector<ECPoint> vec_base{pp.g, pp.h}; 
     std::vector<BigInt> vec_x{a, b};
-    proof.B = ECPointVectorMul(vec_A, vec_x); // B = g^a h^b
+    proof.B = ECPointVectorMul(vec_base, vec_x); // B = g^a h^b
 
     // update the transcript with the first round message
     transcript_str += proof.A.ToByteString() + proof.B.ToByteString(); 
@@ -121,6 +131,8 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     #ifdef DEBUG
         PrintProof(proof); 
     #endif
+
+    return proof;
 }
 
 
@@ -128,7 +140,7 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {    
     // initialize the transcript with instance 
-    transcript_str += instance.pk.ToByteString() + instance.X.ToByteString() + instance.Y.ToByteString(); 
+    transcript_str += instance.pk.ToByteString() + instance.ct.X.ToByteString() + instance.ct.Y.ToByteString(); 
 
     // update the transcript with the first round message
     transcript_str += proof.A.ToByteString() + proof.B.ToByteString(); 
@@ -136,34 +148,36 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     // recover the challenge
     BigInt e = Hash::StringToBigInt(transcript_str); // apply FS-transform to generate the challenge
 
-    bool V1, V2; 
+    std::vector<bool> vec_condition(2); 
     ECPoint LEFT, RIGHT;
 
     // check condition 1
     LEFT = instance.pk * proof.z1; // // LEFT  = pk^z1
-    RIGHT = proof.A + instance.X * e; // RIGHT = A X^e
+    RIGHT = proof.A + instance.ct.X * e; // RIGHT = A X^e
 
-    V1 = (LEFT == RIGHT); //check pk^z1 = A X^e
+    vec_condition[0] = (LEFT == RIGHT); //check pk^z1 = A X^e
     
     // check condition 2
-    std::vector<ECPoint> vec_A{pp.g, pp.h}; 
+    std::vector<ECPoint> vec_base{pp.g, pp.h}; 
     std::vector<BigInt> vec_x{proof.z1, proof.z2}; 
-    LEFT = ECPointVectorMul(vec_A, vec_x); // LEFT = g^z1 h^z2
-    RIGHT = proof.B + instance.Y * e; // RIGHT = B Y^e 
+    LEFT = ECPointVectorMul(vec_base, vec_x); // LEFT = g^z1 h^z2
+    RIGHT = proof.B + instance.ct.Y * e; // RIGHT = B Y^e 
 
-    V2 = (LEFT == RIGHT); //check g^z1 h^z2 = B Y^e
+    vec_condition[1] = (LEFT == RIGHT); //check g^z1 h^z2 = B Y^e
 
-    bool Validity = V1 && V2;
+    bool Validity = vec_condition[0] && vec_condition[1];
 
     #ifdef DEBUG
     PrintSplitLine('-'); 
-    std::cout << "verify the NIZKPoK for plaintext knowledge >>>" << std::endl; 
-    std::cout << std::boolalpha << "Condition 1 (Plaintext Knowledge proof) = " << V1 << std::endl; 
-    std::cout << std::boolalpha << "Condition 2 (Plaintext Knowledge proof) = " << V2 << std::endl; 
+    std::cout << "verify the NIZKPoK for [twisted ElGamal plaintext/randomness knowledge] >>>" << std::endl; 
+    for(auto i = 0; i < vec_condition.size(); i++){
+        std::cout << std::boolalpha << "Condition " << i << " (Plaintext Knowledge proof) = " 
+                                    << vec_condition[i] << std::endl; 
+    }
     if (Validity) { 
-        std::cout << "NIZKPoK for twisted ElGamal ciphertext accepts >>>" << std::endl; 
+        std::cout << "NIZKPoK for [twisted ElGamal plaintext/randomness knowledge] accepts >>>" << std::endl; 
     } else {
-        std::cout<< "NIZKPoK for twisted ElGamal ciphertext rejects >>>" << std::endl; 
+        std::cout << "NIZKPoK for [twisted ElGamal plaintext/randomness knowledge] rejects >>>" << std::endl; 
     }
     #endif
 

@@ -1,15 +1,15 @@
 /****************************************************************************
 this hpp implements NIZKPoK for discrete logarithm equality 
 *****************************************************************************/
-#ifndef KUNLUN_NIZK_DLOGEQ_HPP_
-#define KUNLUN_NIZK_DLOGEQ_HPP_
+#ifndef KUNLUN_NIZK_DLOG_KNOWLEDGE_HPP_
+#define KUNLUN_NIZK_DLOG_KNOWLEDGE_HPP_
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
 #include "../utility/print.hpp"
 #include "../utility/routines.hpp"
 
-namespace DLOGEquality{
+namespace DLOGKnowledge{
 
 // define structure of DLOG_EQ_Proof 
 struct PP
@@ -19,7 +19,7 @@ struct PP
 
 struct Instance
 {
-    ECPoint g1, h1, g2, h2; 
+    ECPoint g, h; 
 }; 
 
 struct Witness
@@ -30,57 +30,52 @@ struct Witness
 // define structure of DLOG_EQ_Proof 
 struct Proof
 {
-    ECPoint A1, A2;     // P's first round message
+    ECPoint A;     // P's first round message
     BigInt z;          // V's response
 };
 
 void PrintInstance(Instance &instance)
 {
-    std::cout << "DLOG Equality Instance >>> " << std::endl; 
-    instance.g1.Print("instance.g1"); 
-    instance.h1.Print("instance.h1"); 
-    instance.g2.Print("instance.g2"); 
-    instance.h2.Print("instance.h2"); 
+    std::cout << "DLOG Knowledge Instance >>> " << std::endl; 
+    instance.g.Print("instance.g"); 
+    instance.h.Print("instance.h"); 
 } 
 
 void PrintWitness(Witness &witness)
 {
-    std::cout << "DLOG Equality Witness >>> " << std::endl; 
+    std::cout << "DLOG Knowledge Witness >>> " << std::endl; 
     witness.w.Print("w"); 
 } 
 
 void PrintProof(Proof &proof)
 {
     PrintSplitLine('-'); 
-    std::cout << "NIZKPoK for DLOG Equality >>> " << std::endl; 
-    proof.A1.Print("proof.A1");
-    proof.A2.Print("proof.A2");
+    std::cout << "NIZKPoK for DLOG Knowledge >>> " << std::endl; 
+    proof.A.Print("proof.A");
     proof.z.Print("proof.z");
 }
 
 std::string ProofToByteString(Proof &proof)
 {
-    std::string str = proof.A1.ToByteString() + proof.A2.ToByteString() + proof.z.ToByteString();
-    return str; 
+    std::string str = proof.A.ToByteString() + proof.z.ToByteString(); 
+    return str;
 }
-
-
 
 void SerializeProof(Proof &proof, std::ofstream &fout)
 {
-    fout << proof.A1 << proof.A2 << proof.z;
+    fout << proof.A << proof.z;
 } 
 
 void DeserializeProof(Proof &proof, std::ifstream &fin)
 {
-    fin >> proof.A1 >> proof.A2 >> proof.z;
+    fin >> proof.A >> proof.z;
 } 
 
 
 /* Setup algorithm: do nothing */ 
 PP Setup()
 { 
-    PP pp; 
+    PP pp;
     pp.ss_reserve = "dummy";
     return pp;  
 }
@@ -91,16 +86,14 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
 {
     Proof proof; 
     // initialize the transcript with instance 
-    transcript_str += instance.g1.ToByteString() + instance.g2.ToByteString() 
-                    + instance.h1.ToByteString() + instance.h2.ToByteString(); 
+    transcript_str += instance.g.ToByteString() + instance.h.ToByteString(); 
     // begin to generate proof
     BigInt a = GenRandomBigIntLessThan(BigInt(order)); // P's randomness used to generate A1, A2
 
-    proof.A1 = instance.g1 * a; // A1 = g1^a
-    proof.A2 = instance.g2 * a; // A2 = g2^a
+    proof.A = instance.g * a; // A = g1^r
 
     // update the transcript 
-    transcript_str += proof.A1.ToByteString() + proof.A2.ToByteString(); 
+    transcript_str += proof.A.ToByteString(); 
     // compute the challenge
     BigInt e = Hash::StringToBigInt(transcript_str); // V's challenge in Zq; 
 
@@ -121,39 +114,27 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {
     // initialize the transcript with instance 
-    transcript_str += instance.g1.ToByteString() + instance.g2.ToByteString() 
-                    + instance.h1.ToByteString() + instance.h2.ToByteString(); 
+    transcript_str += instance.g.ToByteString() + instance.h.ToByteString(); 
 
     // update the transcript 
-    transcript_str += proof.A1.ToByteString() + proof.A2.ToByteString(); 
+    transcript_str += proof.A.ToByteString(); 
     // compute the challenge
     BigInt e = Hash::StringToBigInt(transcript_str); // V's challenge in Zq; 
 
-    bool condition1, condition2; 
-
-    ECPoint LEFT, RIGHT;
-    LEFT = instance.g1 * proof.z; // LEFT = g1^z
-    RIGHT = proof.A1 + instance.h1 * e;  // RIGHT = A1 h1^e  
-
-    condition1 = (LEFT==RIGHT); //check g1^z = A1 h1^e
     
-    // check condition 2
-    LEFT = instance.g2 * proof.z; // LEFT = g2^z
-    RIGHT = proof.A2 + instance.h2 * e;  // RIGHT = A2 h2^e    
+    ECPoint LEFT, RIGHT;
+    LEFT = instance.g * proof.z; // LEFT = g^z
+    RIGHT = proof.A + instance.h * e;  // RIGHT = A h^e  
 
-    condition2 = (LEFT==RIGHT); //check g2^z = A2 h2^e
-
-    bool Validity = condition1 && condition2; 
+    bool Validity = (LEFT==RIGHT); //check g^z = A h^e 
 
     #ifdef DEBUG
-        PrintSplitLine('-'); 
-        std::cout << std::boolalpha << "Condition 1 (LOG_EQ Proof) = " << condition1 << std::endl; 
-        std::cout << std::boolalpha << "Condition 2 (LOG_EQ Proof) = " << condition2 << std::endl;
+        PrintSplitLine('-');  
         if (Validity){ 
-            std::cout<< "DLOG Equality Proof Accepts >>>" << std::endl; 
+            std::cout<< "DLOG Knowledge Proof Accepts >>>" << std::endl; 
         }
         else{
-            std::cout<< "DLOG Equality Proof Rejects >>>" << std::endl; 
+            std::cout<< "DLOG Knowledge Proof Rejects >>>" << std::endl; 
         }
     #endif
 

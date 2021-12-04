@@ -52,6 +52,20 @@ void SerializeProof(Proof &proof, std::ofstream &fout)
     fout << proof.a << proof.b; 
 }
 
+std::string ProofToByteString(Proof &proof)
+{
+    std::string str;
+    for(auto i = 0; i < proof.vec_L.size(); i++){
+        str += proof.vec_L[i].ToByteString(); 
+    } 
+    for(auto i = 0; i < proof.vec_R.size(); i++){
+        str += proof.vec_R[i].ToByteString(); 
+    } 
+    
+    str += proof.a.ToByteString() + proof.b.ToByteString();
+    return str;  
+}
+
 void DeserializeProof(Proof &proof, std::ifstream &fin)
 {
     DeserializeECPointVector(proof.vec_L, fin);
@@ -150,8 +164,9 @@ void ComputeVectorSS(std::vector<BigInt> &vec_s, std::vector<BigInt> &vec_x, std
 
 
 /* (Protocol 2 on pp.15) */
-void Setup(PP &pp, size_t VECTOR_LEN, bool INITIAL_FLAG)
+PP Setup(size_t VECTOR_LEN, bool INITIAL_FLAG)
 {
+    PP pp;
     if(IsPowerOfTwo(VECTOR_LEN)==false){
         std::cerr << "VECTOR_LEN must be power of 2" << std::endl; 
         exit(EXIT_FAILURE); 
@@ -165,6 +180,8 @@ void Setup(PP &pp, size_t VECTOR_LEN, bool INITIAL_FLAG)
         pp.vec_h = GenRandomECPointVector(pp.VECTOR_LEN);
         pp.u = GenRandomGenerator(); 
     }
+
+    return pp;
 }
 
 /* 
@@ -260,12 +277,11 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
         // x.Print(); 
         BigInt x_inverse = x.ModInverse(order);
         // generate new pp
-        PP pp_sub;
         /*
         ** pp_sub.VECTOR_LEN = pp.VECTOR_LEN/2; 
         ** pp_sub.LOG_VECTOR_LEN = pp.LOG_VECTOR_LEN - 1;  
         */
-        Setup(pp_sub, pp.VECTOR_LEN/2, false);
+        PP pp_sub = Setup(pp.VECTOR_LEN/2, false);
 
         // compute vec_g
         vec_gL = ThreadSafeECPointVectorScalar(vec_gL, x_inverse); 

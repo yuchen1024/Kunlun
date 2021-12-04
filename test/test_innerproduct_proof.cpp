@@ -25,10 +25,9 @@ void test_innerproduct_proof()
     PrintSplitLine('-');
     std::cout << "begin the test of innerproduct proof >>>" << std::endl; 
     
-    InnerProduct::PP pp; 
     size_t VECTOR_LEN = 32; 
 
-    InnerProduct::Setup(pp, VECTOR_LEN, true);
+    InnerProduct::PP pp = InnerProduct::Setup(VECTOR_LEN, true);
     
     InnerProduct::Instance instance; 
     InnerProduct::Witness witness; 

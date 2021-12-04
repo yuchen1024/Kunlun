@@ -1,12 +1,5 @@
-/****************************************************************************
-this hpp implements twisted ElGamal PKE scheme
-*****************************************************************************
-* @author     This file is part of Kunlun, developed by Yu Chen
-* @paper      https://eprint.iacr.org/2019/319
-* @copyright  MIT license (see LICENSE file)
-*****************************************************************************/
-#ifndef KUNLUN_TWISTED_ELGAMAL_HPP_
-#define KUNLUN_TWISTED_ELGAMAL_HPP_
+#ifndef TWISTED_ELGAMAL_HPP_
+#define TWISTED_ELGAMAL_HPP_
 
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
@@ -26,15 +19,7 @@ struct PP
     size_t TRADEOFF_NUM; // default value = RANGE_LEN/2; tunning it in [0, RANGE_LEN/2], ++ leads bigger table and less time 
     size_t DEC_THREAD_NUM; // optimized number of threads for faster decryption: CPU dependent
 
-    ECPoint g; 
-    ECPoint h; // two random generators 
-};
-
-// define the structure of keypair
-struct KP
-{
-    ECPoint pk;  // define pk
-    BigInt sk;    // define sk
+    ECPoint g, h; // two random generators 
 };
 
 // define the structure of ciphertext
@@ -44,10 +29,11 @@ struct CT
     ECPoint Y; // Y = g^m h^r 
 };
 
+
 // define the structure of multi-recipients one-message ciphertext (MR denotes multiple recipients)
 struct MRCT
 {
-    std::vector<ECPoint> X; // X_i = pk_i^r
+    std::vector<ECPoint> vec_X; // X_i = pk_i^r
     ECPoint Y; // Y = g^r h^m 
 };
 
@@ -59,12 +45,6 @@ void PrintPP(const PP &pp)
     std::cout << "the optimal decryption thread num = " << pp.DEC_THREAD_NUM << std::endl;
     pp.g.Print("pp.g"); 
     pp.h.Print("pp.h"); 
-} 
-
-void PrintKP(const KP &keypair)
-{
-    keypair.pk.Print("pk"); 
-    keypair.sk.Print("sk"); 
 } 
 
 void PrintCT(const CT &ct)
@@ -86,17 +66,24 @@ void DeserializeCT(CT &ct, std::ifstream &fin)
     ct.Y.Deserialize(fin); 
 } 
 
+std::string CTToByteString(CT &ct)
+{
+    std::string str = ct.X.ToByteString() + ct.Y.ToByteString(); 
+    return str;
+}
+
 
 /* Setup algorithm */ 
-void Setup(PP &pp, size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_THREAD_NUM)
+PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_THREAD_NUM)
 { 
+    PP pp; 
     pp.MSG_LEN = MSG_LEN; 
     pp.TRADEOFF_NUM = TRADEOFF_NUM; 
     pp.DEC_THREAD_NUM = DEC_THREAD_NUM;
     /* set the message space to 2^{MSG_LEN} */
     pp.MSG_SIZE = BigInt(size_t(pow(2, pp.MSG_LEN))); 
 
-    #ifdef DEBUG
+    #ifdef PRINT
         std::cout << "message space = [0, ";   
         std::cout << BN_bn2hex(pp.MSG_SIZE.bn_ptr) << ')' << std::endl; 
     #endif
@@ -106,11 +93,36 @@ void Setup(PP &pp, size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_THREAD_NUM)
     /* generate pp.h via deterministic and transparent manner */
     pp.h = Hash::StringToECPoint(pp.g.ToByteString());   
 
-    #ifdef DEBUG
+    #ifdef PRINT
         std::cout << "generate the public parameters for twisted ElGamal >>>" << std::endl; 
         PrintPP(pp); 
     #endif
+
+    return pp;
 }
+
+void SerializePP(PP &pp, std::ofstream &fout)
+{
+    fout.write((char *)(&pp.MSG_LEN), sizeof(pp.MSG_LEN));
+    fout.write((char *)(&pp.TRADEOFF_NUM), sizeof(pp.TRADEOFF_NUM));
+    fout.write((char *)(&pp.DEC_THREAD_NUM), sizeof(pp.DEC_THREAD_NUM));
+
+    fout << pp.MSG_SIZE; 
+    fout << pp.g;
+    fout << pp.h; 
+}
+
+void DeserializePP(PP &pp, std::ifstream &fin)
+{
+    fin.read((char *)(&pp.MSG_LEN), sizeof(pp.MSG_LEN));
+    fin.read((char *)(&pp.TRADEOFF_NUM), sizeof(pp.TRADEOFF_NUM));
+    fin.read((char *)(&pp.DEC_THREAD_NUM), sizeof(pp.DEC_THREAD_NUM));
+
+    fin >> pp.MSG_SIZE; 
+    fin >> pp.g;
+    fin >> pp.h; 
+}
+
 
 
 /* initialize the hashmap to accelerate decryption */
@@ -136,20 +148,24 @@ void Initialize(PP &pp)
 }
 
 /* KeyGen algorithm */ 
-void KeyGen(const PP &pp, KP &keypair)
+std::tuple<ECPoint, BigInt> KeyGen(const PP &pp)
 { 
-    keypair.sk = GenRandomBigIntLessThan(order); // sk \sample Z_p
-    keypair.pk = pp.g * keypair.sk; // pk = g^sk  
+    BigInt sk = GenRandomBigIntLessThan(order); // sk \sample Z_p
+    ECPoint pk = pp.g * sk; // pk = g^sk  
 
-    #ifdef DEBUG
+    #ifdef PRINT
         std::cout << "key generation finished >>>" << std::endl;  
-        PrintKP(keypair); 
+        pk.Print("pk"); 
+        sk.Print("sk"); 
     #endif
+
+    return {pk, sk}; 
 }
 
 /* Encryption algorithm: compute CT = Enc(pk, m; r) */ 
-void Enc(const PP &pp, const ECPoint &pk, const BigInt &m, CT &ct)
+CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)
 { 
+    CT ct;
     // generate the random coins 
     BigInt r = GenRandomBigIntLessThan(order); 
 
@@ -165,11 +181,14 @@ void Enc(const PP &pp, const ECPoint &pk, const BigInt &m, CT &ct)
         std::cout << "twisted ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
+
+    return ct;
 }
 
 /* Encryption algorithm: compute CT = Enc(pk, m; r): with explicit randomness */ 
-void Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r, CT &ct)
+CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r)
 { 
+    CT ct; 
     // begin encryption
     ct.X = pk * r; // X = pk^r
     //CT.Y = pp.g * r + pp.h * m; // Y = g^r h^m
@@ -181,11 +200,32 @@ void Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r, CT &
         std::cout << "twisted ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
+
+    return ct; 
 }
 
-/* Decryption algorithm: compute m = Dec(sk, CT) */ 
-void Dec(const PP &pp, const BigInt& sk, const CT &ct, BigInt &m)
+// add an method to encrypt message in G
+CT EncECPoint(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
 { 
+    CT ct; 
+    // begin encryption
+    ct.X = pk * r; // X = pk^r
+    ct.Y = pp.g * r + m; // Y = g^r m
+    return ct;
+}
+
+
+// add an method to decrypt message in G
+ECPoint DecECPoint(const PP &pp, const BigInt &sk, const CT &ct)
+{ 
+    return ct.Y - ct.X * sk.ModInverse(order); 
+}
+
+
+/* Decryption algorithm: compute m = Dec(sk, CT) */ 
+BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
+{ 
+    BigInt m;
     //begin decryption  
     ECPoint M = ct.Y - ct.X * sk.ModInverse(order); // M = Y - X^{sk^{-1}} = h^m 
 
@@ -203,38 +243,15 @@ void Dec(const PP &pp, const BigInt& sk, const CT &ct, BigInt &m)
         std::cout << "decyption fails in the specified range" << std::endl; 
         exit(EXIT_FAILURE); 
     }  
+    return m; 
 }
 
-/* Encaps algorithm: compute (CT, k) = Encaps(pk, r): where CT = pk^r, k = g^r */ 
-void Encaps(const PP &pp, const ECPoint &pk, ECPoint &ct, ECPoint &key)
-{ 
-    // begin encryption
-    BigInt r = GenRandomBigIntLessThan(order); 
-    ct = pk * r; // ct = pk^r
-    key = pp.g * r; // KEY = g^r
 
-    #ifdef DEBUG
-        std::cout << "twisted ElGamal encapsulation finishes >>>"<< std::endl;
-        ct.Print("ciphertext");
-        key.Print("session key");  
-    #endif
-}
-
-/* Decaps algorithm: compute KEY = Decaps(sk, ct) */ 
-void Decaps(const PP &pp, const BigInt &sk, const ECPoint &ct, ECPoint &key)
-{ 
-    //begin decryption  
-    key = ct * (sk.ModInverse(order)); // KEY = CT^{sk^{-1}} = g^r 
-
-    #ifdef DEBUG
-        std::cout << "twisted ElGamal decapsulation finishes >>>"<< std::endl;
-        key.Print("session key");  
-    #endif
-}
 
 /* re-encrypt ciphertext CT with given randomness r */ 
-void ReEnc(const PP &pp, const ECPoint &pk, const BigInt &sk, const CT &ct, const BigInt &r, CT &ct_new)
+CT ReEnc(const PP &pp, const ECPoint &pk, const BigInt &sk, const CT &ct, const BigInt &r)
 { 
+    CT ct_new; 
     // begin partial decryption  
     ECPoint M = ct.Y - ct.X * (sk.ModInverse(order)); // M = Y - X^{sk^{-1}} = h^m
 
@@ -246,28 +263,36 @@ void ReEnc(const PP &pp, const ECPoint &pk, const BigInt &sk, const CT &ct, cons
         std::cout << "refresh ciphertext succeeds >>>"<< std::endl;
         PrintCT(ct_new); 
     #endif
+
+    return ct_new;
 }
 
 
 /* homomorphic add */
-void HomoAdd(CT &ct_result, const CT &ct1, const CT &ct2)
+CT HomoAdd(CT &ct1, CT &ct2)
 { 
+    CT ct_result; 
     ct_result.X = ct1.X + ct2.X;  
-    ct_result.Y = ct1.Y + ct2.Y;  
+    ct_result.Y = ct1.Y + ct2.Y;
+    return ct_result;  
 }
 
 /* homomorphic sub */
-void HomoSub(CT &ct_result, const CT &ct1, const CT &ct2)
+CT HomoSub(CT &ct1, CT &ct2)
 { 
+    CT ct_result; 
     ct_result.X = ct1.X - ct2.X;  
-    ct_result.Y = ct1.Y - ct2.Y;  
+    ct_result.Y = ct1.Y - ct2.Y;
+    return ct_result;   
 }
 
 /* scalar operation */
-void ScalarMul(CT &ct_result, const CT &ct, const BigInt &k)
+CT ScalarMul(CT &ct, const BigInt &k)
 { 
+    CT ct_result;
     ct_result.X = ct.X * k;  
-    ct_result.Y = ct.Y * k;  
+    ct_result.Y = ct.Y * k;
+    return ct_result;   
 }
 
 
@@ -279,17 +304,20 @@ void ScalarMul(CT &ct_result, const CT &ct, const BigInt &k)
 
 void PrintCT(const MRCT &ct)
 {
-    ct.X[0].Print("CT.X1");
-    ct.X[1].Print("CT.X2");
-    ct.X[2].Print("CT.X3");
+    std::string note;
+    for(auto i = 0; i < ct.vec_X.size(); i++){
+        note = "CT.X" + std::to_string(i);
+        ct.vec_X[i].Print(note);
+    }
     ct.Y.Print("CT.Y");
 } 
 
-void Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, const BigInt &r, MRCT &ct)
+MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, const BigInt &r)
 {  
+    MRCT ct; 
     size_t n = vec_pk.size();
     for(auto i = 0; i < n; i++){
-        ct.X.push_back(vec_pk[i] * r); 
+        ct.vec_X.push_back(vec_pk[i] * r); 
     }
  
     ct.Y = pp.g * r + pp.h * m; // Y = g^r h^m
@@ -298,123 +326,45 @@ void Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, cons
         std::cout << n <<"-recipient 1-message twisted ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
+
+    return ct; 
 }
-
-
-
 
 void SerializeCT(MRCT &ct, std::ofstream& fout)
 {
-    for(auto i = 0; i < ct.X.size(); i++){
-        ct.X[i].Serialize(fout); 
+    for(auto i = 0; i < ct.vec_X.size(); i++){
+        ct.vec_X[i].Serialize(fout); 
     }
     ct.Y.Serialize(fout); 
 } 
 
 void DeserializeCT(MRCT &ct, std::ifstream& fin)
 {
-    for(auto i = 0; i < ct.X.size(); i++){
-        ct.X[i].Deserialize(fin); 
+    for(auto i = 0; i < ct.vec_X.size(); i++){
+        ct.vec_X[i].Deserialize(fin); 
     }
     ct.Y.Deserialize(fin); 
+}
+
+std::string MRCTToByteString(MRCT &ct)
+{
+    std::string str; 
+    for(auto i = 0; i < ct.vec_X.size(); i++){
+        str += ct.vec_X[i].ToByteString(); 
+    }
+    str += ct.Y.ToByteString(); 
+    return str;
+}
+
+
+bool operator==(const CT& ct_left, const CT& ct_right)
+{
+    return (ct_left.X == ct_right.X) && (ct_left.Y == ct_right.Y);  
 }
 
 }
 # endif
 
 
-//deprecated code
-
-/* parallel implementation */
-
-/*
-* https://www.openssl.org/docs/manmaster/man3/BN_CTX_new.html
-* A given BN_CTX must only be used by a single thread of execution. 
-* No locking is performed, and the internal pool allocator will not properly handle multiple threads of execution. 
-* Thus, in multithread programming, a lazy and safe approach is setting bn_ctx = NULL
-*/
-
-/* parallel homomorphic add */
-
-// void ParallelHomoAdd(CT &ct_result, CT &ct1, CT &ct2)
-// { 
-//     std::thread add_thread1(ThreadSafe_ECPoint_Add, std::ref(ct_result.X), std::ref(ct1.X), std::ref(ct2.X));
-//     std::thread add_thread2(ThreadSafe_ECPoint_Add, std::ref(ct_result.Y), std::ref(ct1.Y), std::ref(ct2.Y));
-
-//     add_thread1.join(); 
-//     add_thread2.join(); 
-// }
-
-
-// void ParallelHomoSub(CT &ct_result, CT &ct1, CT &ct2)
-// { 
-//     std::thread sub_thread1(ThreadSafe_ECPoint_Sub, std::ref(ct_result.X), std::ref(ct1.X), std::ref(ct2.X));
-//     std::thread sub_thread2(ThreadSafe_ECPoint_Sub, std::ref(ct_result.Y), std::ref(ct1.Y), std::ref(ct2.Y));
-
-//     sub_thread1.join(); 
-//     sub_thread2.join(); 
-// }
-
-// /* parallel scalar operation */
-// void ParallelScalarMul(CT &ct_result, CT &ct, BigInt &k)
-// { 
-//     std::thread scalar_thread1(ThreadSafe_ECPoint_Mul, std::ref(ct_result.X), std::ref(ct.X), std::ref(k));
-//     std::thread scalar_thread2(ThreadSafe_ECPoint_Mul, std::ref(ct_result.Y), std::ref(ct.Y), std::ref(k));
-    
-//     // synchronize threads
-//     scalar_thread1.join(); 
-//     scalar_thread2.join(); 
-// }
-
-// parallel re-encryption
-// void ParallelReEnc(PP &pp, ECPoint &pk, BigInt &sk, CT &ct, BigInt &r, CT &ct_new)
-// { 
-//     /* partial decryption: only recover M = h^m */  
-
-//     ECPoint M = ct.Y - ct.X * sk.ModInverse(order);  
-
-//     /* re-encryption with the given randomness */
-//     std::thread reenc_thread1(ThreadSafe_ECPoint_Mul, std::ref(ct_new.X), std::ref(pk), std::ref(r));
-//     std::thread reenc_thread2(ThreadSafe_ECPoint_Mul, std::ref(ct_new.Y), std::ref(pp.g), std::ref(r));
-
-//     reenc_thread1.join(); 
-//     reenc_thread2.join(); 
-
-//     ct_new.Y = ct_new.Y + M;    // Y = g^r h^m
-// }
-
-
-// /* Parallel Encryption algorithm: compute CT = Enc(pk, m; r) */
-// void ParallelEnc(PP &pp, ECPoint &pk, BigInt &m, CT &ct)
-// { 
-//     /* generate fresh randomness */ 
-//     BigInt r = GenRandomBigIntLessThan(BigInt(order)); 
-
-//     std::vector<ECPoint> A{pp.g, pp.h}; 
-//     std::vector<BigInt> a{r, m};   
-//     std::thread enc_thread1(ThreadSafe_ECPoint_Mul, std::ref(ct.X), std::ref(pk), std::ref(r)); 
-//     std::thread enc_thread2(ThreadSafe_ECPointVector_Mul, std::ref(ct.Y), std::ref(A), std::ref(a));
-
-//     // synchronize threads
-//     enc_thread1.join();                // pauses until first finishes
-//     enc_thread2.join();               // pauses until second finishes
-// }
-
-
-// /* Decryption algorithm: compute m = Dec(sk, CT) */
-// void ParallelDec(const PP &pp, BigInt &sk, CT &ct, BigInt &m)
-// { 
-//     /* begin to decrypt */  
-//     ECPoint M = ct.Y - ct.X * sk.ModInverse(BigInt(order)); // M = Y - X^{sk^{-1}} = h^m 
-
-//     // use Shanks's algorithm to decrypt
-//     bool SUCCESS = ParallelShanksDLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, pp.DEC_THREAD_NUM, m); 
-  
-//     if(SUCCESS == false)
-//     {
-//         std::cout << "parallel decyption fails: cannot find the message in the specified range" << std::endl; 
-//         exit(EXIT_FAILURE); 
-//     }  
-// }
 
 

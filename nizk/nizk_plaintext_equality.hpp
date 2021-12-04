@@ -10,6 +10,7 @@ this hpp implements NIZKPoK for three twisited ElGamal ciphertexts
 #include "../crypto/hash.hpp"
 #include "../utility/routines.hpp"
 #include "../utility/print.hpp"
+#include "../pke/twisted_elgamal.hpp"
 
 namespace PlaintextEquality{
 
@@ -17,14 +18,14 @@ namespace PlaintextEquality{
 struct PP
 {
     ECPoint g; 
-    ECPoint h; 
+    ECPoint h;
 };
 
-// structure of instance
+// structure of instance (pk_1,...,pk_n, Xi = pk_i^r, Y = g^r h^v)
 struct Instance
 {
-    ECPoint pk1, pk2, pk3; 
-    ECPoint X1, X2, X3, Y; 
+    std::vector<ECPoint> vec_pk; 
+    TwistedElGamal::MRCT ct;  
 };
 
 // structure of witness 
@@ -38,7 +39,8 @@ struct Witness
 // structure of proof 
 struct Proof
 {
-    ECPoint A1, A2, A3, B; // P's first round message
+    std::vector<ECPoint> vec_A; 
+    ECPoint B; // P's first round message
     BigInt z, t;    // P's response in Zq
 };
 
@@ -47,13 +49,18 @@ struct Proof
 void PrintInstance(Instance &instance)
 {
     std::cout << "Plaintext Equality Instance >>> " << std::endl; 
-    instance.pk1.Print("instance.pk1"); 
-    instance.pk2.Print("instance.pk2"); 
-    instance.pk3.Print("instance.pk3"); 
-    instance.X1.Print("instance.X1"); 
-    instance.X2.Print("instance.X2"); 
-    instance.X3.Print("instance.X3"); 
-    instance.Y.Print("instance.Y"); 
+    std::string note; 
+    for(auto i = 0; i < instance.vec_pk.size(); i++){
+        note = "instance.pk" + std::to_string(i);
+        instance.vec_pk[i].Print(note); 
+    }
+
+    for(auto i = 0; i < instance.ct.vec_X.size(); i++){
+        note = "instance.X" + std::to_string(i);
+        instance.ct.vec_X[i].Print(note); 
+    }
+
+    instance.ct.Y.Print("instance.Y"); 
 } 
 
 void PrintWitness(Witness &witness)
@@ -67,52 +74,86 @@ void PrintProof(Proof &proof)
 {
     PrintSplitLine('-'); 
     std::cout << "NIZKPoK for Plaintext Equality >>> " << std::endl; 
-    proof.A1.Print("proof.A1"); 
-    proof.A2.Print("proof.A2"); 
-    proof.A3.Print("proof.A3"); 
+
+    std::string note;
+    for(auto i = 0; i < proof.vec_A.size(); i++){
+        note = "proof.A" + std::to_string(i);
+        proof.vec_A[i].Print(note); 
+    }
     proof.B.Print("proof.B"); 
     proof.z.Print("proof.z"); 
     proof.t.Print("proof.t"); 
 } 
 
+std::string ProofToByteString(Proof &proof)
+{
+    std::string str;
+    for(auto i = 0; i < proof.vec_A.size(); i++){
+        str += proof.vec_A[i].ToByteString();
+    }
+    proof.B.ToByteString(); 
+    proof.z.ToByteString(); 
+    proof.t.ToByteString(); 
+    return str; 
+} 
+
 void SerializeProof(Proof &proof, std::ofstream &fout)
 {
-    fout << proof.A1 << proof.A2 << proof.A3 << proof.B << proof.z << proof.t; 
+    for(auto i = 0; i < proof.vec_A.size(); i++){
+        fout << proof.vec_A[i]; 
+    }
+    fout << proof.B << proof.z << proof.t; 
 } 
 
 void DeserializeProof(Proof &proof, std::ifstream &fin)
 {
-    fin >> proof.A1 >> proof.A2 >> proof.A3 >> proof.B >> proof.z >> proof.t; 
+    for(auto i = 0; i < proof.vec_A.size(); i++){
+        fin >> proof.vec_A[i]; 
+    }
+    fin >> proof.B >> proof.z >> proof.t; 
 } 
 
 /* Setup algorithm */ 
-void Setup(PP &pp)
+PP Setup(TwistedElGamal::PP pp_enc)
 { 
-    pp.g = generator; 
-    pp.h = Hash::StringToECPoint(pp.g.ToByteString());  
+    PP pp;
+    pp.g = pp_enc.g;
+    pp.h = pp_enc.h; 
+    return pp;
 }
 
 // generate NIZK proof for Ci = Enc(pki, v; r) i={1,2,3} the witness is (r, v)
-void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str, Proof &proof)
+Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str)
 {    
-    // initialize the transcript with instance 
-    transcript_str += instance.pk1.ToByteString() + instance.pk2.ToByteString() + instance.pk3.ToByteString() 
-                    + instance.X1.ToByteString()  + instance.X2.ToByteString()  + instance.X3.ToByteString()
-                    + instance.Y.ToByteString(); 
+    Proof proof; 
+    // initialize the transcript with instance
+    for(auto i = 0; i < instance.vec_pk.size(); i++){
+        transcript_str += instance.vec_pk[i].ToByteString();
+    }
 
-    BigInt a = GenRandomBigIntLessThan(order); 
-    proof.A1 = instance.pk1 * a; // A1 = pk1^a
-    proof.A2 = instance.pk2 * a; // A2 = pk2^a
-    proof.A3 = instance.pk3 * a; // A3 = pk3^a
+    for(auto i = 0; i < instance.vec_pk.size(); i++){
+        transcript_str += instance.ct.vec_X[i].ToByteString();
+    } 
+
+    transcript_str += instance.ct.Y.ToByteString(); 
+
+    BigInt a = GenRandomBigIntLessThan(order);
+    size_t n = instance.vec_pk.size();
+    proof.vec_A.resize(n); 
+    for(auto i = 0; i < proof.vec_A.size(); i++){
+        proof.vec_A[i] = instance.vec_pk[i] * a;
+    }
 
     BigInt b = GenRandomBigIntLessThan(order); 
-    std::vector<ECPoint> vec_A{pp.g, pp.h}; 
+    std::vector<ECPoint> vec_Base{pp.g, pp.h}; 
     std::vector<BigInt> vec_x{a, b};
-    proof.B = ECPointVectorMul(vec_A, vec_x); // B = g^a h^b
+    proof.B = ECPointVectorMul(vec_Base, vec_x); // B = g^a h^b
 
     // update the transcript with the first round message
-    transcript_str += proof.A1.ToByteString() + proof.A2.ToByteString() 
-                    + proof.A3.ToByteString() + proof.B.ToByteString();  
+    for(auto i = 0; i < instance.vec_pk.size(); i++){
+        transcript_str += proof.vec_A[i].ToByteString();
+    } 
+    transcript_str += proof.B.ToByteString();  
                      
     // compute the challenge
     BigInt e = Hash::StringToBigInt(transcript_str); // apply FS-transform to generate the challenge
@@ -124,64 +165,69 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     #ifdef DEBUG
         PrintProof(proof); 
     #endif
+
+    return proof; 
 }
 
 
 // check NIZK proof PI for Ci = Enc(pki, m; r) the witness is (r1, r2, m)
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {
-    // initialize the transcript with instance 
-    transcript_str += instance.pk1.ToByteString() + instance.pk2.ToByteString() + instance.pk3.ToByteString() 
-                    + instance.X1.ToByteString()  + instance.X2.ToByteString()  + instance.X3.ToByteString()
-                    + instance.Y.ToByteString(); 
+    // initialize the transcript with instance
+    for(auto i = 0; i < instance.vec_pk.size(); i++){
+        transcript_str += instance.vec_pk[i].ToByteString();
+    }
 
-    // update the transcript
-    transcript_str += proof.A1.ToByteString() + proof.A2.ToByteString() 
-                    + proof.A3.ToByteString() + proof.B.ToByteString();  
+    for(auto i = 0; i < instance.vec_pk.size(); i++){
+        transcript_str += instance.ct.vec_X[i].ToByteString();
+    } 
+
+    transcript_str += instance.ct.Y.ToByteString(); 
+
+    for(auto i = 0; i < instance.vec_pk.size(); i++){
+        transcript_str += proof.vec_A[i].ToByteString();
+    } 
+    transcript_str += proof.B.ToByteString();  
     
     // compute the challenge
     BigInt e = Hash::StringToBigInt(transcript_str); // apply FS-transform to generate the challenge
 
-    bool V1, V2, V3, V4; 
+    size_t n = instance.vec_pk.size();
+    std::vector<bool> vec_condition(n+1);
+
     ECPoint LEFT, RIGHT; 
 
-    // check condition 1
-    LEFT = instance.pk1 * proof.z; // pk1^{z}
-    RIGHT = proof.A1 + instance.X1 * e;  
-
-    V1 = (LEFT == RIGHT); //check pk1^z = A1 X1^e
-
-    // check condition 2
-    LEFT = instance.pk2 * proof.z; // pk2^{z}
-    RIGHT = proof.A2 + instance.X2 * e; 
-
-    V2 = (LEFT == RIGHT); //check pk2^z = A2 X2^e
-
-    // check condition 3
-    LEFT = instance.pk3 * proof.z; // pk3^{z}
-    RIGHT = proof.A3 + instance.X3 * e; 
-
-    V3 = (LEFT == RIGHT); //check pk3^z = A3 X3^e
+    for(auto i = 0; i < n; i++){
+        LEFT = instance.vec_pk[i] * proof.z; // pk1^{z}
+        RIGHT = proof.vec_A[i] + instance.ct.vec_X[i] * e;  
+        vec_condition[i] = (LEFT == RIGHT); //check pk1^z = A1 X1^e
+    }
 
     // check condition 4
-    std::vector<ECPoint> vec_A{pp.g, pp.h}; 
+    std::vector<ECPoint> vec_base{pp.g, pp.h}; 
     std::vector<BigInt> vec_x{proof.z, proof.t}; 
-    LEFT = ECPointVectorMul(vec_A, vec_x); // g^z h^t
-    RIGHT = proof.B + instance.Y * e; // B Y^e
+    LEFT = ECPointVectorMul(vec_base, vec_x); // g^z h^t
+    RIGHT = proof.B + instance.ct.Y * e; // B Y^e
     
-    V4 = (LEFT == RIGHT); // check g^z h^t = B Y^e
+    vec_condition[n] = (LEFT == RIGHT); // check g^z h^t = B Y^e
 
-    bool Validity = V1 && V2 && V3 && V4;
+    bool Validity = true; 
+    for(auto i = 0; i <=n ; i++){
+        if(vec_condition[i] == false) Validity = false;
+    }
+
     #ifdef DEBUG
-    std::cout << std::boolalpha << "Condition 1 (Plaintext Equality proof) = " << V1 << std::endl; 
-    std::cout << std::boolalpha << "Condition 2 (Plaintext Equality proof) = " << V2 << std::endl; 
-    std::cout << std::boolalpha << "Condition 3 (Plaintext Equality proof) = " << V3 << std::endl; 
-    std::cout << std::boolalpha << "Condition 4 (Plaintext Equality proof) = " << V4 << std::endl; 
+    for(auto i = 0; i <=n; i++){
+        std::cout << std::boolalpha << "Condition "<< std::to_string(i) <<" (Plaintext Equality proof) = " 
+                  << vec_condition[i] << std::endl; 
+    }
 
     if (Validity){ 
-        std::cout<< "NIZK proof for triple twisted ElGamal plaintexts equality accepts >>>" << std::endl; 
+        std::cout << "NIZK proof for " << std::to_string(n) 
+                  << "-receivers twisted ElGamal plaintext equality accepts >>>" << std::endl; 
     } else {
-        std::cout<< "NIZK proof for triple twisted ElGamal plaintexts equality rejects >>>" << std::endl; 
+        std::cout << "NIZK proof for " << std::to_string(n) 
+                  << "-receivers twisted ElGamal plaintext equality rejects >>>" << std::endl; 
     }
     #endif
 

@@ -19,21 +19,17 @@ void GenRandomEncInstanceWitness(PlaintextKnowledge::PP &pp, PlaintextKnowledge:
     pp_enc.g = pp.g; 
     pp_enc.h = pp.h;  
 
-    TwistedElGamal::CT ct; 
-    TwistedElGamal::Enc(pp_enc, instance.pk, witness.v, witness.r, ct); 
-    instance.X = ct.X; 
-    instance.Y = ct.Y;
+    instance.ct = TwistedElGamal::Enc(pp_enc, instance.pk, witness.v, witness.r); 
 }
 
 void test_nizk_plaintext_knowledge()
 {
     std::cout << "begin the test of NIZKPoK for plaintext knowledge >>>" << std::endl; 
     
-    PlaintextKnowledge::PP pp; 
-    PlaintextKnowledge::Setup(pp);
+    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(32, 7, 8); 
+    PlaintextKnowledge::PP pp = PlaintextKnowledge::Setup(pp_enc);
     PlaintextKnowledge::Instance instance;
     PlaintextKnowledge::Witness witness; 
-    PlaintextKnowledge::Proof proof; 
 
     GenRandomEncInstanceWitness(pp, instance, witness); 
 
@@ -41,7 +37,7 @@ void test_nizk_plaintext_knowledge()
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = ""; 
-    PlaintextKnowledge::Prove(pp, instance, witness, transcript_str, proof); 
+    PlaintextKnowledge::Proof proof = PlaintextKnowledge::Prove(pp, instance, witness, transcript_str); 
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
     std::cout << "proof generation takes time = " 

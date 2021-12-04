@@ -32,11 +32,9 @@ void test_nizk_dlog_equality(bool flag)
     PrintSplitLine('-');
     std::cout << "begin the test of dlog equality proof (standard version) >>>" << std::endl; 
     
-    DLOGEquality::PP pp;  
-    DLOGEquality::Setup(pp);
+    DLOGEquality::PP pp = DLOGEquality::Setup();
     DLOGEquality::Instance instance; 
-    DLOGEquality::Witness witness; 
-    DLOGEquality::Proof proof; 
+    DLOGEquality::Witness witness;  
 
 
     std::string transcript_str;
@@ -46,7 +44,7 @@ void test_nizk_dlog_equality(bool flag)
     GenRandomDDHInstanceWitness(pp, instance, witness, flag); 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     transcript_str = "";
-    DLOGEquality::Prove(pp, instance, witness, transcript_str, proof); 
+    DLOGEquality::Proof proof = DLOGEquality::Prove(pp, instance, witness, transcript_str); 
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
     std::cout << "DDH proof generation takes time = " 

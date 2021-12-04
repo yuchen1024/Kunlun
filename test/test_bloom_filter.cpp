@@ -12,7 +12,7 @@ bool ReadFileToContainer(std::string file_name, Container<T, Allocator>& contain
     if(!fin)
     {
         std::cerr << file_name << " open error" << std::endl;
-        exit(1); 
+        exit(EXIT_FAILURE); 
     }
     std::string str;
 

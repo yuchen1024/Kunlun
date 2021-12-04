@@ -480,6 +480,11 @@ std::vector<ECPoint> GenRandomECPointVector(size_t LEN)
     return vec_result;
 }
 
+ECPoint GenRandomECPoint()
+{
+    return GenRandomGenerator(); 
+}
+
 
 void SerializeECPointVector(const std::vector<ECPoint> &vec_A, std::ofstream &fout)
 {
