@@ -61,6 +61,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * routines.hpp: related routine algorithms 
   * print.hpp: print info for debug
   * murmurhash3.hpp: add fast non-cryptographic hash
+  * polymul.hpp: naive poly mul
 
 - /crypto: C++ wrapper for OpenSSL
   * constant.h: define global constants
@@ -81,6 +82,8 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - /signature
   * accountable_ring_signature.hpp: implement accountable ring signature
 
+- /commitment
+  * pedersen.hpp: multi-element Pedersen commitment
 - /nizk: associated sigma protocol for twisted elgamal; obtained via Fiat-Shamir transform  
   * nizk_plaintext_equality.hpp: NIZKPoK for twisted ElGamal plaintext equality in 3-recipient mode
   * nizk_plaintext_knowledge.hpp: NIZKPoK for twisted ElGamal plaintext and randomness knowledge
