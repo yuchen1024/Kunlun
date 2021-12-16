@@ -158,9 +158,10 @@ std::tuple<ECPoint, BigInt> KeyGen(const PP &pp)
         pk.Print("pk"); 
         sk.Print("sk"); 
     #endif
-
+    
     return {pk, sk}; 
 }
+
 
 /* Encryption algorithm: compute CT = Enc(pk, m; r) */ 
 CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)

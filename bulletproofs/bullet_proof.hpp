@@ -139,8 +139,6 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
 { 
     auto start_time = std::chrono::steady_clock::now(); 
 
-
-
     size_t n = instance.C.size();
     size_t LEN = pp.RANGE_LEN * n; // LEN = mn
 

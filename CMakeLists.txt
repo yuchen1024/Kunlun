@@ -57,8 +57,8 @@ ADD_EXECUTABLE(test_calculate_dlog test/test_calculate_dlog.cpp)
 TARGET_LINK_LIBRARIES(test_calculate_dlog ${OPENSSL_LIBRARIES} -lomp)
 
 # accountable ring signature
-ADD_EXECUTABLE(test_accountable_ring_sig test/test_accountable_ring_sig.cpp)
-TARGET_LINK_LIBRARIES(test_accountable_ring_sig ${OPENSSL_LIBRARIES} -lomp)
+# ADD_EXECUTABLE(test_accountable_ring_sig test/test_accountable_ring_sig.cpp)
+# TARGET_LINK_LIBRARIES(test_accountable_ring_sig ${OPENSSL_LIBRARIES} -lomp)
 
 # nike
 ADD_EXECUTABLE(test_nizk_enc_relation test/test_nizk_enc_relation.cpp)
@@ -88,6 +88,6 @@ ADD_EXECUTABLE(test_range_proof test/test_range_proof.cpp)
 TARGET_LINK_LIBRARIES(test_range_proof ${OPENSSL_LIBRARIES} -lomp)
 
 # cryptocurrency
-ADD_EXECUTABLE(test_adct test/test_adct.cpp)
-TARGET_LINK_LIBRARIES(test_adct ${OPENSSL_LIBRARIES} -lomp)
+# ADD_EXECUTABLE(test_adct test/test_adct.cpp)
+# TARGET_LINK_LIBRARIES(test_adct ${OPENSSL_LIBRARIES} -lomp)
 

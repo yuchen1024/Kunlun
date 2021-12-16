@@ -14,11 +14,10 @@ void test_accountable_ring_sig()
     std::tie(pp, sp) = AccountableRingSig::Setup(N_max); 
 
     size_t N = 8; // ring size
-    std::vector<AccountableRingSig::KeyPair> user_ring(N);
-    std::vector<ECPoint> vk_ring(N); 
+    std::vector<ECPoint> vk_ring(N);
+    std::vector<BigInt> sk_ring(N); 
     for(auto i = 0; i < N; i++){
-        AccountableRingSig::KeyGen(pp, user_ring[i]); 
-        vk_ring[i] = user_ring[i].vk; 
+        std::tie(vk_ring[i], sk_ring[i]) = AccountableRingSig::KeyGen(pp); 
     }
     srand(time(0));
     size_t index = rand() % N; 
@@ -26,7 +25,7 @@ void test_accountable_ring_sig()
     std::string message = "I am a hacker"; 
     AccountableRingSig::Signature sigma; 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
-    sigma = AccountableRingSig::Sign(pp, user_ring[index].sk, vk_ring, message);
+    sigma = AccountableRingSig::Sign(pp, sk_ring[index], vk_ring, message);
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
     std::cout << "size-" << N << " acountable ring signature generation takes time = " 

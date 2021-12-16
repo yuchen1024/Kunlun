@@ -11,7 +11,6 @@ this hpp implements relation R1 in ESORICS 2015
 
 namespace EncRelation{
 
-// define structure of PT_EQ_Proof 
 struct PP
 {
     Pedersen::PP com_part;
