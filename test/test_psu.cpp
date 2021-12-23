@@ -20,8 +20,8 @@ void GenPSUTestSet(std::vector<block> &vec_X, std::vector<block> &vec_Y, size_t 
 void test_psu(std::string party, size_t LEN) 
 {
     PSU::PP pp; 
-    //PSU::Setup(pp, "bloom", 40); // 40 is the statistical parameter
-    PSU::Setup(pp, "cuckoo", 40); // 40 is the statistical parameter
+    PSU::Setup(pp, "bloom", 40); // 40 is the statistical parameter
+    //PSU::Setup(pp, "cuckoo", 40); // 40 is the statistical parameter
 
     std::vector<block> vec_X; 
     std::vector<block> vec_Y;

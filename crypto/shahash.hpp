@@ -11,49 +11,32 @@ this hpp implements hash functions
 #include "bigint.hpp"
 #include "ec_point.hpp"
 #include "constants.h"
-#include "blake3.h"
-
-//#define BasicHash(input, HASH_INPUT_LEN, output) BLAKE3(input, HASH_INPUT_LEN, output)
-#define BasicHash(input, HASH_INPUT_LEN, output) SHA256(input, HASH_INPUT_LEN, output)
 
 namespace Hash{
 
-// void StringToCharArray(const std::string &input, unsigned char* output)
-// {
-//     blake3_hasher hasher; 
-//     blake3_hasher_init(&hasher); 
-//     blake3_hasher_update(&hasher, input.c_str(), input.length()); 
-//     blake3_hasher_finalize(&hasher, output, HASH_OUTPUT_LENGTH); 
-// }
-
-void BLAKE3(const unsigned char* input, size_t HASH_INPUT_LEN, unsigned char* output)
+void StringToCharArray(const std::string &input, unsigned char* digest)
 {
-    blake3_hasher hasher; 
-    blake3_hasher_init(&hasher); 
-    blake3_hasher_update(&hasher, input, HASH_INPUT_LEN); 
-    blake3_hasher_finalize(&hasher, output, HASH_OUTPUT_LEN);
+    SHA256_CTX sha256; 
+    SHA256_Init(&sha256); 
+    SHA256_Update(&sha256, input.c_str(), input.length()); 
+    SHA256_Final(digest, &sha256); 
 }
-
 
 __attribute__((target("sse2")))
-block StringToBlock(const std::string &str_input) 
+block StringToBlock(const std::string &input) 
 {
-    unsigned char output[HASH_OUTPUT_LEN];
-    const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());
-    size_t HASH_INPUT_LEN = str_input.length();
-    BasicHash(input, HASH_INPUT_LEN, output); 
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    StringToCharArray(input, digest); 
     //std::cout << "we are here" << std::endl;
-    return _mm_load_si128((__m128i*)&output[0]);
+    return _mm_load_si128((__m128i*)&digest[0]);
 }
 
-BigInt StringToBigInt(const std::string& str_input){
-    unsigned char output[HASH_OUTPUT_LEN]; 
-    const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());
-    size_t HASH_INPUT_LEN = str_input.length();
-    BasicHash(input, HASH_INPUT_LEN, output); 
+BigInt StringToBigInt(const std::string& input){
+    unsigned char digest[SHA256_DIGEST_LENGTH]; 
+    StringToCharArray(input, digest); 
 
     BigInt result; 
-    BN_bin2bn(output, HASH_OUTPUT_LEN, result.bn_ptr);
+    BN_bin2bn(digest, SHA256_DIGEST_LENGTH, result.bn_ptr);
     return result; 
 }
 
@@ -94,31 +77,29 @@ block ECPointToBlock(const ECPoint &A)
 
 std::string ECPointToString(const ECPoint &A) 
 { 
-    unsigned char input[POINT_BYTE_LEN];
-    unsigned char output[HASH_OUTPUT_LEN]; 
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, input, POINT_BYTE_LEN, bn_ctx);
-    
-    size_t HASH_INPUT_LEN = POINT_BYTE_LEN;
-    BasicHash(input, HASH_INPUT_LEN, output); 
-
-    std::string str(reinterpret_cast<char *>(output), HASH_OUTPUT_LEN); 
+    unsigned char buffer[POINT_BYTE_LEN];
+    unsigned char digest[HASH_OUTPUT_LEN]; 
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+    SHA256(buffer, POINT_BYTE_LEN, digest);
+    std::string str(reinterpret_cast<char *>(digest), HASH_OUTPUT_LEN); 
     return str; 
 }
 
 
-block BlocksToBlock(const std::vector<block> &input_block)
+block BlocksToBlock(const std::vector<block> &input)
 {
+
+    SHA256_CTX sha256; 
+    SHA256_Init(&sha256); 
     std::string str_input;
-    for(auto i = 0; i < input_block.size(); i++){
-        str_input += Block::ToString(input_block[i]);  
+    for(auto i = 0; i < input.size(); i++){
+        str_input = Block::ToString(input[i]); 
+        SHA256_Update(&sha256, str_input.c_str(), str_input.length()); 
     }
 
-    const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());
-    size_t HASH_INPUT_LEN = str_input.length();
-    unsigned char output[HASH_OUTPUT_LEN]; 
-    BasicHash(input, HASH_INPUT_LEN, output); 
-
-    return _mm_load_si128((__m128i*)&output[0]);
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    SHA256_Final(digest, &sha256); 
+    return _mm_load_si128((__m128i*)&digest[0]);
 }
 
 // fast block to ecpoint hash using low level openssl code
@@ -152,7 +133,7 @@ inline ECPoint BlockToECPoint(const block &var)
             if(EC_POINT_set_affine_coordinates_GFp(group, ecp_result.point_ptr, x, y, bn_ctx)) break;
         }      
         LEN = BN_bn2bin(x, buffer); 
-        BasicHash(buffer, LEN, hash_output);
+        SHA256(buffer, LEN, hash_output);
         BN_bin2bn(hash_output, 32, x);
     }
     BN_free(BN_3); 
@@ -196,7 +177,7 @@ inline ECPoint ThreadSafeBlockToECPoint(const block &var)
             if(EC_POINT_set_affine_coordinates_GFp(group, ecp_result.point_ptr, x, y, temp_bn_ctx)) break;
         }      
         LEN = BN_bn2bin(x, buffer); 
-        BasicHash(buffer, LEN, hash_output);
+        SHA256(buffer, LEN, hash_output);
         BN_bin2bn(hash_output, 32, x);
     }
     BN_free(BN_3); 
@@ -221,7 +202,7 @@ ECPoint ECPointToECPoint(ECPoint &g)
     /* continue the loop until find a point on curve */
     while(true){
         EC_POINT_point2oct(group, ecp_trypoint.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
-        BasicHash(buffer, POINT_BYTE_LEN, hash_output);
+        SHA256(buffer, POINT_BYTE_LEN, hash_output);
         // set h to be the first EC point sartisfying the following constraint
         if(EC_POINT_oct2point(group, h.point_ptr, hash_output, POINT_BYTE_LEN, bn_ctx) == 1 
            && EC_POINT_is_on_curve(group, h.point_ptr, bn_ctx) == 1
