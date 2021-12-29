@@ -37,7 +37,7 @@ ADD_EXECUTABLE(test_naor_pinkas_ot test/test_naor_pinkas_ot.cpp)
 TARGET_LINK_LIBRARIES(test_naor_pinkas_ot ${OPENSSL_LIBRARIES} -lomp -lblake3)
 
 ADD_EXECUTABLE(test_iknp_ote test/test_iknp_ote.cpp)
-target_link_libraries(test_iknp_ote ${OPENSSL_LIBRARIES} -lomp -lblake3)
+TARGET_LINK_LIBRARIES(test_iknp_ote ${OPENSSL_LIBRARIES} -lomp -lblake3)
 
 # pso
 ADD_EXECUTABLE(test_psu test/test_psu.cpp)

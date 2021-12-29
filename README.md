@@ -32,16 +32,21 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - Language: C++
 - Requires: OpenSSL
 
-## Install OpenSSL 3.0 (On MAC OS)
+## Install OpenSSL 3.0 (On MAC OS after Mojave)
 ```
   $ git clone https://github.com/openssl/openssl.git
   $ ./config 
-  $ make install
+  $ sudo make install
 ```
 
 ## Install OpenMP (On MAC OS)
 ```
   $ brew install libomp
+```
+
+## Install libblake3.so
+```
+  $ sudo cp lib/libblake3.so /usr/local/lib
 ```
 
 
