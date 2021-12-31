@@ -104,7 +104,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * range_proof.hpp: two useful gadgets for proving encrypted values lie in the right range
 
 - /cryptocurrency
-  * adct.hpp: the ADCT system 
+  * adcp.hpp: the adcp system 
 
 - /netio
   * stream_channel.hpp: basic network socket functionality for OT
@@ -137,17 +137,17 @@ If the above two issues get solved, the performance of Kunlun will be better.
 ## Evolution and Updates Log
 
    * 20210827: post the initial version, mainly consists of wrapper class for BIGNUM* and EC_Point*
-   * 20210925: shift twisted elgamal, sigma protocols, bulletproofs, and ADCT to Kunlun
+   * 20210925: shift twisted elgamal, sigma protocols, bulletproofs, and adcp to Kunlun
    * 20211011: feed my first grammer sugar "namespace" to Kunlun, add OT primitive 
 
 ---
 
-## Demo with Test Cases of ADCT
+## Demo with Test Cases of adcp
 
 
 set the range size = $[0, 2^\ell = 2^{32}-1 = 4294967295]$
 
-### Flow of ADCT_Demo
+### Flow of adcp_Demo
 
    1. run <font color=blue>Setup:</font> to build up the system, generating system-wide parameters and store them in "common.para"
    2. run <font color=blue>Create_Account</font> to create accounts for Alice ($m_1$) and Bob ($m_2$); 
@@ -169,9 +169,9 @@ set the range size = $[0, 2^\ell = 2^{32}-1 = 4294967295]$
 
 ### Test Cases
 ---
-Create ADCT environment
+Create adcp environment
 
-1. setup the ADCT system
+1. setup the adcp system
 
 
 2. generate three accounts: Alice, Bob and Tax

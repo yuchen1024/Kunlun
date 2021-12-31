@@ -89,5 +89,5 @@ ADD_EXECUTABLE(test_range_proof test/test_range_proof.cpp)
 TARGET_LINK_LIBRARIES(test_range_proof ${OPENSSL_LIBRARIES} -lomp -lblake3)
 
 # cryptocurrency
-ADD_EXECUTABLE(test_adct test/test_adct.cpp)
-TARGET_LINK_LIBRARIES(test_adct ${OPENSSL_LIBRARIES} -lomp -lblake3)
+ADD_EXECUTABLE(test_adcp test/test_adcp.cpp)
+TARGET_LINK_LIBRARIES(test_adcp ${OPENSSL_LIBRARIES} -lomp -lblake3)

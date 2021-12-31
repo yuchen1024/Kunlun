@@ -1,8 +1,8 @@
 /****************************************************************************
-this hpp implements the ADCT functionality 
+this hpp implements the ADCP functionality 
 *****************************************************************************/
-#ifndef ADCT_HPP_
-#define ADCT_HPP_
+#ifndef ADCP_HPP_
+#define ADCP_HPP_
 
 #include "../pke/twisted_elgamal.hpp"        // implement Twisted ElGamal  
 #include "../nizk/nizk_plaintext_equality.hpp" // NIZKPoK for plaintext equality
@@ -16,7 +16,7 @@ this hpp implements the ADCT functionality
 #define DEMO           // demo mode 
 //#define DEBUG        // show debug information 
 
-namespace ADCT{
+namespace ADCP{
 // define the structure of system parameters
 
 struct PP{    
@@ -134,26 +134,26 @@ void PrintCTx(ToOneCTx &newCTx)
 }
 
 
-void SaveSP(SP &sp, std::string ADCT_SP_File)
+void SaveSP(SP &sp, std::string ADCP_SP_File)
 {
     std::ofstream fout;
-    fout.open(ADCT_SP_File, std::ios::binary); 
+    fout.open(ADCP_SP_File, std::ios::binary); 
     fout << sp.ska;
     fout.close();   
 }
 
-void FetchSP(SP &sp, std::string ADCT_SP_File)
+void FetchSP(SP &sp, std::string ADCP_SP_File)
 {
     std::ifstream fin; 
-    fin.open(ADCT_SP_File, std::ios::binary); 
+    fin.open(ADCP_SP_File, std::ios::binary); 
     fin >> sp.ska; 
     fin.close();   
 }
 
-void SavePP(PP &pp, std::string ADCT_PP_File)
+void SavePP(PP &pp, std::string ADCP_PP_File)
 {
     std::ofstream fout; 
-    fout.open(ADCT_PP_File, std::ios::binary); 
+    fout.open(ADCP_PP_File, std::ios::binary); 
 
     fout.write((char *)(&pp.MAX_RECEIVER_NUM), sizeof(pp.MAX_RECEIVER_NUM));
     fout.write((char *)(&pp.SN_LEN), sizeof(pp.SN_LEN));
@@ -166,10 +166,10 @@ void SavePP(PP &pp, std::string ADCT_PP_File)
     fout.close();   
 }
 
-void FetchPP(PP &pp, std::string ADCT_PP_File)
+void FetchPP(PP &pp, std::string ADCP_PP_File)
 {
     std::ifstream fin; 
-    fin.open(ADCT_PP_File, std::ios::binary); 
+    fin.open(ADCP_PP_File, std::ios::binary); 
 
     fin.read((char *)(&pp.MAX_RECEIVER_NUM), sizeof(pp.MAX_RECEIVER_NUM));
     fin.read((char *)(&pp.SN_LEN), sizeof(pp.SN_LEN));
@@ -183,10 +183,10 @@ void FetchPP(PP &pp, std::string ADCT_PP_File)
     fin.close();   
 }
 
-void SaveAccount(Account &user, std::string ADCT_Account_File)
+void SaveAccount(Account &user, std::string ADCP_Account_File)
 {
     std::ofstream fout; 
-    fout.open(ADCT_Account_File, std::ios::binary);
+    fout.open(ADCP_Account_File, std::ios::binary);
     fout.write((char *)(&user.identity), sizeof(user.identity));
      
     fout << user.pk;              
@@ -197,10 +197,10 @@ void SaveAccount(Account &user, std::string ADCT_Account_File)
     fout.close();  
 }
 
-void FetchAccount(Account &user, std::string ADCT_Account_File)
+void FetchAccount(Account &user, std::string adcp_Account_File)
 {
     std::ifstream fin; 
-    fin.open(ADCT_Account_File, std::ios::binary);
+    fin.open(adcp_Account_File, std::ios::binary);
     fin.read((char *)(&user.identity), sizeof(user.identity));
 
     fin >> user.pk;              
@@ -212,10 +212,10 @@ void FetchAccount(Account &user, std::string ADCT_Account_File)
 }
 
 // save CTx into sn.ctx file
-void SaveCTx(ToOneCTx &newCTx, std::string ADCT_CTx_File)
+void SaveCTx(ToOneCTx &newCTx, std::string ADCP_CTx_File)
 {
     std::ofstream fout; 
-    fout.open(ADCT_CTx_File, std::ios::binary); 
+    fout.open(ADCP_CTx_File, std::ios::binary); 
     
     // save sn
     fout << newCTx.sn; 
@@ -235,17 +235,17 @@ void SaveCTx(ToOneCTx &newCTx, std::string ADCT_CTx_File)
 
     // calculate the size of ctx_file
     std::ifstream fin; 
-    fin.open(ADCT_CTx_File, std::ios::ate | std::ios::binary);
-    std::cout << ADCT_CTx_File << " size = " << fin.tellg() << " bytes" << std::endl;
+    fin.open(ADCP_CTx_File, std::ios::ate | std::ios::binary);
+    std::cout << ADCP_CTx_File << " size = " << fin.tellg() << " bytes" << std::endl;
     fin.close(); 
 }
 
 /* recover CTx from ctx file */
-void FetchCTx(ToOneCTx &newCTx, std::string ADCT_CTx_File)
+void FetchCTx(ToOneCTx &newCTx, std::string ADCP_CTx_File)
 {
     // Deserialize_CTx(newCTx, ctx_file); 
     std::ifstream fin; 
-    fin.open(ADCT_CTx_File);
+    fin.open(ADCP_CTx_File);
 
     // recover sn
     fin >> newCTx.sn;
@@ -264,13 +264,12 @@ void FetchCTx(ToOneCTx &newCTx, std::string ADCT_CTx_File)
     fin.close(); 
 }
 
-/* This function implements Setup algorithm of ADCT */
+/* This function implements Setup algorithm of ADCP */
 std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size_t SN_LEN)
 {
     PP pp; 
     SP sp; 
-    // pp.RANGE_LEN = RANGE_LEN; 
-    // pp.LOG_RANGE_LEN = log2(RANGE_LEN); 
+
 
     pp.MAX_RECEIVER_NUM = MAX_RECEIVER_NUM; 
     if(IsPowerOfTwo(MAX_RECEIVER_NUM+1) == false){
@@ -281,8 +280,6 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
 
 
     size_t MAX_AGG_NUM = pp.MAX_RECEIVER_NUM + 1; 
-    // pp.vec_g = GenRandomECPointVector(RANGE_LEN*MAX_AGG_NUM); 
-    // pp.vec_h = GenRandomECPointVector(RANGE_LEN*MAX_AGG_NUM); 
 
     pp.bullet_part = Bullet::Setup(LOG_MAXIMUM_COINS, MAX_AGG_NUM); 
     
@@ -298,9 +295,9 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
 /* initialize the encryption part for faster decryption */
 void Initialize(PP &pp)
 {
-    std::cout << "initialize ADCT >>>" << std::endl; 
+    std::cout << "initialize ADCP >>>" << std::endl; 
     // TwistedElGamal::PP enc_pp; 
-    // GetEncPPfromADCTPP(pp, enc_pp);  
+    // GetEncPPfromadcpPP(pp, enc_pp);  
     TwistedElGamal::Initialize(pp.enc_part); 
     PrintSplitLine('-'); 
 }
@@ -311,8 +308,6 @@ Account CreateAccount(PP &pp, std::string identity, BigInt &init_balance, BigInt
     Account newAcct;
     newAcct.identity = identity;
     newAcct.sn = init_sn;  
-    // TwistedElGamal::PP enc_pp;
-    // GetEncPPfromADCTPP(pp, enc_pp); // enc_pp.g = pp.g, enc_pp.h = pp.h;  
 
     std::tie(newAcct.pk, newAcct.sk) = TwistedElGamal::KeyGen(pp.enc_part); // generate a keypair
 
@@ -323,7 +318,7 @@ Account CreateAccount(PP &pp, std::string identity, BigInt &init_balance, BigInt
     newAcct.balance_ct = TwistedElGamal::Enc(pp.enc_part, newAcct.pk, init_balance, r);
 
     #ifdef DEMO
-        std::cout << identity << "'s ADCT account creation succeeds" << std::endl;
+        std::cout << identity << "'s ADCP account creation succeeds" << std::endl;
         newAcct.pk.Print("pk"); 
         std::cout << identity << "'s initial balance = "; 
         newAcct.m.PrintInDec("m"); 
@@ -359,8 +354,6 @@ bool UpdateAccount(PP &pp, ToOneCTx &newCTx, Account &Acct_sender, Account &Acct
 /* reveal the balance */ 
 BigInt RevealBalance(PP &pp, Account &Acct)
 {
-    // TwistedElGamal::PP enc_pp;
-    // GetEncPPfromADCTPP(pp, enc_pp); 
     return TwistedElGamal::Dec(pp.enc_part, Acct.sk, Acct.balance_ct); 
 }
 
@@ -369,8 +362,7 @@ BigInt SuperviseCTx(SP &sp, PP &pp, ToOneCTx &ctx)
 {
     std::cout << "Supervise " << GetCTxFileName(ctx) << std::endl; 
     auto start_time = std::chrono::steady_clock::now(); 
-    // TwistedElGamal::PP enc_pp;
-    // GetEncPPfromADCTPP(pp, enc_pp); 
+
 
     TwistedElGamal::CT ct; 
     ct.X = ctx.transfer_ct.vec_X[2];
@@ -423,9 +415,6 @@ ToOneCTx CreateCTx(PP &pp, Account &Acct_sender, BigInt &v, ECPoint &pkr)
     newCTx.pks = Acct_sender.pk; 
     newCTx.pkr = pkr; 
 
-    // TwistedElGamal::PP enc_pp;
-    // GetEncPPfromADCTPP(pp, enc_pp); 
-
     std::vector<ECPoint> vec_pk = {newCTx.pks, newCTx.pkr, pp.pka}; 
     BigInt r = GenRandomBigIntLessThan(order);
     newCTx.transfer_ct = TwistedElGamal::Enc(pp.enc_part, vec_pk, v, r); 
@@ -471,7 +460,6 @@ ToOneCTx CreateCTx(PP &pp, Account &Acct_sender, BigInt &v, ECPoint &pkr)
         std::cout << "5. generate NIZKPoK for refreshed updated balance" << std::endl;  
     #endif
     PlaintextKnowledge::PP plaintext_knowledge_pp = PlaintextKnowledge::Setup(pp.enc_part);
-    // GetPlaintextKnowledgePPfromADCTPP(pp, plaintext_knowledge_pp);
 
     PlaintextKnowledge::Instance plaintext_knowledge_instance; 
 
@@ -548,7 +536,6 @@ bool VerifyCTx(PP &pp, ToOneCTx &newCTx)
     std::string transcript_str = "";
 
     PlaintextEquality::PP plaintext_equality_pp = PlaintextEquality::Setup(pp.enc_part);
-    //GetPlaintextEqualityPPfromADCTPP(pp, plaintext_equality_pp); 
 
     PlaintextEquality::Instance plaintext_equality_instance; 
     plaintext_equality_instance.vec_pk = {newCTx.pks, newCTx.pkr, pp.pka};
@@ -981,10 +968,10 @@ struct ToManyCTx{
 };
 
 // save CTx into sn.ctx file
-void SaveCTx(ToManyCTx &newCTx, std::string ADCT_CTx_File)
+void SaveCTx(ToManyCTx &newCTx, std::string ADCP_CTx_File)
 {
     std::ofstream fout; 
-    fout.open(ADCT_CTx_File, std::ios::binary); 
+    fout.open(ADCP_CTx_File, std::ios::binary); 
     
     // save sn
     fout << newCTx.sn; 
@@ -1013,8 +1000,8 @@ void SaveCTx(ToManyCTx &newCTx, std::string ADCT_CTx_File)
 
     // calculate the size of ctx_file
     std::ifstream fin; 
-    fin.open(ADCT_CTx_File, std::ios::ate | std::ios::binary);
-    std::cout << ADCT_CTx_File << " size = " << fin.tellg() << " bytes" << std::endl;
+    fin.open(ADCP_CTx_File, std::ios::ate | std::ios::binary);
+    std::cout << ADCP_CTx_File << " size = " << fin.tellg() << " bytes" << std::endl;
     fin.close(); 
 }
 
@@ -1099,7 +1086,6 @@ ToManyCTx CreateCTx(PP &pp, Account &Acct_sender, std::vector<BigInt> &vec_v, st
 
     // generate NIZK proof for validity of transfer              
     PlaintextEquality::PP plaintext_equality_pp = PlaintextEquality::Setup(pp.enc_part); 
-    // GetPlaintextEqualityPPfromADCTPP(pp, plaintext_equality_pp);
     
     PlaintextEquality::Instance plaintext_equality_instance;
     PlaintextEquality::Witness plaintext_equality_witness; 
@@ -1172,7 +1158,6 @@ ToManyCTx CreateCTx(PP &pp, Account &Acct_sender, std::vector<BigInt> &vec_v, st
         std::cout << "7. generate NIZKPoK for v = v_1+...+v_n" << std::endl;    
     #endif
     DLOGKnowledge::PP dlog_knowledge_pp = DLOGKnowledge::Setup();
-    //GetDLOGKnowledgePPfromADCTPP(pp, dlog_knowledge_pp);
 
     DLOGKnowledge::Instance dlog_knowledge_instance;
     dlog_knowledge_instance.g = pp.enc_part.g; 
@@ -1467,8 +1452,6 @@ std::vector<BigInt> SuperviseCTx(SP &sp, PP &pp, ToManyCTx &ctx)
 
     std::cout << "Supervise " << GetCTxFileName(ctx) << std::endl; 
     auto start_time = std::chrono::steady_clock::now(); 
-    // TwistedElGamal::PP enc_pp;
-    // GetEncPPfromADCTPP(pp, enc_pp); 
 
     std::cout << ctx.pks.ToHexString() << " transfers "; 
     std::cout << std::endl;

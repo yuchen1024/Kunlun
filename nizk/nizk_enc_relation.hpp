@@ -1,5 +1,5 @@
 /***********************************************************************************
-this hpp implements relation R1 in ESORICS 2015
+this hpp implements the merge of (relation R1 and R2) in ESORICS 2015
 ***********************************************************************************/
 #ifndef NIZK_ENC_RELATION_HPP_
 #define NIZK_ENC_RELATION_HPP_
@@ -69,7 +69,6 @@ std::vector<size_t> Decompose(size_t l, size_t n, size_t m)
     return vec_index;  
 }  
 
-// generate NIZK proof for Ci = Enc(pki, v; r) i={1,2,3} the witness is (r, v)
 Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str)
 {    
     Proof proof;
@@ -85,12 +84,12 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
         column_delta[vec_index_star[j]] = bn_1; 
         vec_delta.insert(vec_delta.end(), column_delta.begin(), column_delta.end());
     }
-    BigInt rB; 
+    BigInt rB = GenRandomBigIntLessThan(order); 
     proof.B = Pedersen::Commit(pp.com_part, vec_delta, rB); 
 
 
     // generate the proof for bit constraint of vec_delta
-    BigInt rA; 
+    BigInt rA = GenRandomBigIntLessThan(order); 
 
     std::vector<BigInt> vec_a; 
     for(auto j = 0; j < pp.m; j++){
@@ -104,7 +103,7 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
     }
     proof.A = Pedersen::Commit(pp.com_part, vec_a, rA);
 
-    BigInt rC;
+    BigInt rC = GenRandomBigIntLessThan(order);
     std::vector<BigInt> vec_c;
     vec_c.resize(pp.m * pp.n);  
     for(auto i = 0; i < pp.m*pp.n; i++){
@@ -112,7 +111,7 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
     }
     proof.C = Pedersen::Commit(pp.com_part, vec_c, rC);
 
-    BigInt rD; 
+    BigInt rD = GenRandomBigIntLessThan(order); 
     std::vector<BigInt> vec_d;
     vec_d.resize(pp.m * pp.n);  
     for(auto i = 0; i < pp.m * pp.n; i++){
