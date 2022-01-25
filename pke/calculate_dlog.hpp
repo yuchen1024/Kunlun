@@ -17,6 +17,7 @@ this hpp implements DLOG algorithm
 #include <iostream>
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
+#include "../utility/murmurhash3.hpp"
 
 class naivehash{
 public:
@@ -75,7 +76,7 @@ std::string GetKeyTableFileName(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NU
 void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_t SLICED_BABYSTEP_NUM, unsigned char* buffer)
 {    
     //std::lock_guard<std::mutex> guard(bn_ctx_mutex);
-    size_t hashkey; 
+    size_t hashkey;
     for(auto i = 0; i < SLICED_BABYSTEP_NUM; i++)
     {
         hashkey = std::hash<std::string>{}(startpoint.ThreadSafeToByteString()); 

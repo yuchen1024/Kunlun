@@ -12,26 +12,36 @@ this hpp implements hash functions
 #include "ec_point.hpp"
 #include "constants.h"
 #include "blake3.h"
+#include "openssl/evp.h"
 
 //#define BasicHash(input, HASH_INPUT_LEN, output) BLAKE3(input, HASH_INPUT_LEN, output)
-#define BasicHash(input, HASH_INPUT_LEN, output) SHA256(input, HASH_INPUT_LEN, output)
+#define BasicHash(input, HASH_INPUT_LEN, output) SM3(input, HASH_INPUT_LEN, output)
+//#define BasicHash(input, HASH_INPUT_LEN, output) SHA256(input, HASH_INPUT_LEN, output)
 
 namespace Hash{
 
-// void StringToCharArray(const std::string &input, unsigned char* output)
-// {
-//     blake3_hasher hasher; 
-//     blake3_hasher_init(&hasher); 
-//     blake3_hasher_update(&hasher, input.c_str(), input.length()); 
-//     blake3_hasher_finalize(&hasher, output, HASH_OUTPUT_LENGTH); 
-// }
-
+// hash input to output
 void BLAKE3(const unsigned char* input, size_t HASH_INPUT_LEN, unsigned char* output)
 {
     blake3_hasher hasher; 
     blake3_hasher_init(&hasher); 
     blake3_hasher_update(&hasher, input, HASH_INPUT_LEN); 
     blake3_hasher_finalize(&hasher, output, HASH_OUTPUT_LEN);
+}
+
+void SM3(const unsigned char *input, size_t HASH_INPUT_LEN, unsigned char *output)
+{
+    EVP_MD_CTX *md_ctx;
+    const EVP_MD *md;
+ 
+    md = EVP_sm3();
+    md_ctx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(md_ctx, md, NULL);
+    EVP_DigestUpdate(md_ctx, input, HASH_INPUT_LEN);
+
+    unsigned int md_len = HASH_OUTPUT_LEN; 
+    EVP_DigestFinal_ex(md_ctx, output, &md_len);
+    EVP_MD_CTX_free(md_ctx);
 }
 
 

@@ -21,23 +21,24 @@
 namespace PRG{
 
 struct Seed{ 
-    size_t counter = 0;
+    size_t counter = 0; 
     AES::Key aes_key;
-    block key;
 };
 
 void ReSeed(Seed &seed, const block* salt, uint64_t id = 0) 
 {
-    seed.key = _mm_loadu_si128(salt);
-    seed.key ^= Block::MakeBlock(0LL, id);
-    AES::SetEncKey(seed.key, seed.aes_key);
+    block key = _mm_loadu_si128(salt);
+    key ^= Block::MakeBlock(0LL, id);
+    AES::SetEncKey(key, seed.aes_key);
     seed.counter = 0;
 }
 
 void SetSeed(Seed &seed, const void* salt = nullptr, uint64_t id = 0) {
+    // if there is a given salt
     if (salt != nullptr) {
         ReSeed(seed, (const block *)salt, id);
     } 
+    // if there is no given salt
     else {
         block v;
         #ifndef ENABLE_RDSEED
