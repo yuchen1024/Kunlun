@@ -34,8 +34,7 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, si
     BigInt x[TEST_NUM];                        // scalars  
     BigInt x_prime[TEST_NUM];                  // dlog scalars
     ECPoint Y[TEST_NUM];  
-    BigInt MAX = BigInt(bn_2); 
-    MAX = MAX.Exp(RANGE_LEN);
+    BigInt MAX = BigInt(bn_2).Exp(RANGE_LEN);
     for(auto i = 0; i < TEST_NUM; i++)
     {
         x[i] = GenRandomBigIntLessThan(MAX); 
@@ -54,7 +53,7 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, si
     << std::chrono::duration <double, std::milli> (running_time).count()/TEST_NUM << " ms" << std::endl;
 
     for(auto i = 0; i < TEST_NUM; i++)
-    {
+    {        
         if(x[i] != x_prime[i]){ 
             std::cout << "dlog fails at test case " << i << std::endl;
         } 
@@ -69,21 +68,21 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, si
 
 int main()
 {  
+    Global_Setup();
     Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
     
     std::ios::sync_with_stdio(false);
 
-    size_t RANGE_LEN = 46; 
-    size_t TRADEOFF_NUM = 4; 
+    size_t RANGE_LEN = 32; 
+    size_t TRADEOFF_NUM = 7; 
     size_t THREAD_NUM = 8; 
-    size_t TEST_NUM = 128;  
+    size_t TEST_NUM = 100;  
 
     benchmark_dlog(RANGE_LEN, TRADEOFF_NUM, THREAD_NUM, TEST_NUM);
-    
-
 
     ECGroup_Finalize(); 
     Context_Finalize(); 
+
     return 0; 
 }

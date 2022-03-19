@@ -1,6 +1,6 @@
 #define DEBUG
 
-#include "../bulletproofs/innerproduct_proof.hpp"
+#include "../zkp/bulletproofs/innerproduct_proof.hpp"
 
 // generate a random instance-witness pair
 void GenRandomInnerProductInstanceWitness(InnerProduct::PP &pp, InnerProduct::Instance &instance, InnerProduct::Witness &witness)

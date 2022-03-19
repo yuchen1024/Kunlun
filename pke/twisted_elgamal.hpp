@@ -1,6 +1,7 @@
 #ifndef TWISTED_ELGAMAL_HPP_
 #define TWISTED_ELGAMAL_HPP_
 
+#include "../crypto/global.hpp"
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
 #include "../utility/routines.hpp"

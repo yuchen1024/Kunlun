@@ -1,6 +1,6 @@
 #define DEBUG
 
-#include "../nizk/nizk_dlog_equality.hpp"
+#include "../zkp/nizk/nizk_dlog_equality.hpp"
 
 void GenRandomDDHInstanceWitness(DLOGEquality::PP &pp, DLOGEquality::Instance &instance, 
                                  DLOGEquality::Witness &witness, bool flag)

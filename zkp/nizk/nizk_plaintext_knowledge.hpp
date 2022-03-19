@@ -4,11 +4,11 @@ this hpp implements NIZKPoK for twisted ElGamal ciphertext
 #ifndef KUNLUN_NIZK_PTKE_HPP_
 #define KUNLUN_NIZK_PTKE_HPP_
 
-#include "../crypto/ec_point.hpp"
-#include "../crypto/hash.hpp"
-#include "../utility/print.hpp"
-#include "../utility/routines.hpp"
-#include "../pke/twisted_elgamal.hpp"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
+#include "../../utility/print.hpp"
+#include "../../utility/routines.hpp"
+#include "../../pke/twisted_elgamal.hpp"
 
 
 namespace PlaintextKnowledge{

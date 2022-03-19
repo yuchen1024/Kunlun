@@ -1,6 +1,6 @@
 #define DEBUG
 
-#include "../nizk/nizk_dlog_knowledge.hpp"
+#include "../zkp/nizk/nizk_dlog_knowledge.hpp"
 
 void GenRandomDLOGInstanceWitness(DLOGKnowledge::PP &pp, DLOGKnowledge::Instance &instance, DLOGKnowledge::Witness &witness)
 {

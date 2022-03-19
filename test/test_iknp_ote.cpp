@@ -1,140 +1,179 @@
 //#define DEBUG
 
-#include "../ot/iknp_ote.hpp"
+#include "../mpc/ot/iknp_ote.hpp"
 
-void test_sender(IKNPOTE::PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec_m1, size_t EXTEND_LEN)
-{
-    NetIO server("server", "", 8080); 
-	IKNPOTE::Send(server, pp, vec_m0, vec_m1, EXTEND_LEN);
-}
+struct OTETestcase{
+    size_t EXTEND_LEN; 
+    std::vector<block> vec_m0; 
+    std::vector<block> vec_m1; 
+    std::vector<uint8_t> vec_selection_bit; 
+    size_t HAMMING_WEIGHT; // number of 1 in vec_selection_bit 
+    std::vector<block> vec_result; 
+    
+    std::vector<block> vec_m; 
+    std::vector<block> vec_one_sided_result; 
+}; 
 
-void test_receiver(IKNPOTE::PP &pp, std::vector<block> &vec_result_prime, 
-				   std::vector<uint8_t> &vec_selection_bit, size_t EXTEND_LEN)
-{
-	// receiver play the role of client 
-	NetIO client("client", "127.0.0.1", 8080); 
-	IKNPOTE::Receive(client, pp, vec_result_prime, vec_selection_bit, EXTEND_LEN);
-}
+OTETestcase GenTestCase(size_t EXTEND_LEN)
+{	
+    OTETestcase testcase; 
+    testcase.EXTEND_LEN = EXTEND_LEN; 
+    testcase.HAMMING_WEIGHT = 0; 
 
-void test_iknp_ote(std::string& party, size_t EXTEND_LEN) 
-{
-    PrintSplitLine('-'); 
-
-    IKNPOTE::PP pp; 
-	IKNPOTE::Setup(pp); 
-
-	std::vector<block> vec_result(EXTEND_LEN); 
-	std::vector<block> vec_result_prime(EXTEND_LEN);
-	
 	PRG::Seed seed; 
 	PRG::SetSeed(seed, fix_key, 0); // initialize PRG
-	std::vector<block> vec_m0 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
-	std::vector<block> vec_m1 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
 	
-	std::vector<uint8_t> vec_selection_bit = PRG::GenRandomBits(seed, EXTEND_LEN);
+    testcase.vec_m0 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
+	testcase.vec_m1 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
+	testcase.vec_selection_bit = PRG::GenRandomBits(seed, EXTEND_LEN);
+    testcase.vec_m  = PRG::GenRandomBlocks(seed, EXTEND_LEN);
+
 
 	for (auto i = 0; i < EXTEND_LEN; i++){
-		if(vec_selection_bit[i] == 0) vec_result[i] = vec_m0[i]; 
-		else vec_result[i] = vec_m1[i]; 
+		if(testcase.vec_selection_bit[i] == 0){
+            testcase.vec_result.emplace_back(testcase.vec_m0[i]);
+        } 
+		else{
+            testcase.vec_result.emplace_back(testcase.vec_m1[i]);
+            testcase.HAMMING_WEIGHT++; 
+            testcase.vec_one_sided_result.emplace_back(testcase.vec_m[i]);
+        } 
 	}
-
-	if (party == "receiver")
-	{
-		test_receiver(pp, vec_result_prime, vec_selection_bit, EXTEND_LEN); 
-
-		if(Block::Compare(vec_result, vec_result_prime, EXTEND_LEN) == true){
-			std::cout << "IKNP OTE test succeeds" << std::endl; 
-		} 
-        else{
-            std::cout << "IKNP OTE test fails" << std::endl;  
-        }
-	}
-
-	if (party == "sender")
-	{
-		test_sender(pp, vec_m0, vec_m1, EXTEND_LEN); 
-	}
-
+    return testcase;
 }
 
-
-void test_one_sided_sender(IKNPOTE::PP &pp, std::vector<block> &vec_m, size_t EXTEND_LEN)
+void SaveTestCase(OTETestcase &testcase, std::string testcase_filename)
 {
-    NetIO server("server", "", 8080); 
-    IKNPOTE::OnesidedSend(server, pp, vec_m, EXTEND_LEN);
-}
-
-void test_one_sided_receiver(IKNPOTE::PP &pp, std::vector<block> &vec_result_prime, 
-                             std::vector<uint8_t> &vec_selection_bit, size_t EXTEND_LEN)
-{
-    // receiver play the role of client 
-    
-    NetIO client("client", "127.0.0.1", 8080); 
-    IKNPOTE::OnesidedReceive(client, pp, vec_result_prime, vec_selection_bit, EXTEND_LEN);
-}
-
-void test_one_sided_iknp_ote(std::string& party, size_t EXTEND_LEN) 
-{
-    PrintSplitLine('-'); 
-    IKNPOTE::PP pp; 
-    IKNPOTE::Setup(pp); 
-
-    std::vector<block> vec_result; 
-    std::vector<block> vec_result_prime;
-    
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, fix_key, 0); // initialize PRG
-    std::vector<block> vec_m = PRG::GenRandomBlocks(seed, EXTEND_LEN);
-    
-    std::vector<uint8_t> vec_selection_bit = PRG::GenRandomBits(seed, EXTEND_LEN);
-    //for(auto i = 0; i < EXTEND_LEN; i++) vec_selection_bit[i] = 0; 
-
-    for (auto i = 0; i < EXTEND_LEN; i++){
-        if(vec_selection_bit[i] == 1) vec_result.emplace_back(vec_m[i]); 
-        //PrintBlock(vec_result[i]); 
-    }
-
-    if (party == "receiver")
+    std::ofstream fout; 
+    fout.open(testcase_filename, std::ios::binary); 
+    if(!fout)
     {
-        test_one_sided_receiver(pp, vec_result_prime, vec_selection_bit, EXTEND_LEN); 
-
-        if (vec_result_prime.size()!=vec_result.size()){
-            std::cout << "1-sided IKNP OTE test fails" << std::endl;
-        }
-        else{
-            size_t LEN = vec_result.size(); 
-            if(Block::Compare(vec_result, vec_result_prime, LEN) == true){
-                std::cout << "1-sided IKNP OTE test succeeds" << std::endl; 
-            }
-            else{
-                std::cout << "1-sided IKNP OTE test fails" << std::endl;
-            } 
-        }
+        std::cerr << testcase_filename << " open error" << std::endl;
+        exit(1); 
     }
-    if (party == "sender")
-    {
-        test_one_sided_sender(pp, vec_m, EXTEND_LEN); 
-    }
+    fout << testcase.EXTEND_LEN; 
+    fout << testcase.HAMMING_WEIGHT; 
+    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m0[i]; 
+    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m1[i]; 
+    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_selection_bit[i]; 
+	for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_result[i]; 
+    
+    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m[i]; 
+    for(auto i = 0; i < testcase.HAMMING_WEIGHT; i++) fout << testcase.vec_one_sided_result[i]; 
 
+    fout.close(); 
 }
 
+void FetchTestCase(OTETestcase &testcase, std::string testcase_filename)
+{
+    std::ifstream fin; 
+    fin.open(testcase_filename, std::ios::binary); 
+    if(!fin)
+    {
+        std::cerr << testcase_filename << " open error" << std::endl;
+        exit(1); 
+    }
+    fin >> testcase.EXTEND_LEN; 
+    fin >> testcase.HAMMING_WEIGHT; 
+	testcase.vec_m0.resize(testcase.EXTEND_LEN); 
+	testcase.vec_m1.resize(testcase.EXTEND_LEN); 
+	testcase.vec_selection_bit.resize(testcase.EXTEND_LEN); 
+	testcase.vec_result.resize(testcase.EXTEND_LEN); 
+
+    testcase.vec_m.resize(testcase.EXTEND_LEN); 
+    testcase.vec_one_sided_result.resize(testcase.HAMMING_WEIGHT); 
+
+    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m0[i]; 
+    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m1[i]; 
+    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_selection_bit[i]; 
+	for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_result[i]; 
+
+    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m[i]; 
+    for(auto i = 0; i < testcase.HAMMING_WEIGHT; i++) fin >> testcase.vec_one_sided_result[i]; 
+
+    fin.close(); 
+}
 
 int main()
 {
-	Context_Initialize(); 
+	Global_Setup(); 
+    Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1); 
 
-    std::string party;
-    std::cout << "please select your role between sender and receiver (hint: start sender first) ==> ";  
-    std::getline(std::cin, party); // first receiver (acts as server), then sender (acts as client)
-	
-    auto start_time = std::chrono::steady_clock::now(); 
-	size_t EXTEND_LEN = size_t(pow(2, 10)); 
-	std::cout << "The extend LEN = " << EXTEND_LEN << std::endl; 
-	test_iknp_ote(party, EXTEND_LEN);
+	PrintSplitLine('-'); 
+    std::cout << "IKNP OTE test begins >>>" << std::endl; 
+    PrintSplitLine('-'); 
+    std::cout << "generate or load public parameters and test case" << std::endl;
 
-    //test_one_sided_iknp_ote(party, EXTEND_LEN); 
+    // generate pp (must be same for both server and client)
+    std::string pp_filename = "iknpote.pp"; 
+    IKNPOTE::PP pp; 
+    if(!FileExist(pp_filename)){
+        pp = IKNPOTE::Setup(); 
+        IKNPOTE::SavePP(pp, pp_filename); 
+    }
+    else{
+        IKNPOTE::FetchPP(pp, pp_filename); 
+    }
+
+    // set instance size
+    size_t EXTEND_LEN = size_t(pow(2, 20)); 
+    std::cout << "LENGTH of OTE = " << EXTEND_LEN << std::endl; 
+
+    // generate or fetch test case
+    std::string testcase_filename = "iknpote.testcase"; 
+    OTETestcase testcase; 
+    if(!FileExist(testcase_filename)){
+        testcase = GenTestCase(EXTEND_LEN); 
+        SaveTestCase(testcase, testcase_filename); 
+    }
+    else{
+        FetchTestCase(testcase, testcase_filename);
+    }
+
+    std::string party;
+    std::cout << "please select your role between (one-sided) sender and (one-sided) receiver (hint: start sender first) ==> ";  
+    std::getline(std::cin, party); // first sender (acts as server), then receiver (acts as client)
 	
+    if(party == "sender"){
+        NetIO server_io("server", "", 8080); 
+	    IKNPOTE::Send(server_io, pp, testcase.vec_m0, testcase.vec_m1, EXTEND_LEN);
+    }
+
+    if(party == "receiver"){
+        NetIO client_io("client", "127.0.0.1", 8080); 
+	    std::vector<block> vec_result_prime = IKNPOTE::Receive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
+        
+        if(Block::Compare(testcase.vec_result, vec_result_prime) == true){
+			std::cout << "two-sided IKNP OTE test succeeds" << std::endl; 
+		} 
+        else{
+            std::cout << "two-sided IKNP OTE test fails" << std::endl;  
+        }
+    }
+
+    if(party == "one-sided sender"){
+        NetIO server_io("server", "", 8080); 
+	    IKNPOTE::OnesidedSend(server_io, pp, testcase.vec_m, EXTEND_LEN);
+    }
+
+    if(party == "one-sided receiver"){
+        NetIO client_io("client", "127.0.0.1", 8080); 
+	    std::vector<block> vec_one_sided_result_prime = 
+        IKNPOTE::OnesidedReceive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
+        
+        if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_prime) == true){
+			std::cout << "one-sided IKNP OTE test succeeds" << std::endl; 
+		} 
+        else{
+            std::cout << "one-sided IKNP OTE test fails" << std::endl;  
+        }
+    }
+	
+    PrintSplitLine('-'); 
+    std::cout << "IKNP OTE test ends >>>" << std::endl; 
+    PrintSplitLine('-'); 
+
 	ECGroup_Finalize(); 
     Context_Finalize();   
 	return 0; 

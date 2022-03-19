@@ -2,7 +2,7 @@
 
 #include "../crypto/ec_point.hpp"
 #include "../pke/twisted_elgamal.hpp"
-#include "../nizk/nizk_plaintext_equality.hpp"
+#include "../zkp/nizk/nizk_plaintext_equality.hpp"
 
 void GenRandomTripleEncInstanceWitness(PlaintextEquality::PP &pp, PlaintextEquality::Instance &instance, 
                                        PlaintextEquality::Witness &witness, bool flag)

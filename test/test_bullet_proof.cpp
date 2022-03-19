@@ -1,6 +1,6 @@
 #define DEBUG
 
-#include "../bulletproofs/bullet_proof.hpp"
+#include "../zkp/bulletproofs/bullet_proof.hpp"
 
 
 void GenRandomBulletInstanceWitness(Bullet::PP &pp, Bullet::Instance &instance, Bullet::Witness &witness, bool STATEMENT_FLAG)

@@ -4,10 +4,10 @@ this hpp implements the inner product proof system
 #ifndef IP_PROOF_HPP
 #define IP_PROOF_HPP
 
-#include "../crypto/ec_point.hpp"
-#include "../crypto/hash.hpp"
-#include "../utility/print.hpp"
-#include "../utility/routines.hpp"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
+#include "../../utility/print.hpp"
+#include "../../utility/routines.hpp"
 
 namespace InnerProduct{
 // define the structure of InnerProduct Proof

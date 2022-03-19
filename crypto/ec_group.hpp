@@ -15,7 +15,8 @@ static BIGNUM *curve_params_a;
 static BIGNUM *curve_params_b;
 static BIGNUM *curve_params_q; // q = (p-1)/2
 
-static size_t POINT_BYTE_LEN; // the byte length of ec point in compressed form
+static size_t POINT_BYTE_LEN; // the byte length of ec point
+static size_t POINT_COMPRESSED_BYTE_LEN; // the byte length of ec point in compressed form
 
 void ECGroup_Initialize(int curve_id){
     group = EC_GROUP_new_by_curve_name(curve_id);
@@ -42,7 +43,8 @@ void ECGroup_Initialize(int curve_id){
     BN_rshift(curve_params_q, curve_params_p, 1); // p_minus_one_over_two = (p-1)/2
 
     BN_BYTE_LEN = BN_num_bits(curve_params_p)/8 + BN_num_bits(curve_params_p)%8;
-    POINT_BYTE_LEN = BN_BYTE_LEN + 1; 
+    POINT_BYTE_LEN = BN_BYTE_LEN * 2 + 1; 
+    POINT_COMPRESSED_BYTE_LEN = BN_BYTE_LEN + 1; 
 
     //BN_BIT_LEN = BN_BYTE_LEN * 8; 
     INT_BYTE_LEN = sizeof(size_t); 

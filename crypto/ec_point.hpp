@@ -11,6 +11,9 @@
 #include "bigint.hpp"
 #include "../utility/routines.hpp"
 
+// enable compressed representation of EC Point
+//#define ECPOINT_COMPRESSED 
+
 
 class BigInt;
 
@@ -241,7 +244,7 @@ void ECPoint::Print(std::string note) const
 void ECPoint::Serialize(std::ofstream &fout)
 {
     unsigned char buffer[POINT_BYTE_LEN];
-    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
     // write to outfile
     fout.write(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
 }
@@ -250,28 +253,34 @@ void ECPoint::Deserialize(std::ifstream &fin)
 {
     unsigned char buffer[POINT_BYTE_LEN];
     fin.read(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
-    EC_POINT_oct2point(group, this->point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
+    EC_POINT_oct2point(group, this->point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
 }
 
 std::string ECPoint::ToByteString() const
 {
-    unsigned char buffer[POINT_BYTE_LEN]; 
-    //memset(buffer, 0, POINT_BYTE_LEN); 
+    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];  
 
-    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
     std::string result; 
-    result.assign(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN);
+    result.assign(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN);
 
     return result; 
 }
 
 std::string ECPoint::ThreadSafeToByteString() const
 {
-    std::string ecp_str(POINT_BYTE_LEN, '0');   
+    std::string ecp_str(POINT_COMPRESSED_BYTE_LEN, '0');   
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, 
-                       reinterpret_cast<unsigned char *>(&ecp_str[0]), POINT_BYTE_LEN, nullptr);
+                       reinterpret_cast<unsigned char *>(&ecp_str[0]), POINT_COMPRESSED_BYTE_LEN, nullptr);
     return ecp_str; 
 }
+
+// make sure you have allocate enough memory for buffer
+// does not make this check to efficiency concern
+// inline void ECPoint::ThreadSafeToByteArray(unsigned char* buffer) const
+// {
+//     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr); 
+// }
 
 /* convert an EC point to string */
 std::string ECPoint::ToHexString() const
@@ -285,17 +294,17 @@ std::string ECPoint::ToHexString() const
 std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A)
 { 
     unsigned char buffer[POINT_BYTE_LEN];
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
     // write to outfile
-    fout.write(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
+    fout.write(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
     return fout;            
 }
  
 std::ifstream &operator>>(std::ifstream &fin, ECPoint &A)
 { 
     unsigned char buffer[POINT_BYTE_LEN];
-    fin.read(reinterpret_cast<char *>(buffer), BN_BYTE_LEN+1); 
-    EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
+    fin.read(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
+    EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
     return fin;            
 }
 

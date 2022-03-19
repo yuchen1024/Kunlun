@@ -4,10 +4,10 @@ this hpp implements NIZKPoK for discrete logarithm equality
 #ifndef KUNLUN_NIZK_DLOG_KNOWLEDGE_HPP_
 #define KUNLUN_NIZK_DLOG_KNOWLEDGE_HPP_
 
-#include "../crypto/ec_point.hpp"
-#include "../crypto/hash.hpp"
-#include "../utility/print.hpp"
-#include "../utility/routines.hpp"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
+#include "../../utility/print.hpp"
+#include "../../utility/routines.hpp"
 
 namespace DLOGKnowledge{
 

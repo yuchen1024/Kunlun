@@ -4,8 +4,8 @@ this hpp implements and improves the scheme in ESORICS 2015
 #ifndef ACCOUNTABLE_RING_SIG_HPP_
 #define ACCOUNTABLE_RING_SIG_HPP_
 
-#include "../nizk/nizk_enc_relation.hpp"
-#include "../nizk/nizk_dlog_equality.hpp"
+#include "../zkp/nizk/nizk_enc_relation.hpp"
+#include "../zkp/nizk/nizk_dlog_equality.hpp"
 
 namespace AccountableRingSig{
 

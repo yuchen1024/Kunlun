@@ -5,12 +5,12 @@ this hpp implements NIZKPoK for three twisited ElGamal ciphertexts
 #ifndef KUNLUN_NIZK_PTEQ_HPP_
 #define KUNLUN_NIZK_PTEQ_HPP_
 
-#include "../crypto/ec_point.hpp"
-#include "../crypto/bigint.hpp"
-#include "../crypto/hash.hpp"
-#include "../utility/routines.hpp"
-#include "../utility/print.hpp"
-#include "../pke/twisted_elgamal.hpp"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/bigint.hpp"
+#include "../../crypto/hash.hpp"
+#include "../../utility/routines.hpp"
+#include "../../utility/print.hpp"
+#include "../../pke/twisted_elgamal.hpp"
 
 namespace PlaintextEquality{
 

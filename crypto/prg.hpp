@@ -29,7 +29,7 @@ void ReSeed(Seed &seed, const block* salt, uint64_t id = 0)
 {
     block key = _mm_loadu_si128(salt);
     key ^= Block::MakeBlock(0LL, id);
-    AES::SetEncKey(key, seed.aes_key);
+    seed.aes_key = AES::GenEncKey(key);
     seed.counter = 0;
 }
 
@@ -119,13 +119,27 @@ std::vector<uint8_t> GenRandomBitMatrix(Seed &seed, size_t ROW_NUM, size_t COLUM
     
     // generate the i-th row
     for(auto i = 0; i < COLUMN_NUM; i++){
-        //std::cout << i << std::endl;
         random_column = GenRandomBytes(seed, ROW_NUM/8);
-        //PrintBytes(temp_column.data(), ROW_NUM/8); 
         memcpy(T.data()+i*ROW_NUM/8, random_column.data(), ROW_NUM/8);  
     }
     return T;
 }
+}
+
+bool CompareBits(std::vector<uint8_t>& vec_A,  std::vector<uint8_t>& vec_B)
+{
+    bool flag = true; 
+    if(vec_A.size()!=vec_B.size()){
+        std::cerr << "sizes of bits vector do not match" << std::endl;
+        return false; 
+    }
+    for(auto i = 0; i < vec_A.size(); i++){
+        if(vec_A[i] != vec_B[i]){
+            std::cerr << i << "th position does not match" << std::endl;
+            flag = false;
+        }
+    }
+    return flag; 
 }
 
 

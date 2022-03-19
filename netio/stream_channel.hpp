@@ -47,8 +47,8 @@ public:
 	void SendBlock(const block &a);
 	void ReceiveBlock(block &a);  
 
-	void SendECPoints(const ECPoint* A, size_t LEN); 
-	void ReceiveECPoints(ECPoint* A, size_t LEN); 
+	void SendECPoints(const ECPoint* vec_A, size_t LEN); 
+	void ReceiveECPoints(ECPoint* vec_A, size_t LEN); 
 
 	void SendECPoint(const ECPoint &A);
 	void ReceiveECPoint(ECPoint &A);
@@ -154,7 +154,7 @@ NetIO::NetIO(std::string party, std::string address, int port)
 			exit(EXIT_FAILURE);	
 		}
 		else{
-			std::cout << "client conencts to server successfully >>>" << std::endl;
+			std::cout << "client connects to server successfully >>>" << std::endl;
 		}
 	}
 	
@@ -270,37 +270,69 @@ void NetIO::ReceiveString(std::string str)
 
 void NetIO::SendECPoints(const ECPoint* A, size_t LEN) 
 {
-	unsigned char* buffer = new unsigned char[LEN*POINT_BYTE_LEN];
-
-	for(auto i = 0; i < LEN; i++) {
-    	EC_POINT_point2oct(group, A[i].point_ptr, POINT_CONVERSION_COMPRESSED, buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx);
-    }
-	SendBytes(buffer, LEN*POINT_BYTE_LEN);
+	#ifdef ECPOINT_COMPRESSED
+		unsigned char* buffer = new unsigned char[LEN*POINT_COMPRESSED_BYTE_LEN];
+		for(auto i = 0; i < LEN; i++) {
+    		EC_POINT_point2oct(group, A[i].point_ptr, POINT_CONVERSION_COMPRESSED, 
+				               buffer + i*POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+    	}
+		SendBytes(buffer, LEN*POINT_COMPRESSED_BYTE_LEN);
+	#else
+		unsigned char* buffer = new unsigned char[LEN*POINT_BYTE_LEN];
+		for(auto i = 0; i < LEN; i++) {
+    		EC_POINT_point2oct(group, A[i].point_ptr, POINT_CONVERSION_UNCOMPRESSED, 
+				               buffer + i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx);
+    	}
+		SendBytes(buffer, LEN*POINT_BYTE_LEN);
+	#endif
+	
 	delete[] buffer; 
 }
 
 void NetIO::ReceiveECPoints(ECPoint* A, size_t LEN) 
 {
-	unsigned char* buffer = new unsigned char[LEN*POINT_BYTE_LEN];
-	ReceiveBytes(buffer, LEN*POINT_BYTE_LEN); 
-	for(auto i = 0; i < LEN; i++) {
-		EC_POINT_oct2point(group, A[i].point_ptr, buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx);
-	}
+	#ifdef ECPOINT_COMPRESSED
+		unsigned char* buffer = new unsigned char[LEN*POINT_COMPRESSED_BYTE_LEN];
+		ReceiveBytes(buffer, LEN*POINT_COMPRESSED_BYTE_LEN); 
+		for(auto i = 0; i < LEN; i++) {
+			EC_POINT_oct2point(group, A[i].point_ptr, buffer+i*POINT_COMPRESSED_BYTE_LEN, 
+			                   POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+		}
+	#else
+		unsigned char* buffer = new unsigned char[LEN*POINT_BYTE_LEN];
+		ReceiveBytes(buffer, LEN*POINT_BYTE_LEN); 
+		for(auto i = 0; i < LEN; i++) {
+			EC_POINT_oct2point(group, A[i].point_ptr, buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx);
+		}
+	#endif
+
 	delete[] buffer; 
 }
 
 void NetIO::SendECPoint(const ECPoint &A) 
 {
-	unsigned char buffer[POINT_BYTE_LEN];
-	EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
-	SendBytes(buffer, POINT_BYTE_LEN);
+	#ifdef ECPOINT_COMPRESSED
+		unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+		EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+		SendBytes(buffer, POINT_COMPRESSED_BYTE_LEN);
+	#else
+		unsigned char buffer[POINT_BYTE_LEN];
+		EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+		SendBytes(buffer, POINT_BYTE_LEN);
+	#endif
 }
 
 void NetIO::ReceiveECPoint(ECPoint &A) 
 {
-	unsigned char buffer[POINT_BYTE_LEN];
-	ReceiveBytes(buffer, POINT_BYTE_LEN); 
-	EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
+	#ifdef ECPOINT_COMPRESSED
+		unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+		ReceiveBytes(buffer, POINT_COMPRESSED_BYTE_LEN); 
+		EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+	#else
+		unsigned char buffer[POINT_BYTE_LEN];
+		ReceiveBytes(buffer, POINT_BYTE_LEN); 
+		EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
+	#endif
 }
 
 // T could be any built-in data type, such as block or int
@@ -326,15 +358,6 @@ void NetIO::ReceiveBlock(block &a)
 	ReceiveBytes(&a, sizeof(block));
 }
 
-// void NetIO::SendInt64(const size_t &n)
-// {
-// 	SendBytes(&n, sizeof(size_t)); 
-// }
-
-// void NetIO::ReceiveInt64(size_t &n)
-// {
-// 	ReceiveBytes(&n, sizeof(size_t)); 
-// }
 
 
 #endif  //NETWORK_IO_CHANNEL

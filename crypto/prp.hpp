@@ -18,24 +18,19 @@
 
 namespace PRP{
 
-struct PRP_Key{
-    AES_KEY key;
-}; 
-
-void PRP_Set_Key(PRP_Key &key, const block* v)
+void AES::Key GenKey(const block& salt)
 {
-    if(userkey == nullptr) AES_Set_Encrypt_Key(zero_block, key);
-    else AES_Set_Encrypt_Key(v, key);
+    return AES::GenEncKey(salt);
 }
 
-void PRP_Permutation(PRP_Key &key, block *data, size_t BLOCK_NUM) {
-    for(auto i = 0; i < BLOCK_NUM/AES_BATCH_SIZE; i++) 
-    {
-        AES_ECB_Encrypt(data + i*AES_BATCH_SIZE, AES_BATCH_SIZE, key);
-    }
-    size_t REMAIN_NUM = BLOCK_NUM % AES_BATCH_SIZE;
-    AES_ECB_Encrypt(key, data + BLOCK_NUM - REMAIN_NUM, REMAIN_NUM);
-    
+// key plays the role of enc key
+block Evaluate(AES::Key &key, const block &data) {
+    return AES::ECBEnc(enc_key, data);
+}
+
+block Inverse(AES::Key &key, const block &data) {
+    AES::dec_key = AES::DeriveDecKeyFromEncKey(key);
+    return AES::ECBDec(dec_key, data);
 }
 
 }

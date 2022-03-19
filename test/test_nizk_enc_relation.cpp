@@ -1,6 +1,6 @@
 #define DEBUG
 
-#include "../nizk/nizk_enc_relation.hpp"
+#include "../zkp/nizk/nizk_enc_relation.hpp"
 
 
 void GenRandomEncInstanceWitness(EncRelation::PP &pp, EncRelation::Instance &instance, 

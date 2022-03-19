@@ -6,11 +6,11 @@
 #ifndef KUNLUN_NP_OT_HPP__
 #define KUNLUN_NP_OT_HPP__
 
-#include "../crypto/ec_point.hpp"
-#include "../crypto/hash.hpp"
-#include "../crypto/prg.hpp"
-#include "../crypto/block.hpp"
-#include "../netio/stream_channel.hpp"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
+#include "../../crypto/prg.hpp"
+#include "../../crypto/block.hpp"
+#include "../../netio/stream_channel.hpp"
 
 /*
  * Noar Pinkas OT
@@ -25,9 +25,50 @@ struct PP
 	ECPoint g;
 };
 
-void Setup(PP &pp)
+PP Setup()
 {
-	pp.g = ECPoint(generator); 
+	PP pp; 
+	pp.g = ECPoint(generator);
+	return pp; 
+}
+
+// serialize pp to stream
+void SerializePP(PP &pp, std::ofstream &fout)
+{
+	fout << pp.g; 
+}
+// save pp to file
+void SavePP(PP &pp, std::string pp_filename)
+{
+	std::ofstream fout; 
+    fout.open(pp_filename, std::ios::binary); 
+    if(!fout)
+    {
+        std::cerr << pp_filename << " open error" << std::endl;
+        exit(1); 
+    }
+    SerializePP(pp, fout); 
+    fout.close(); 
+}
+
+// deserialize pp from stream
+void DeserializePP(PP &pp, std::ifstream &fin)
+{
+	fin >> pp.g; 
+}
+
+// fetch pp from file
+void FetchPP(PP &pp, std::string pp_filename)
+{
+	std::ifstream fin; 
+    fin.open(pp_filename, std::ios::binary); 
+    if(!fin)
+    {
+        std::cerr << pp_filename << " open error" << std::endl;
+        exit(1); 
+    }
+    DeserializePP(pp, fin); 
+    fin.close(); 
 }
 
 void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector<block> &vec_m1, size_t LEN)
@@ -60,7 +101,7 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	io.SendECPoints(vec_X.data(), LEN); 
 
 	std::cout <<"Naor-Pinkas OT [step 1]: Sender ===> (C, vec_X) ===> Receiver";
-    std::cout << " [" << POINT_BYTE_LEN*(LEN+1) << " bytes]" << std::endl;
+    std::cout << " [" << (double)POINT_BYTE_LEN*(LEN+1)/(1024*1024) << " MB]" << std::endl;
 
 	io.ReceiveECPoints(vec_pk0.data(), LEN); 
 
@@ -80,7 +121,7 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	io.SendBlocks(vec_Y1.data(), LEN);
 
 	std::cout <<"Naor-Pinkas OT [step 3]: Sender ===> (vec_Y0, vec_Y1) ===> Receiver";
-    std::cout << " [" << POINT_BYTE_LEN*LEN*2 << " bytes]" << std::endl;
+    std::cout << " [" << (double)POINT_BYTE_LEN*LEN*2/(1024*1024) << " MB]" << std::endl;
 
 	auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -88,10 +129,10 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	          << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
-void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vector<uint8_t> &vec_selection_bit, size_t LEN)
+std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_selection_bit, size_t LEN)
 {	
 	auto start_time = std::chrono::steady_clock::now(); 
-
+	std::vector<block> vec_result(LEN);  
 	if(vec_result.size()!=LEN || vec_selection_bit.size()!=LEN){
 		std::cerr << "size does not match" << std::endl; 
 	}
@@ -146,6 +187,8 @@ void Receive(NetIO &io, PP &pp, std::vector<block> &vec_result, const std::vecto
     auto running_time = end_time - start_time;
     std::cout << "Naor-Pinkas OT: Receiver side takes time " 
 	          << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+	return vec_result; 
 }
 }
 #endif

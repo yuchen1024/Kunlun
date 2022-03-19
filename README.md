@@ -18,12 +18,20 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 ## To do list (impossible missions for me)
 
-1. PRF, PRG (done)
+1. PRF  
+2. PRG (done)
 2. oblivious transfer (done)
 3. garbled circuit
 4. secret sharing
 5. zk-SNARK
 6. add class for Zn and ECPoint/BigInt vector
+7. add unified interface for serialization and deserailization
+8. wrap _m128i as class?
+9. test AES-based hash
+10. add multi-point OPRF
+11. silient OT
+12. change the interfaces of hash: string => char[]?
+13. speed serialization of ECPoint
 
 
 ## Specifications
@@ -44,12 +52,6 @@ If the above two issues get solved, the performance of Kunlun will be better.
   $ brew install libomp
 ```
 
-## Install libblake3.so
-```
-  $ sudo cp lib/libblake3.so /usr/local/lib
-```
-
-
 ## Code Structure
 
 - README.md
@@ -63,6 +65,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * openssl.inc: openssl header files
 
 - /utility: dependent files
+  * bit_operation.hpp
   * routines.hpp: related routine algorithms 
   * print.hpp: print info for debug
   * murmurhash3.hpp: add fast non-cryptographic hash
@@ -74,7 +77,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * ec_group.hpp: initialize ec group environment
   * bigint.hpp: class for BIGNUM
   * ec_point.hpp: class for EC_POINT
-  * hash.hpp: related hash function
+  * hash.hpp: all kinds of cryptographic hash function
   * aes.hpp: implement AES using SSE
   * prg.hpp: implement PRG associated algorithms
   * prp.hpp: implement PRP using AES
@@ -89,16 +92,6 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 - /commitment
   * pedersen.hpp: multi-element Pedersen commitment
-- /nizk: associated sigma protocol for twisted elgamal; obtained via Fiat-Shamir transform  
-  * nizk_plaintext_equality.hpp: NIZKPoK for twisted ElGamal plaintext equality in 3-recipient mode
-  * nizk_plaintext_knowledge.hpp: NIZKPoK for twisted ElGamal plaintext and randomness knowledge
-  * nizk_dlog_equality.hpp: NIZKPoK for discrete logarithm equality
-  * nizk_dlog_knowledge.hpp: Schnorr protocol for dlog
-  * nizk_enc_relation.hpp: prove one-out-of-n ciphertexts is encryption of 0
-
-- /bulletproofs
-  * bullet_proof.hpp: the aggregating logarithmic size bulletproofs
-  * innerproduct_proof.hpp: the inner product argument (used by Bulletproof to shrink the proof size) 
 
 - /gadgets
   * range_proof.hpp: two useful gadgets for proving encrypted values lie in the right range
@@ -107,18 +100,30 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * adcp.hpp: the adcp system 
 
 - /netio
-  * stream_channel.hpp: basic network socket functionality for OT
+  * stream_channel.hpp: basic network socket functionality
 
-- /ot
-  * naor_pinkas_ot.hpp: one base OT
-  * chou_orlandi_ot.hpp: another base OT
-  * iknp_ote.hpp: IKNP OT extension
+- mpc
+  - /ot
+    * naor_pinkas_ot.hpp: one base OT
+    * iknp_ote.hpp: IKNP OT extension
 
-- /psi
-  * dh-psi.hpp
+  - /rpmt
+    * cwprf_mqrpmt.hpp: mq-RPMT from commutative weak PRF
 
-- /psu
-  * dh-psu.hpp
+  - /pso
+    * pso.hpp: support private set intersection, cardinality, sum, union
+
+- zkp
+  - /nizk: associated sigma protocol for twisted elgamal; obtained via Fiat-Shamir transform  
+    * nizk_plaintext_equality.hpp: NIZKPoK for twisted ElGamal plaintext equality in 3-recipient mode
+    * nizk_plaintext_knowledge.hpp: NIZKPoK for twisted ElGamal plaintext and randomness knowledge
+    * nizk_dlog_equality.hpp: NIZKPoK for discrete logarithm equality
+    * nizk_dlog_knowledge.hpp: Schnorr protocol for dlog
+    * nizk_enc_relation.hpp: prove one-out-of-n ciphertexts is encryption of 0
+
+  - /bulletproofs
+    * bullet_proof.hpp: the aggregating logarithmic size bulletproofs
+    * innerproduct_proof.hpp: the inner product argument (used by Bulletproof to shrink the proof size) 
 
 - /filter
   * bloom_filter.hpp
@@ -138,105 +143,10 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
    * 20210827: post the initial version, mainly consists of wrapper class for BIGNUM* and EC_Point*
    * 20210925: shift twisted elgamal, sigma protocols, bulletproofs, and adcp to Kunlun
-   * 20211011: feed my first grammer sugar "namespace" to Kunlun, add OT primitive 
+   * 20211011: feed my first grammer sugar "namespace" to Kunlun, add OT primitive
+   * 20220319: add private set operation and re-org many places 
 
 ---
-
-## Demo with Test Cases of adcp
-
-
-set the range size = $[0, 2^\ell = 2^{32}-1 = 4294967295]$
-
-### Flow of adcp_Demo
-
-   1. run <font color=blue>Setup:</font> to build up the system, generating system-wide parameters and store them in "common.para"
-   2. run <font color=blue>Create_Account</font> to create accounts for Alice ($m_1$) and Bob ($m_2$); 
-      one can reveal the balance by running <font color=blue>Reveal_Balance:</font> 
-   3. Alice runs <font color=blue>Create_CTx</font> to transfer $v_1$ coins to Bob ===> Alice_sn.ctx; 
-      <font color=blue>Print_CTx:</font> shows the details of CTx
-   4. Miners runs <font color=blue>Verify_CTx:</font> check CTx validity
-   5. If CTx is valid, run <font color=blue>Update_Account</font> to Update Alice and Bob's account balance and serialize the changes.
-
-### Support to Auditing Polices
-
-   * Selective opne policy: either Alice or Bob can reveal the transfer amount of related CTx in dispute by running <font color=blue>Justify_open_policy</font>. Anyone can check if the transfer amount is correct by running <font color=blue>Audit_open_policy</font>. 
-   
-   * Anti-money laundering policy: sender can prove the transfer amount sum of a collection of ctx sent from him does not exceed a give limit by running <font color=blue>Justify_limit_policy</font>. Anyone can check if the transfer amount is correct by running <font color=blue>Audit_limit_policy</font>. 
-
-   * Tax policy: user can prove he paid the incoming tax according to the rules by running <font color=blue>Justify_tax_policy</font>. Anyone can check if the transfer amount is correct by running <font color=blue>Audit_tax_policy</font>. 
-
-
-
-### Test Cases
----
-Create adcp environment
-
-1. setup the adcp system
-
-
-2. generate three accounts: Alice, Bob and Tax
-   * $512$ --- Alice's initial balance  
-   * $256$ --- Bob's initial balance    
-   * $0$   --- Tax's initial balance
-
-
-3. serialize pp and three accounts
-
----
-Test basic transactions among Alice, Bob and Tax
-
-0. deserialize pp and three accounts
-
-1. Invalid CTx: <font color=red>$v_1 \neq v_2$ $\Rightarrow$ plaintext equality proof will be rejected</font>  
-   - $v_1 \neq v_2$ --- in transfer amount
-
-
-2. Invalid CTx: <font color=red>$v \notin [0, 2^\ell]$ $\Rightarrow$ range proof for right interval will be rejected</font>
-   - $v  = 4294967296$ --- transfer amount      
-
-
-3. Invalid CTx: <font color=red>$(m_1 - v) \notin [0, 2^\ell]$ $\Rightarrow$ range proof for solvent 
-   will be rejected</font>
-   - $m_1  = 384$ --- Alice's updated balance  
-   - $v  = 385$ --- transfer amount 
-
-4. 1st Valid CTx
-   - $v    = 128$ --- transfer amount from Alice to Bob
-   - $384$ --- Alice's updated balance  
-   - $384$ --- Bob's updated balance    
-   - $0$   --- Tax's updated balance
-
-5. 2nd Valid CTx
-   - $v    = 32$ --- transfer amount from Bob to Alice
-   - $384$ --- Alice's updated balance  
-   - $352$ --- Bob's updated balance    
-   - $32$   --- Tax's updated balance
-
-
-6. 3st Valid CTx:
-   - $v    = 384$ --- transfer amount from Alice to Bob
-   - $0$ --- Alice's updated balance  
-   - $736$ --- Bob's updated balance    
-   - $32$   --- Tax's updated balance
-
----
-Test auditing policies
-
-1. Open policy: for ctx1
-   - $v_1  = 128$ --- Alice's claim (correct)  
-   - $v_2  = 127$ --- Bob's claim (false)  
-
-
-2. Tax policy: for ctx1 and ctx2
-   - tax rate is 1/4 --- Bob's claim (correct)
-
-
-3. Limit policy: for ctx1 and ctx3
-   - limit is 512 --- Alice's claim (false) 
-   - limit is 513 --- Alice's claim (correct)      
-
----
-
 
 ## License
 

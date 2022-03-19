@@ -124,6 +124,7 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_T
 
 int main()
 {  
+    Global_Setup();
     Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
     
@@ -136,7 +137,7 @@ int main()
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
     size_t DEC_THREAD_NUM = 8; 
-    size_t TEST_NUM = 10000;  
+    size_t TEST_NUM = 10000;
 
     benchmark_twisted_elgamal(MSG_LEN, TRADEOFF_NUM, DEC_THREAD_NUM, TEST_NUM);
 

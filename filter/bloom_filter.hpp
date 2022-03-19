@@ -86,12 +86,15 @@ public:
 */
    BloomFilter() {}; 
 
-   BloomFilter(size_t projected_element_num, double desired_false_positive_probability)
+   BloomFilter(size_t projected_element_num, size_t statistical_security_parameter)
    {
-      hash_num = static_cast<size_t>(-log2(desired_false_positive_probability));
+      //desired_false_positive_probability = 1/2^{statistical_security_parameter/2};
+      //hash_num = static_cast<size_t>(-log2(desired_false_positive_probability));
+      hash_num = statistical_security_parameter/2; 
       random_seed = static_cast<uint32_t>(0xA5A5A5A55A5A5A5A * 0xA5A5A5A5 + 1); 
       vec_salt = GenUniqueSaltVector(hash_num, random_seed);   
-      table_size = static_cast<uint32_t>(projected_element_num * (-1.44 * log2(desired_false_positive_probability)));
+      //table_size = static_cast<uint32_t>(projected_element_num * (-1.44 * log2(desired_false_positive_probability)));
+      table_size = static_cast<uint32_t>(projected_element_num * (1.44 * statistical_security_parameter/2));
       bit_table.resize(table_size/8, static_cast<uint8_t>(0x00)); // naive implementation
       
       inserted_element_num = 0; 
@@ -132,20 +135,39 @@ public:
 */
    inline void Insert(const ECPoint &A)
    {
-      unsigned char buffer[POINT_BYTE_LEN]; 
-      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-      PlainInsert(buffer, POINT_BYTE_LEN);
+      #ifdef ECPOINT_COMPRESSED
+         unsigned char buffer[POINT_COMPRESSED_BYTE_LEN]; 
+         EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+         PlainInsert(buffer, POINT_COMPRESSED_BYTE_LEN);
+      #else
+         unsigned char buffer[POINT_BYTE_LEN]; 
+         EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
+         PlainInsert(buffer, POINT_BYTE_LEN);
+      #endif
    }
 
    inline void Insert(const std::vector<ECPoint> &vec_A)
    {
       size_t num = vec_A.size();
-      unsigned char *buffer = new unsigned char[num*POINT_BYTE_LEN]; 
-      for(auto i = 0; i < num; i++){
-         EC_POINT_point2oct(group, vec_A[i].point_ptr, POINT_CONVERSION_COMPRESSED, 
+   
+      #ifdef ECPOINT_COMPRESSED
+         unsigned char *buffer = new unsigned char[num*POINT_COMPRESSED_BYTE_LEN]; 
+         #pragma omp parallel for
+         for(auto i = 0; i < num; i++){
+            EC_POINT_point2oct(group, vec_A[i].point_ptr, POINT_CONVERSION_COMPRESSED, 
+                            buffer+i*POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN, nullptr);
+            PlainInsert(buffer+i*POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN);
+         }
+      #else
+         unsigned char *buffer = new unsigned char[num*POINT_BYTE_LEN]; 
+         #pragma omp parallel for
+         for(auto i = 0; i < num; i++){
+            EC_POINT_point2oct(group, vec_A[i].point_ptr, POINT_CONVERSION_UNCOMPRESSED, 
                             buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, nullptr);
-         PlainInsert(buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN);
-      }
+            PlainInsert(buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN);
+         }
+      #endif
+
       delete[] buffer; 
    }
 
@@ -162,9 +184,7 @@ public:
    template <class T, class Allocator, template <class,class> class Container>
    inline void Insert(Container<T, Allocator>& container)
    {
-      #ifdef OMP
-         #pragma omp parallel for
-      #endif
+      #pragma omp parallel for
       for(auto i = 0; i < container.size(); i++)
          Insert(container[i]); 
    }
@@ -196,9 +216,15 @@ public:
 
    inline bool Contain(const ECPoint& A) const
    {
-      unsigned char buffer[POINT_BYTE_LEN]; 
-      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-      return PlainContain(buffer, POINT_BYTE_LEN);
+      #ifdef ECPOINT_COMPRESSED
+         unsigned char buffer[POINT_COMPRESSED_BYTE_LEN]; 
+         EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+         return PlainContain(buffer, POINT_COMPRESSED_BYTE_LEN);
+      #else
+         unsigned char buffer[POINT_BYTE_LEN]; 
+         EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
+         return PlainContain(buffer, POINT_BYTE_LEN);
+      #endif
    }
 
 

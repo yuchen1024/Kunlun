@@ -5,11 +5,11 @@ this hpp implements the ADCP functionality
 #define ADCP_HPP_
 
 #include "../pke/twisted_elgamal.hpp"        // implement Twisted ElGamal  
-#include "../nizk/nizk_plaintext_equality.hpp" // NIZKPoK for plaintext equality
-#include "../nizk/nizk_plaintext_knowledge.hpp"        // NIZKPoK for ciphertext/honest encryption 
-#include "../nizk/nizk_dlog_equality.hpp"      // NIZKPoK for dlog equality
-#include "../nizk/nizk_dlog_knowledge.hpp"     // NIZKPoK for dlog knowledge
-#include "../bulletproofs/bullet_proof.hpp"    // implement Log Size Bulletproof
+#include "../zkp/nizk/nizk_plaintext_equality.hpp" // NIZKPoK for plaintext equality
+#include "../zkp/nizk/nizk_plaintext_knowledge.hpp"        // NIZKPoK for ciphertext/honest encryption 
+#include "../zkp/nizk/nizk_dlog_equality.hpp"      // NIZKPoK for dlog equality
+#include "../zkp/nizk/nizk_dlog_knowledge.hpp"     // NIZKPoK for dlog knowledge
+#include "../zkp/bulletproofs/bullet_proof.hpp"    // implement Log Size Bulletproof
 #include "../gadget/range_proof.hpp"
 #include "../utility/routines.hpp"
 

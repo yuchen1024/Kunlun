@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <vector>
 
@@ -23,6 +24,12 @@ inline block MakeBlock(uint64_t high, uint64_t low) {
 	 return _mm_set_epi64x(high, low);
 }
 
+inline int64_t BlockToInt64(const block &a)
+{
+    return _mm_cvtsi128_si64(a); 
+}
+
+
 const block zero_block = _mm_set_epi64x(0, 0);
 const block all_one_block = _mm_set_epi64x(0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF);
 const block select_mask[2] = {zero_block, all_one_block};
@@ -32,8 +39,6 @@ const block select_mask[2] = {zero_block, all_one_block};
 
 block Calc2ToTheN(int N)
 {
-    // block zero_block = _mm_setzero_si128();
-    // block all_one_block = _mm_cmpeq_epi32(zero, zero);
     block onesLowHigh = _mm_slli_epi64(all_one_block, 63);
     block single_one_block = N < 64 ? _mm_srli_si128(onesLowHigh, 64 / 8) : _mm_slli_si128(onesLowHigh, 64 / 8);
     return _mm_slli_epi64(single_one_block, N & 63);
@@ -74,16 +79,19 @@ inline std::vector<block> FixXOR(std::vector<block> &vec_a, block &b)
     return vec_result; 
 }
 
-
 __attribute__((target("sse4")))
-inline bool Compare(std::vector<block> &vec_a, std::vector<block> &vec_b, size_t LEN) 
+inline bool Compare(std::vector<block> &vec_a, std::vector<block> &vec_b) 
 {
-	bool EQUAL = true;
-    for (auto i = 0; i < LEN; i++) 
+	if(vec_a.size() != vec_b.size()){
+        std::cerr << "size of block vector does not match" << std::endl;
+    }
+
+    bool EQUAL = true;
+    for (auto i = 0; i < vec_a.size(); i++) 
     {
         __m128i vcmp = _mm_xor_si128(vec_a[i], vec_b[i]); 
 	    if(!_mm_testz_si128(vcmp, vcmp)){
-            //std::cerr <<"blocks differ at position: "<< i << std::endl;
+            std::cerr <<"blocks differ at position: "<< i << std::endl;
             EQUAL = false;
         }
 	}
@@ -96,6 +104,20 @@ inline bool Compare(const block &a, const block &b)
     if(!_mm_testz_si128(vcmp, vcmp)) return false;
     else return true;
 }
+
+inline bool IsLessThan(const block &a, const block &b) 
+{
+    /* Compare 8-bit lanes for ( a < b ), store the bits in the low 16 bits of thescalar value: */
+    const int less = _mm_movemask_epi8( _mm_cmplt_epi8(a, b));
+
+    /* Compare 8-bit lanes for ( a > b ), store the bits in the low 16 bits of thescalar value: */
+    const int greater = _mm_movemask_epi8( _mm_cmpgt_epi8( a, b ) );
+
+    /* It's counter-intuitive, but this scalar comparison does the right thing.
+       Essentially, integer comparison searches for the most significant bit that differs... */
+    return less > greater;
+}
+
 
 inline std::string ToString(const block &var)
 {
@@ -151,17 +173,6 @@ public:
 };
 
 
-inline std::ostream& operator<<(std::ostream &out, const block &a) 
-{
-    out << std::hex;
-    uint64_t* data = (uint64_t*)&a;
-
-    out << std::setw(16) << std::setfill('0') << data[1]
-        << std::setw(16) << std::setfill('0') << data[0];
-
-    out << std::dec << std::setw(0);
-    return out;
-}
 
 
 // copy from https://github.com/mischasan/sse2/blob/master/ssebmx.c
@@ -210,50 +221,35 @@ void BitMatrixTranspose(uint8_t const *inp, int nrows, int ncols, uint8_t *out)
 }
 
 
+std::ofstream &operator<<(std::ofstream &fout, const block &a)
+{ 
+    char buffer[16];
+    _mm_storeu_si128((block *)buffer, a);
+    fout.write(buffer, 16);
+    return fout;            
+}
+ 
+std::ifstream &operator>>(std::ifstream &fin, block &a)
+{ 
+    char buffer[16];
+    fin.read(buffer, 16); 
+    a = _mm_load_si128((block *)buffer); 
+    return fin;            
+}
 
 
-// // expand n block to 128*n bits: each bit store in a byte 
-// inline void SparseBlocksToBits(const block *block_data, size_t BLOCK_LEN, uint8_t *bool_data, size_t BIT_LEN) 
-// {
-//     if(BIT_LEN != BLOCK_LEN*128){
-//         std::cerr << "BlocksToBits: size does not match" << std::endl; 
-//     }
+void SerializeBlockVector(const std::vector<block> &vec_a, std::ofstream &fout)
+{
+    for(auto i = 0; i < vec_a.size(); i++) fout << vec_a[i];  
+}
 
-//     for(auto i = 0; i < BLOCK_LEN; i++){ 
-//         for(auto j = 0; j < 128; j++){
-//             bool_data[i*128+j] = GetBlockBit(block_data[i], 127-j);
-//         }
-//     }   
-// }
-
-
-/* Linear orthomorphism function
- * [REF] Implementation of "Efficient and Secure Multiparty Computation from Fixed-Key Block Ciphers"
- * https://eprint.iacr.org/2019/074.pdf
- */
-
-// __attribute__((target("sse2")))
-// inline block Sigma(block a) {
-//      return _mm_shuffle_epi32(a, 78) ^ (a & MakeBlock(0xFFFFFFFFFFFFFFFF, 0x00));
-// }
+void DeserializeBlockVector(std::vector<block> &vec_a, std::ifstream &fin)
+{
+    for(auto i = 0; i < vec_a.size(); i++) fin >> vec_a[i];  
+}
 
 
 
-// // set a __m128i mask: only the ith bit is 1
-// inline block GenMaskBlock(size_t i)
-// {
-//     block mask; 
-//     // if(i < 64) mask = _mm_set_epi64x(0L, 1ULL<<i);
-//     // else mask = _mm_set_epi64x(1ULL<<(i-64), 0L);
-
-//     if(i < 64) mask = _mm_set_epi64x(1ULL<<(63-i), 0L);
-//     else mask = _mm_set_epi64x(0L, 1ULL<<(127-i));
-//     return mask; 
-// }
-
-// inline bool GetLSB(const block &a) {
-//    return (a[0] & 1) == 1;
-// }
 
 // Modified from
 // https://mischasan.wordpress.com/2011/10/03/the-full-sse2-bit-matrix-transpose-routine/
@@ -325,26 +321,35 @@ inline void empBitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64
         OUTPUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
 }
 
+
+inline void PrintBlock(const block &a) 
+{
+    std::cout << std::hex;
+    uint64_t* data = (uint64_t*)&a;
+
+    std::cout << std::setw(16) << std::setfill('0') << data[1]
+        << std::setw(16) << std::setfill('0') << data[0];
+
+    std::cout << std::dec << std::setw(0);
+}
+
+
 void PrintBlocks(block* var, size_t LEN) 
 {
     for(auto i = 0; i< LEN; i++){
-        std::cout << var[i] << std::endl; 
+        PrintBlock(var[i]); 
+        std::cout << std::endl; 
     }
 }
 
-// inline void SetBlockBit(block &a, size_t i) 
-// {
-//     block mask = GenMaskBlock(i); 
-//     a = mask | a; 
-// }
+void PrintBlocks(std::vector<block> vec_B) 
+{
+    for(auto i = 0; i< vec_B.size(); i++){
+        PrintBlock(vec_B[i]); 
+        std::cout << std::endl; 
+    }
+}
 
-// // return 0 or 1
-// inline uint8_t GetBlockBit(const block &a, size_t i)
-// {
-//     block mask = GenMaskBlock(i); 
-//     mask = mask & a; 
-//     return uint8_t(_mm_testz_si128(mask, mask));
-// }
 
 #endif
 

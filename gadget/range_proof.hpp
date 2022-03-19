@@ -10,22 +10,13 @@ in the range [LEFT_BOUND, RIGHT_BOUND)
 #define GADGET_RANGE_PROOF_HPP
 
 #include "../pke/twisted_elgamal.hpp"        // implement Twisted ElGamal  
-#include "../nizk/nizk_plaintext_equality.hpp" // NIZKPoK for plaintext equality
-#include "../nizk/nizk_plaintext_knowledge.hpp"        // NIZKPoK for ciphertext/honest encryption 
-#include "../nizk/nizk_dlog_equality.hpp"      // NIZKPoK for dlog equality
-#include "../bulletproofs/bullet_proof.hpp"    // implement Log Size Bulletproof
+#include "../zkp/nizk/nizk_plaintext_equality.hpp" // NIZKPoK for plaintext equality
+#include "../zkp/nizk/nizk_plaintext_knowledge.hpp"        // NIZKPoK for ciphertext/honest encryption 
+#include "../zkp/nizk/nizk_dlog_equality.hpp"      // NIZKPoK for dlog equality
+#include "../zkp/bulletproofs/bullet_proof.hpp"    // implement Log Size Bulletproof
 
 namespace Gadget{
-struct PP{  
-    // size_t RANGE_LEN; // the maximum coin value is 2^RANGE_LEN 
-    // size_t LOG_RANGE_LEN; // this parameter will be used by Bulletproof
-    // size_t AGG_NUM; 
-    // size_t TRADEOFF_NUM; 
-    // size_t DEC_THREAD_NUM; // used by twisted ElGamal
-
-    // ECPoint g, h, u; // used for inside innerproduct statement
-    // std::vector<ECPoint> vec_g; 
-    // std::vector<ECPoint> vec_h; // the pp of innerproduct part     
+struct PP{     
     TwistedElGamal::PP enc_part; 
     Bullet::PP bullet_part; 
 

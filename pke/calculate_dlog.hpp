@@ -18,6 +18,7 @@ this hpp implements DLOG algorithm
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
 #include "../utility/murmurhash3.hpp"
+#include "../utility/print.hpp"
 
 class naivehash{
 public:
@@ -28,7 +29,10 @@ public:
 };
 
 
-// key-value hash table: key is integer, value is its corresponding DLOG w.r.t. g
+/*
+** key-value hash table: key is integer, value is its corresponding DLOG w.r.t. g
+** more intuitive solution is using <ECPoint, size_t> hashmap, but its storage cost is high 
+*/
 std::unordered_map<size_t, size_t, naivehash> int2index_map; 
 
 // add mutex lock will severely harm the performance
@@ -79,7 +83,12 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
     size_t hashkey;
     for(auto i = 0; i < SLICED_BABYSTEP_NUM; i++)
     {
-        hashkey = std::hash<std::string>{}(startpoint.ThreadSafeToByteString()); 
+        //hashkey = std::hash<std::string>{}(startpoint.ThreadSafeToByteString()); 
+        //PrintSplitLine('-');
+        hashkey = Hash::AdHocECPointToIndex(startpoint); 
+        //std::cout << i << "=" << hashkey << std::endl;
+        //startpoint.Print(); 
+
         std::memcpy(buffer+(startindex+i)*INT_BYTE_LEN, &hashkey, INT_BYTE_LEN);
         startpoint = startpoint.ThreadSafeAdd(g); 
     } 
@@ -182,7 +191,8 @@ void BuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, s
     #endif
     for(auto index = 0; index < BABYSTEP_NUM; index++)
     {
-        hashkey = std::hash<std::string>{}(startpoint.ToByteString()); 
+        //hashkey = std::hash<std::string>{}(startpoint.ToByteString()); 
+        hashkey = Hash::AdHocECPointToIndex(startpoint); 
         std::memcpy(buffer+index*INT_BYTE_LEN, &hashkey, INT_BYTE_LEN);
         startpoint = startpoint + g; 
     } 
@@ -285,8 +295,8 @@ void SearchSlicedRange(ECPoint ecp_searchanchor, ECPoint ecp_giantstep, size_t S
         /* If key not found in map iterator to end is returned */ 
         if (PARALLEL_FIND == 1) break; 
         // map the point to keyvalue
-        hashkey = std::hash<std::string>{}(ecp_searchanchor.ThreadSafeToByteString()); 
-        
+        //hashkey = std::hash<std::string>{}(ecp_searchanchor.ThreadSafeToByteString()); 
+        hashkey = Hash::AdHocECPointToIndex(ecp_searchanchor); 
         // baby-step search in the hash map
         if (int2index_map.find(hashkey) == int2index_map.end())
         {
@@ -397,8 +407,8 @@ bool ShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRA
     for(j = 0; j < GIANTSTEP_NUM; j++)
     {
         // map the point to keyvalue
-        hashkey = std::hash<std::string>{}(ecp_startpoint.ToByteString()); 
-        
+        //hashkey = std::hash<std::string>{}(ecp_startpoint.ToByteString()); 
+        hashkey = Hash::AdHocECPointToIndex(ecp_startpoint); 
         // baby-step search in the hash map
         if (int2index_map.find(hashkey) == int2index_map.end())
         {
