@@ -91,7 +91,7 @@ int main()
     }
 
     // set instance size
-    size_t LEN = size_t(pow(2, 20)); 
+    size_t LEN = size_t(pow(2, 10)); 
     std::cout << "number of elements = " << LEN << std::endl; 
 
     std::string testcase_filename = "mqRPMT.testcase"; 
@@ -123,12 +123,12 @@ int main()
             std::cout << "cwPRF-mqRPMT test fails" << std::endl; 
         }
 
-        // size_t CARDINALITY = 0;
-        // for(auto i = 0; i < LEN; i++){
-        //     if(vec_indication_bit_prime[i] == 1) CARDINALITY++; 
-        // } 
-        // std::cout << testcase.HAMMING_WEIGHT << std::endl;
-        // std::cout << CARDINALITY << std::endl;
+        size_t CARDINALITY = 0;
+        for(auto i = 0; i < LEN; i++){
+            if(vec_indication_bit_prime[i] == 1) CARDINALITY++; 
+        } 
+        std::cout << testcase.HAMMING_WEIGHT << std::endl;
+        std::cout << CARDINALITY << std::endl;
     }
 
     if(party == "client")
