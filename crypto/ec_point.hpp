@@ -10,6 +10,9 @@
 #include "ec_group.hpp"
 #include "bigint.hpp"
 #include "../utility/routines.hpp"
+#include "../utility/murmurhash2.hpp"
+#include "global.hpp"
+
 
 // enable compressed representation of EC Point
 //#define ECPOINT_COMPRESSED 
@@ -99,10 +102,11 @@ public:
     std::string ThreadSafeToByteString() const; 
     std::string ToHexString() const;
 
+    size_t ToUint64() const; 
+
     friend std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A); 
  
     friend std::ifstream &operator>>(std::ifstream &fin, ECPoint &A);
-
 
 };
 
@@ -243,16 +247,16 @@ void ECPoint::Print(std::string note) const
 
 void ECPoint::Serialize(std::ofstream &fout)
 {
-    unsigned char buffer[POINT_BYTE_LEN];
+    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
     // write to outfile
-    fout.write(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
+    fout.write(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
 }
 
 void ECPoint::Deserialize(std::ifstream &fin)
 {
-    unsigned char buffer[POINT_BYTE_LEN];
-    fin.read(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
+    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+    fin.read(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
     EC_POINT_oct2point(group, this->point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
 }
 
@@ -291,9 +295,18 @@ std::string ECPoint::ToHexString() const
 }
 
 
+size_t ECPoint::ToUint64() const
+{
+    // standard method
+    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+    return MurmurHash64A(buffer, POINT_COMPRESSED_BYTE_LEN, fixed_salt); 
+}
+
+
 std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A)
 { 
-    unsigned char buffer[POINT_BYTE_LEN];
+    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
     EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
     // write to outfile
     fout.write(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
@@ -302,7 +315,7 @@ std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A)
  
 std::ifstream &operator>>(std::ifstream &fin, ECPoint &A)
 { 
-    unsigned char buffer[POINT_BYTE_LEN];
+    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
     fin.read(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
     EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
     return fin;            
@@ -341,6 +354,7 @@ ECPoint GetPointAtInfinity(){
 bool IsSquare(const BigInt& q) {
     return q.ModExp(BigInt(curve_params_q), BigInt(curve_params_p)).IsOne();
 }
+
 
 
 // ecpoint vector operations

@@ -26,7 +26,7 @@ void test_nizk_plaintext_knowledge()
 {
     std::cout << "begin the test of NIZKPoK for plaintext knowledge >>>" << std::endl; 
     
-    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(32, 7, 8); 
+    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(32, 7); 
     PlaintextKnowledge::PP pp = PlaintextKnowledge::Setup(pp_enc);
     PlaintextKnowledge::Instance instance;
     PlaintextKnowledge::Witness witness; 

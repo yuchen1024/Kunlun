@@ -16,4 +16,6 @@ const static int BOB = 2;
 
 const char fix_key[] = "\x61\x7e\x8d\xa2\xa0\x51\x1e\x96\x5e\x41\xc2\x9b\x15\x3f\xc7\x7a";
 
+const static uint64_t fixed_salt = 0xAAAAAAAA; // used for murmurhash
+
 #endif

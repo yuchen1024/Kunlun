@@ -49,7 +49,7 @@ void test_nizk_enc_relation(bool flag)
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
     size_t DEC_THREAD_NUM = 8;
-    TwistedElGamal::PP enc_pp = TwistedElGamal::Setup(MSG_LEN, TRADEOFF_NUM, DEC_THREAD_NUM); 
+    TwistedElGamal::PP enc_pp = TwistedElGamal::Setup(MSG_LEN, TRADEOFF_NUM); 
 
 
     size_t n = 2;

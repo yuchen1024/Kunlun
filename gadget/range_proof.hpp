@@ -48,39 +48,6 @@ struct Proof_type2{
     Bullet::Proof bullet_proof;     
 };
 
-// void GetEncPPfromGadgetPP(PP &pp, TwistedElGamal::PP &enc_pp)
-// {
-//     enc_pp.MSG_LEN = pp.RANGE_LEN;  
-//     enc_pp.g = pp.g; 
-//     enc_pp.h = pp.h;  
-//     enc_pp.TRADEOFF_NUM = pp.TRADEOFF_NUM; 
-//     enc_pp.DEC_THREAD_NUM = pp.DEC_THREAD_NUM; 
-// }
-
-// void GetBulletPPfromGadgetPP(PP &pp, Bullet::PP &bullet_pp)
-// {
-//     bullet_pp.RANGE_LEN = pp.RANGE_LEN; 
-//     bullet_pp.LOG_RANGE_LEN = pp.LOG_RANGE_LEN; 
-//     bullet_pp.AGG_NUM = pp.AGG_NUM; 
-
-//     bullet_pp.g = pp.g; 
-//     bullet_pp.h = pp.h;  
-//     bullet_pp.u = pp.u; 
-//     bullet_pp.vec_g = pp.vec_g; 
-//     bullet_pp.vec_h = pp.vec_h; 
-// }
-
-// void GetDLOGEqualityPPfromGadgetPP(PP &pp, DLOGEquality::PP &dlogeq_pp)
-// {
-//     dlogeq_pp.ss_reserve = "dummy";  
-// }
-
-// void GetPlaintextKnowledgePPfromGadgetPP(PP &pp, PlaintextKnowledge::PP &ptknowledge_pp)
-// {
-//     ptknowledge_pp.g = pp.g; 
-//     ptknowledge_pp.h = pp.h; 
-// }
-
 
 /* adjust Bullet instance 
 * this is equivalent to show: 
@@ -209,7 +176,7 @@ void Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
         exit(EXIT_FAILURE);
     } 
       
-    if(int2index_map.empty() == true)
+    if(encoding2index_map.empty() == true)
     {
         std::cout << "the hashmap is empty" << std::endl; 
         TwistedElGamal::Initialize(pp.enc_part);

@@ -91,7 +91,7 @@ int main()
     }
 
     // set instance size
-    size_t LEN = size_t(pow(2, 10)); 
+    size_t LEN = size_t(pow(2, 20)); 
     std::cout << "number of elements = " << LEN << std::endl; 
 
     std::string testcase_filename = "mqRPMT.testcase"; 

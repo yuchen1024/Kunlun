@@ -41,7 +41,7 @@ void test_nizk_plaintext_equality(bool flag)
     PrintSplitLine('-');  
     std::cout << "begin the test of NIZKPoK for plaintext equality >>>" << std::endl; 
 
-    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(32, 7, 8); 
+    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(32, 7); 
     PlaintextEquality::PP pp = PlaintextEquality::Setup(pp_enc);
     PlaintextEquality::Instance instance; 
     PlaintextEquality::Witness witness; 

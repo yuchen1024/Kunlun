@@ -6,7 +6,7 @@
 #ifndef MURMURHASH3_HPP_
 #define MURMURHASH3_HPP_
 
-const static uint64_t fixed_salt = 0xAAAAAAAA;  
+#include "../crypto/constants.h"
 
 void MurmurHash3_x86_32  (const void * key, int len, uint32_t seed, void * out);
 

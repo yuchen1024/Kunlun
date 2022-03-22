@@ -7,6 +7,7 @@
 #include "../utility/routines.hpp"
 #include "calculate_dlog.hpp"
 
+
 // babystep hashkey table: crucial for implement Shanks algorithm
 const std::string keytable_filename  = "babystep_hashkey.table"; 
 
@@ -18,8 +19,6 @@ struct PP
     size_t MSG_LEN; // the length of message space, also the length of the DLOG interval  
     BigInt MSG_SIZE; // the size of message space
     size_t TRADEOFF_NUM; // default value = RANGE_LEN/2; tunning it in [0, RANGE_LEN/2], ++ leads bigger table and less time 
-    size_t DEC_THREAD_NUM; // optimized number of threads for faster decryption: CPU dependent
-
     ECPoint g, h; // two random generators 
 };
 
@@ -43,7 +42,6 @@ void PrintPP(const PP &pp)
 {
     std::cout << "the length of message space = " << pp.MSG_LEN << std::endl; 
     std::cout << "the trade-off parameter for fast decryption = " << pp.TRADEOFF_NUM << std::endl;
-    std::cout << "the optimal decryption thread num = " << pp.DEC_THREAD_NUM << std::endl;
     pp.g.Print("pp.g"); 
     pp.h.Print("pp.h"); 
 } 
@@ -75,12 +73,11 @@ std::string CTToByteString(CT &ct)
 
 
 /* Setup algorithm */ 
-PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_THREAD_NUM)
+PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
 { 
     PP pp; 
     pp.MSG_LEN = MSG_LEN; 
     pp.TRADEOFF_NUM = TRADEOFF_NUM; 
-    pp.DEC_THREAD_NUM = DEC_THREAD_NUM;
     /* set the message space to 2^{MSG_LEN} */
     pp.MSG_SIZE = BigInt(size_t(pow(2, pp.MSG_LEN))); 
 
@@ -104,10 +101,8 @@ PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t DEC_THREAD_NUM)
 
 void SerializePP(PP &pp, std::ofstream &fout)
 {
-    fout.write((char *)(&pp.MSG_LEN), sizeof(pp.MSG_LEN));
-    fout.write((char *)(&pp.TRADEOFF_NUM), sizeof(pp.TRADEOFF_NUM));
-    fout.write((char *)(&pp.DEC_THREAD_NUM), sizeof(pp.DEC_THREAD_NUM));
-
+    fout << pp.MSG_LEN; 
+    fout << pp.TRADEOFF_NUM; 
     fout << pp.MSG_SIZE; 
     fout << pp.g;
     fout << pp.h; 
@@ -115,10 +110,8 @@ void SerializePP(PP &pp, std::ofstream &fout)
 
 void DeserializePP(PP &pp, std::ifstream &fin)
 {
-    fin.read((char *)(&pp.MSG_LEN), sizeof(pp.MSG_LEN));
-    fin.read((char *)(&pp.TRADEOFF_NUM), sizeof(pp.TRADEOFF_NUM));
-    fin.read((char *)(&pp.DEC_THREAD_NUM), sizeof(pp.DEC_THREAD_NUM));
-
+    fin >> pp.MSG_LEN;
+    fin >> pp.TRADEOFF_NUM;
     fin >> pp.MSG_SIZE; 
     fin >> pp.g;
     fin >> pp.h; 
@@ -131,21 +124,19 @@ void Initialize(PP &pp)
 {
     std::cout << "initialize Twisted ElGamal PKE >>>" << std::endl; 
 
-    CheckDlogParameters(pp.MSG_LEN, pp.TRADEOFF_NUM, pp.DEC_THREAD_NUM); 
+    CheckDlogParameters(pp.MSG_LEN, pp.TRADEOFF_NUM); 
  
-    std::string keytable_filename = GetKeyTableFileName(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM);     
+    std::string keytable_filename = GetKeyTableFileName(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM); 
+    std::string auxtable_filename = GetAuxTableFileName();     
     /* generate babystep table */
     if(FileExist(keytable_filename) == false){
-        if(pp.DEC_THREAD_NUM > 1){
-            ParallelBuildSerializeKeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, pp.DEC_THREAD_NUM, keytable_filename);
-        }
-        if(pp.DEC_THREAD_NUM == 1){
-            BuildSerializeKeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, keytable_filename);
-        }
+        BuildSerializeKeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, keytable_filename);
+        BuildSerializeAuxTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, auxtable_filename); 
     }
     
     // load the table from file 
     DeserializeKeyTableBuildHashMap(keytable_filename, pp.MSG_LEN, pp.TRADEOFF_NUM); 
+    //DeserializeAuxTable(auxtable_filename, pp.MSG_LEN, pp.TRADEOFF_NUM);
 }
 
 /* KeyGen algorithm */ 
@@ -231,15 +222,7 @@ BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
     //begin decryption  
     ECPoint M = ct.Y - ct.X * sk.ModInverse(order); // M = Y - X^{sk^{-1}} = h^m 
 
-    bool SUCCESS;
-    //Brute_Search(pp.h, M, m);
-    if(pp.DEC_THREAD_NUM == 1){
-        // use Shanks's algorithm to decrypt
-        SUCCESS = ShanksDLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, m); 
-    }
-    else{
-        SUCCESS = ParallelShanksDLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, pp.DEC_THREAD_NUM, m); 
-    }
+    bool SUCCESS = ShanksDLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, m); 
     if(SUCCESS == false)
     {
         std::cout << "decyption fails in the specified range" << std::endl; 

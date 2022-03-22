@@ -8,6 +8,7 @@ this hpp file define and initialize misc global variables
 #define KUNLUN_GLOBAL_HPP_
 
 #include "../include/std.inc"
+#include "constants.h"
 #include "aes.hpp"
 #include "block.hpp"
 

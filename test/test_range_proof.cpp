@@ -52,7 +52,7 @@ void test_gadget1(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN, si
     Bullet::PP pp_bullet = Bullet::Setup(RANGE_LEN, AGG_NUM); 
     size_t DEC_THREAD_NUM = 8; 
     size_t TRADEOFF_NUM = 7;
-    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(RANGE_LEN, TRADEOFF_NUM, DEC_THREAD_NUM); 
+    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(RANGE_LEN, TRADEOFF_NUM); 
 
     Gadget::PP pp = Gadget::Setup(pp_enc, pp_bullet);
     Gadget::Instance instance; 
@@ -93,7 +93,7 @@ void test_gadget2(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN, si
     Bullet::PP pp_bullet = Bullet::Setup(RANGE_LEN, AGG_NUM); 
     size_t DEC_THREAD_NUM = 8; 
     size_t TRADEOFF_NUM = 7;
-    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(RANGE_LEN, TRADEOFF_NUM, DEC_THREAD_NUM); 
+    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(RANGE_LEN, TRADEOFF_NUM); 
     Gadget::PP pp = Gadget::Setup(pp_enc, pp_bullet);
     Gadget::Instance instance; 
     Gadget::Witness_type2 witness; 

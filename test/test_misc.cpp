@@ -10,8 +10,6 @@ void benchmark_ecc(size_t TEST_NUM)
     std::cout << "ECC benchmark test begins >>>>>>" << std::endl; 
     PrintSplitLine('-'); 
 
-
-
     ECPoint A[TEST_NUM];                 // decrypted messages
     BigInt k[TEST_NUM];                  // scalars
 
@@ -67,7 +65,7 @@ void test_hash_to_point(size_t LEN)
     auto start_time = std::chrono::steady_clock::now(); 
     //#pragma omp parallel for
     for(auto i = 0; i < LEN; i++){
-        Hash::StringToECPoint(Block::ToString(vec_M[i])); 
+        Hash::ThreadSafeBlockToECPoint(vec_M[i]); 
     }
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -75,51 +73,39 @@ void test_hash_to_point(size_t LEN)
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
-void test_fast_hash_to_point(size_t LEN)
-{
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, fix_key, 0); // initialize PRG
-    std::vector<block> vec_M = PRG::GenRandomBlocks(seed, LEN);
+// void test_fast_hash_to_point(size_t LEN)
+// {
+//     PRG::Seed seed; 
+//     PRG::SetSeed(seed, fix_key, 0); // initialize PRG
+//     std::vector<block> vec_M = PRG::GenRandomBlocks(seed, LEN);
     
 
-    auto start_time = std::chrono::steady_clock::now(); 
-    #ifdef THREAD_SAFE
-    #pragma omp parallel for
-    #endif
-    for(auto i = 0; i < LEN; i++){
-        Hash::BlockToECPoint(vec_M[i]); 
-    }
-    auto end_time = std::chrono::steady_clock::now(); 
-    auto running_time = end_time - start_time;
-    std::cout << "hash to point takes time = " 
-    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-}
+//     auto start_time = std::chrono::steady_clock::now(); 
+//     #ifdef THREAD_SAFE
+//     #pragma omp parallel for
+//     #endif
+//     for(auto i = 0; i < LEN; i++){
+//         Hash::BlockToECPoint(vec_M[i]); 
+//     }
+//     auto end_time = std::chrono::steady_clock::now(); 
+//     auto running_time = end_time - start_time;
+//     std::cout << "hash to point takes time = " 
+//     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+// }
 
-// void test_endian()
+// void test_ECPointToIndex(size_t LEN)
 // {
-//     std::cout << sizeof(block) << std::endl; 
-//     std::vector<uint8_t> A(16); 
-//     A[0] = 0xFF;
-//     A[1] = 0x0F; 
-//     A[2] = 0xF0; 
-//     A[3] = 0xDD; 
-//     A[4] = 0xFF;
-//     A[5] = 0x01; 
-//     A[6] = 0x10; 
-//     A[7] = 0x25; 
-//     A[8] = 0x56;
-//     A[9] = 0x34; 
-//     A[10] = 0x67; 
-//     A[11] = 0x98; 
-//     A[12] = 0x22;
-//     A[13] = 0x41; 
-//     A[14] = 0x38; 
-//     A[15] = 0x66; 
-
-//     block B; 
-//     memcpy(&B, A.data(), 16); 
-
-//     //PrintBlock(B); 
+//     std::vector<ECPoint> vec_A = GenRandomECPointVector(LEN); 
+//     auto start_time = std::chrono::steady_clock::now(); 
+//     #pragma omp parallel for
+//     for(auto i = 0; i < LEN; i++){
+//         //Hash::AdHocECPointToIndex(vec_A[i]);
+//         Hash::SimpleECPointToIndex(vec_A[i]);  
+//     }
+//     auto end_time = std::chrono::steady_clock::now(); 
+//     auto running_time = end_time - start_time;
+//     std::cout << "hash to point takes time = " 
+//     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 // }
 
 // void test_matrix_transpose()
@@ -163,14 +149,15 @@ void test_fast_hash_to_point(size_t LEN)
 
 int main()
 {  
+    Global_Setup();
     Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
 
-    size_t TEST_NUM = 1024*32;  
+    size_t TEST_NUM = 1024*1024;  
 
-    benchmark_ecc(TEST_NUM); 
+    //benchmark_ecc(TEST_NUM); 
 
-    test_fast_hash_to_point(1024*1024); 
+    test_hash_to_point(TEST_NUM); 
     
 
     ECGroup_Finalize(); 

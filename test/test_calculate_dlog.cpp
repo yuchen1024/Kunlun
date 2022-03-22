@@ -3,29 +3,23 @@
 #include "../utility/print.hpp"
 
 
-void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, size_t TEST_NUM)
+void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 {
     PrintSplitLine('-'); 
     std::cout << "dlog benchmark test begins >>>"<< std::endl;
     PrintSplitLine('-'); 
     std::cout << "RANGE_LEN = " << RANGE_LEN << std::endl;
     std::cout << "TRADEOFF_NUM = " << TRADEOFF_NUM << std::endl; 
-    std::cout << "THREAD_NUM = " << THREAD_NUM << std::endl; 
     std::cout << "TEST_NUM = " << TEST_NUM << std::endl;
     PrintSplitLine('-'); 
 
-    CheckDlogParameters(RANGE_LEN, TRADEOFF_NUM, THREAD_NUM); 
+    CheckDlogParameters(RANGE_LEN, TRADEOFF_NUM); 
 
     ECPoint g = ECPoint(generator); 
     std::string keytable_filename = GetKeyTableFileName(g, RANGE_LEN, TRADEOFF_NUM);     
     /* generate babystep table */
     if(FileExist(keytable_filename) == false){
-        if(THREAD_NUM > 1){
-            ParallelBuildSerializeKeyTable(g, RANGE_LEN, TRADEOFF_NUM, THREAD_NUM, keytable_filename);
-        }
-        if(THREAD_NUM == 1){
             BuildSerializeKeyTable(g, RANGE_LEN, TRADEOFF_NUM, keytable_filename);
-        }
     }
     
     // load the table from file 
@@ -45,7 +39,7 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t THREAD_NUM, si
     auto start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        ParallelShanksDLOG(g, Y[i], RANGE_LEN, TRADEOFF_NUM, THREAD_NUM, x_prime[i]); 
+        ShanksDLOG(g, Y[i], RANGE_LEN, TRADEOFF_NUM, x_prime[i]); 
     }
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -76,10 +70,9 @@ int main()
 
     size_t RANGE_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
-    size_t THREAD_NUM = 8; 
     size_t TEST_NUM = 100;  
 
-    benchmark_dlog(RANGE_LEN, TRADEOFF_NUM, THREAD_NUM, TEST_NUM);
+    benchmark_dlog(RANGE_LEN, TRADEOFF_NUM, TEST_NUM);
 
     ECGroup_Finalize(); 
     Context_Finalize(); 

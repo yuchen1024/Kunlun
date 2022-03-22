@@ -7,7 +7,6 @@
 #include "../../crypto/block.hpp"
 #include "../../netio/stream_channel.hpp"
 #include "../../filter/bloom_filter.hpp"
-#include "../ot/iknp_ote.hpp"
 
 
 

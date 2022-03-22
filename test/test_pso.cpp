@@ -104,7 +104,7 @@ int main()
     Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1); 
 
-    PSO_type current = PSI_sum; 
+    PSO_type current = PSU; 
 
     switch(current) {
         case PSI: std::cout << "PSI"; break; 
@@ -121,7 +121,7 @@ int main()
     std::string pp_filename = "PSO.pp"; 
     PSO::PP pp; 
     if(!FileExist(pp_filename)){
-        pp = PSO::Setup("shuffle", 40); // 50 is the statistical parameter
+        pp = PSO::Setup("bloom", 40); // 50 is the statistical parameter
         PSO::SavePP(pp, pp_filename); 
     }
     else{
@@ -153,7 +153,6 @@ int main()
         if(party == "server"){
             NetIO server_io("server", "", 8080);
             std::vector<block> vec_intersection_prime = PSO::PSIServer(server_io, pp, testcase.vec_X, testcase.LEN);
-            //std::cout << vec_intersection_prime.size() << std::endl;
 
             bool result = Block::Compare(testcase.vec_intersection, vec_intersection_prime); 
             if(result) std::cout << "PSI test succeeds" << std::endl; 
@@ -172,9 +171,9 @@ int main()
             NetIO server_io("server", "", 8080);
             std::vector<block> vec_union_prime = PSO::PSUServer(server_io, pp, testcase.vec_X, testcase.LEN);
 
-            bool result = Block::Compare(testcase.vec_union, vec_union_prime); 
-            if(result) std::cout << "PSU test succeeds" << std::endl; 
-            else std::cout << "PSU test fails" << std::endl; 
+            // bool result = Block::Compare(testcase.vec_union, vec_union_prime); 
+            // if(result) std::cout << "PSU test succeeds" << std::endl; 
+            // else std::cout << "PSU test fails" << std::endl; 
         }
     
         if(party == "client"){

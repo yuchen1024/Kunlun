@@ -19,6 +19,35 @@ LINK_DIRECTORIES(
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build) 
 
+include(CMakePrintHelpers)
+
+foreach(key
+  IN ITEMS
+    NUMBER_OF_LOGICAL_CORES
+    NUMBER_OF_PHYSICAL_CORES
+    IS_64BIT
+    HAS_SSE2
+    OS_NAME
+    OS_RELEASE
+  )
+  # query the item ${key} and save its value in the variable _${key}
+  cmake_host_system_information(RESULT _${key} QUERY ${key})
+  cmake_print_variables(_${key})
+endforeach()
+
+# let the preprocessor know about the system name
+if(CMAKE_SYSTEM_NAME  STREQUAL "Linux")
+  SET(IS_LINUX 1)
+endif()
+if(CMAKE_SYSTEM_NAME  STREQUAL "Darwin")
+  SET(IS_MACOS 1)
+endif()
+if(CMAKE_SYSTEM_NAME  STREQUAL "Windows")
+  SET(IS_WINDOWS 1)
+endif()
+
+configure_file(${PROJECT_SOURCE_DIR}/config/config.h.in ${PROJECT_SOURCE_DIR}/config/config.h @ONLY)
+
 
 # netio
 ADD_EXECUTABLE(test_netio test/test_netio.cpp)
@@ -94,3 +123,4 @@ TARGET_LINK_LIBRARIES(test_range_proof ${OPENSSL_LIBRARIES} -lomp)
 # cryptocurrency
 ADD_EXECUTABLE(test_adcp test/test_adcp.cpp)
 TARGET_LINK_LIBRARIES(test_adcp ${OPENSSL_LIBRARIES} -lomp)
+

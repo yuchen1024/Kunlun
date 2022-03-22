@@ -285,7 +285,7 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
     
     size_t TRADEOFF_NUM = 7;
     size_t DEC_THREAD_NUM = 8;
-    pp.enc_part = TwistedElGamal::Setup(LOG_MAXIMUM_COINS, TRADEOFF_NUM, DEC_THREAD_NUM);  
+    pp.enc_part = TwistedElGamal::Setup(LOG_MAXIMUM_COINS, TRADEOFF_NUM);  
 
     std::tie(pp.pka, sp.ska) = TwistedElGamal::KeyGen(pp.enc_part);
 

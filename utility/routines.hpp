@@ -8,6 +8,8 @@ this hpp implements some routine algorithms
 #define KUNLUN_UTILITY_ROUTINES_HPP_
 
 #include "../include/std.inc"
+#include "../config/config.h"
+
 
 // check the existence of a given file
 inline bool FileExist(const std::string& filename)
@@ -53,8 +55,10 @@ std::vector<int64_t> GenRandomIntegerVectorLessThan(size_t LEN, int64_t MAX)
     return vec_result; 
 }
 
+#ifdef IS_MACOS
 std::ofstream &operator<<(std::ofstream &fout, const size_t &a)
 { 
+    //std::cout << "OS name: " << OS_NAME << std::endl;
     fout.write(reinterpret_cast<const char *>(&a), 8);  
     return fout;            
 }
@@ -64,6 +68,7 @@ std::ifstream &operator>>(std::ifstream &fin, size_t &a)
     fin.read(reinterpret_cast<char *>(&a), 8); 
     return fin;            
 }
+#endif
 
 std::ofstream &operator<<(std::ofstream &fout, const int64_t &a)
 { 

@@ -2,6 +2,7 @@
 #define KUNLUN_PSO_HPP_
 
 #include "../rpmt/cwprf_mqrpmt.hpp"
+#include "../ot/iknp_ote.hpp"
 
 
 /*

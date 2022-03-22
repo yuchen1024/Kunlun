@@ -1,0 +1,10 @@
+#pragma once
+
+#define NUMBER_OF_LOGICAL_CORES      @_NUMBER_OF_LOGICAL_CORES@
+#define NUMBER_OF_PHYSICAL_CORES     @_NUMBER_OF_PHYSICAL_CORES@
+#define IS_64BIT                     @_IS_64BIT@
+#define HAS_SSE2                     @_HAS_SSE2@
+
+#cmakedefine IS_LINUX                 @IS_LINUX@
+#cmakedefine IS_MACOS                 @IS_MACOS@
+#cmakedefine IS_WINDOWS               @IS_WINDOWS@

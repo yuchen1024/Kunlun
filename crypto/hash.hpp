@@ -13,6 +13,7 @@ this hpp implements hash functions
 #include "global.hpp"
 #include "constants.h"
 #include "openssl/evp.h"
+#include "../utility/murmurhash2.hpp"
 
 
 //#define BasicHash(input, HASH_INPUT_LEN, output) SM3(input, HASH_INPUT_LEN, output)
@@ -20,7 +21,7 @@ this hpp implements hash functions
 
 namespace Hash{
 
-// adaptor for SM3
+// adaptor for SM3: default output length is 256 bit
 void SM3(const unsigned char *input, size_t HASH_INPUT_LEN, unsigned char *output)
 {
     EVP_MD_CTX *md_ctx;
@@ -34,6 +35,29 @@ void SM3(const unsigned char *input, size_t HASH_INPUT_LEN, unsigned char *outpu
     unsigned int md_len = HASH_OUTPUT_LEN; 
     EVP_DigestFinal_ex(md_ctx, output, &md_len);
     EVP_MD_CTX_free(md_ctx);
+}
+
+// adaptor for CBC-AES hash: default output length is 128 bit
+void CBCAES(const unsigned char *input, size_t HASH_INPUT_LEN, unsigned char *output) 
+{
+    // pad input to 16*n bytes: 16*(INPUT_LEN % 16 + 1)
+    size_t PADDED_LEN = ((HASH_INPUT_LEN + 0x0F) >> 4) << 4; // ((LEN+15)/16)*16
+
+    // padding method to be refined
+    size_t BLOCK_NUM = (PADDED_LEN >> 4); // 16 bytes = 1 block
+    unsigned char buffer[PADDED_LEN]; 
+    memset(buffer, 0, PADDED_LEN); 
+    memcpy(buffer, input, HASH_INPUT_LEN); 
+
+    block data[BLOCK_NUM];
+    for(auto i = 0; i < BLOCK_NUM; i++){
+        data[i] = _mm_load_si128((block *)(input + i*16));
+    } 
+
+    // use CBC-AES hash: digest lies in the last block
+    AES::CBCEnc(fix_aes_enc_key, data, BLOCK_NUM);  
+
+    _mm_storeu_si128((block *)output, data[BLOCK_NUM-1]);
 }
 
 
@@ -93,27 +117,6 @@ block ECPointToBlock(const ECPoint &A)
     return StringToBlock(str_input);  
 }
 
-size_t AdHocECPointToIndex(const ECPoint &A)
-{
-    unsigned char buffer[POINT_BYTE_LEN];
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-
-    unsigned char input[BN_BYTE_LEN*2];
-    memcpy(input, buffer+1, BN_BYTE_LEN*2); 
-
-    // note that omp does not help to accelerate here
-    block data[4]; 
-    data[0] = _mm_load_si128((block *)(input+0 ));     
-    data[1] = _mm_load_si128((block *)(input+16)); 
-    data[2] = _mm_load_si128((block *)(input+32)); 
-    data[3] = _mm_load_si128((block *)(input+48));
-
-    AES::CBCEnc(fix_aes_enc_key, data, 4);  
-
-    size_t index = _mm_cvtsi128_si64(data[3]);
-    return index;
-}
-
 std::string ECPointToString(const ECPoint &A) 
 { 
     unsigned char input[POINT_COMPRESSED_BYTE_LEN];
@@ -143,47 +146,22 @@ block BlocksToBlock(const std::vector<block> &input_block)
     return _mm_load_si128((__m128i*)&output[0]);
 }
 
+
 // fast block to ecpoint hash using low level openssl code
 inline ECPoint BlockToECPoint(const block &var)
 {
-    //BN_CTX *temp_bn_ctx = BN_CTX_new(); 
     ECPoint ecp_result; 
  
     BIGNUM *x = BN_new();
-    unsigned char buffer[32]; 
-    memcpy(buffer, &var, 16); 
-    BN_bin2bn(buffer, 16, x);
-    
-    BIGNUM *BN_3 = BN_new(); 
-    BN_set_word(BN_3, 3); 
-
-    BIGNUM *y_square = BN_new();
-    BIGNUM *y = BN_new(); 
-    BIGNUM *ax = BN_new(); 
-    
-    size_t LEN; 
-    unsigned char hash_output[32]; 
+    unsigned char buffer[32];
+    memset(buffer, 0, 32);
+    memcpy(buffer, &var, 16);    
     while (true) { 
-        BN_exp(y_square, x, BN_3, bn_ctx); 
-        BN_mul(ax, x, curve_params_a, bn_ctx);
-        BN_add(y_square, y_square, ax); 
-        BN_add(y_square, y_square, curve_params_b);   
-        y = BN_mod_sqrt(y, y_square, curve_params_p, bn_ctx);
-        // hash success
-        if (y!= NULL){
-            if(EC_POINT_set_affine_coordinates_GFp(group, ecp_result.point_ptr, x, y, bn_ctx)) break;
-        }      
-        LEN = BN_bn2bin(x, buffer); 
-        BasicHash(buffer, LEN, hash_output);
-        BN_bin2bn(hash_output, 32, x);
+        BN_bin2bn(buffer, 32, x);
+        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, bn_ctx)==1) break;      
+        BasicHash(buffer, 32, buffer);
     }
-    BN_free(BN_3); 
-    BN_free(y); 
-    BN_free(y_square); 
-    BN_free(x); 
-    BN_free(ax); 
-    //BN_CTX_free(temp_bn_ctx); 
-   
+    BN_free(x);    
     return ecp_result;
 }
 
@@ -194,64 +172,22 @@ inline ECPoint ThreadSafeBlockToECPoint(const block &var)
     ECPoint ecp_result; 
  
     BIGNUM *x = BN_new();
-    unsigned char buffer[32]; 
-    memcpy(buffer, &var, 16); 
-    BN_bin2bn(buffer, 16, x);
+    unsigned char buffer[32];
+    memset(buffer, 0, 32);
+    memcpy(buffer, &var, 16);    
     
-    BIGNUM *BN_3 = BN_new(); 
-    BN_set_word(BN_3, 3); 
-
-    BIGNUM *y_square = BN_new();
-    BIGNUM *y = BN_new(); 
-    BIGNUM *ax = BN_new(); 
-    
-    size_t LEN; 
-    unsigned char hash_output[32]; 
     while (true) { 
-        BN_exp(y_square, x, BN_3, temp_bn_ctx); 
-        BN_mul(ax, x, curve_params_a, temp_bn_ctx);
-        BN_add(y_square, y_square, ax); 
-        BN_add(y_square, y_square, curve_params_b);   
-        y = BN_mod_sqrt(y, y_square, curve_params_p, temp_bn_ctx);
-        // hash success
-        if (y!= NULL){
-            if(EC_POINT_set_affine_coordinates_GFp(group, ecp_result.point_ptr, x, y, temp_bn_ctx)) break;
-        }      
-        LEN = BN_bn2bin(x, buffer); 
-        BasicHash(buffer, LEN, hash_output);
-        BN_bin2bn(hash_output, 32, x);
+        BN_bin2bn(buffer, 32, x);
+        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, temp_bn_ctx)==1) break;      
+        BasicHash(buffer, 32, buffer);
     }
-    BN_free(BN_3); 
-    BN_free(y); 
-    BN_free(y_square); 
-    BN_free(x); 
-    BN_free(ax); 
+    BN_free(x);    
     BN_CTX_free(temp_bn_ctx); 
    
     return ecp_result;
 }
 
-/* map an EC point to another EC point, used in pp generation */
-ECPoint ECPointToECPoint(ECPoint &g)
-{
-    ECPoint h; 
-    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
-    unsigned char hash_output[HASH_OUTPUT_LEN]; 
 
-    ECPoint ecp_trypoint = g;  
-
-    /* continue the loop until find a point on curve */
-    while(true){
-        EC_POINT_point2oct(group, ecp_trypoint.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
-        BasicHash(buffer, POINT_BYTE_LEN, hash_output);
-        // set h to be the first EC point sartisfying the following constraint
-        if(EC_POINT_oct2point(group, h.point_ptr, hash_output, POINT_COMPRESSED_BYTE_LEN, bn_ctx) == 1 
-           && EC_POINT_is_on_curve(group, h.point_ptr, bn_ctx) == 1
-           && EC_POINT_is_at_infinity(group, h.point_ptr) == 0) break;
-        else ecp_trypoint = ecp_trypoint + g; 
-    } 
-    return h; 
-}
 
 }
 
