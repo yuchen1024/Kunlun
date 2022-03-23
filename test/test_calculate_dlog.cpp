@@ -16,15 +16,18 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     CheckDlogParameters(RANGE_LEN, TRADEOFF_NUM); 
 
     ECPoint g = ECPoint(generator); 
-    std::string keytable_filename = GetKeyTableFileName(g, RANGE_LEN, TRADEOFF_NUM);     
-    /* generate babystep table */
-    if(FileExist(keytable_filename) == false){
-            BuildSerializeKeyTable(g, RANGE_LEN, TRADEOFF_NUM, keytable_filename);
+    std::string table_filename = GetTableFileName(g, RANGE_LEN, TRADEOFF_NUM);   
+
+    /* generate and save table */
+    if(FileExist(table_filename) == false){
+        std::cout << table_filename << " does not exist" << std::endl;
+        BuildSaveTable(g, RANGE_LEN, TRADEOFF_NUM, table_filename);
     }
     
     // load the table from file 
-    DeserializeKeyTableBuildHashMap(keytable_filename, RANGE_LEN, TRADEOFF_NUM); 
-
+    std::cout << table_filename << " already exists" << std::endl;
+    LoadTable(table_filename, RANGE_LEN, TRADEOFF_NUM); 
+    
     BigInt x[TEST_NUM];                        // scalars  
     BigInt x_prime[TEST_NUM];                  // dlog scalars
     ECPoint Y[TEST_NUM];  

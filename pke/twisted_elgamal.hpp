@@ -7,10 +7,6 @@
 #include "../utility/routines.hpp"
 #include "calculate_dlog.hpp"
 
-
-// babystep hashkey table: crucial for implement Shanks algorithm
-const std::string keytable_filename  = "babystep_hashkey.table"; 
-
 namespace TwistedElGamal{
 
 // define the structure of PP
@@ -126,17 +122,16 @@ void Initialize(PP &pp)
 
     CheckDlogParameters(pp.MSG_LEN, pp.TRADEOFF_NUM); 
  
-    std::string keytable_filename = GetKeyTableFileName(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM); 
-    std::string auxtable_filename = GetAuxTableFileName();     
-    /* generate babystep table */
-    if(FileExist(keytable_filename) == false){
-        BuildSerializeKeyTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, keytable_filename);
-        BuildSerializeAuxTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, auxtable_filename); 
+    std::string table_filename = GetTableFileName(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM);      
+    /* generate and save table */
+    if(FileExist(table_filename) == false){
+        std::cout << table_filename << " does not exist" << std::endl;
+        BuildSaveTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, table_filename);
     }
     
     // load the table from file 
-    DeserializeKeyTableBuildHashMap(keytable_filename, pp.MSG_LEN, pp.TRADEOFF_NUM); 
-    //DeserializeAuxTable(auxtable_filename, pp.MSG_LEN, pp.TRADEOFF_NUM);
+    std::cout << table_filename << " already exists" << std::endl;
+    LoadTable(table_filename, pp.MSG_LEN, pp.TRADEOFF_NUM); 
 }
 
 /* KeyGen algorithm */ 

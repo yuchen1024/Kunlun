@@ -14,13 +14,10 @@ this hpp implements DLOG algorithm
 ** giantstep num/loop num     = 2^(RANGE_LEN/2-TRADEOFF_NUM)
 */
 
-#include <iostream>
 #include "../crypto/ec_point.hpp"
 #include "../crypto/hash.hpp"
 #include "../utility/murmurhash3.hpp"
 #include "../utility/print.hpp"
-
-
 
 class naivehash{
 public:
@@ -30,11 +27,12 @@ public:
     }
 };
 
-const static size_t BUILD_TASK_NUM = pow(2, 6); 
-const static size_t SEARCH_TASK_NUM = pow(2, 6);  
 
-ECPoint ecp_giantstep; 
-std::vector<ECPoint> ecp_vec_searchanchor;
+const static size_t BUILD_TASK_NUM  = pow(2, 6);  // number of parallel task for building pre-computable table 
+const static size_t SEARCH_TASK_NUM = pow(2, 6);  // number of parallel task for search  
+
+ECPoint giantstep; 
+std::vector<ECPoint> vec_searchanchor;
 
 /*
 ** key-value hash table: key is uint64_t encoding, value is its corresponding DLOG w.r.t. g
@@ -54,28 +52,25 @@ void CheckDlogParameters(size_t RANGE_LEN, size_t TRADEOFF_NUM)
     }
 }
 
-std::string GetKeyTableFileName(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM)
+std::string GetTableFileName(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM)
 {
     std::string str_base = std::to_string(2);
-    std::string str_exp  = std::to_string(RANGE_LEN/2+TRADEOFF_NUM);
-    // use 8-byte uint64_t hash value as encoding of EC Point 
+    std::string str_exp0 = std::to_string(RANGE_LEN);    // range size
+    std::string str_exp1 = std::to_string(RANGE_LEN/2+TRADEOFF_NUM);  // babystep key table size
+    std::string str_exp2 = std::to_string(RANGE_LEN/2-TRADEOFF_NUM-(size_t)log2(SEARCH_TASK_NUM));  // (log) giant step amplification factor: default value=0 
+    // use 8-byte uint64_t hash value as an identifier of EC Point 
     std::string str_suffix = FormatToHexString(Hash::ECPointToString(g));
     str_suffix = str_suffix.substr(0,16);
 
-    std::string keytable_filename  = str_suffix + "-babystephashkey(" + str_base + "^" + str_exp + ").table"; 
-    return keytable_filename; 
+    std::string table_filename  = str_suffix +"[" + 
+                                  str_base+"^"+str_exp0 + "," + 
+                                  str_base+"^"+str_exp1 + "," + 
+                                  str_base+"^"+str_exp2 + "].table"; 
+    return table_filename; 
 }
 
-
-std::string GetAuxTableFileName()
-{
-    std::string auxtable_filename  = "aux.table"; 
-    return auxtable_filename; 
-}
 /* 
-* parallel implementation
-* include parallel keytable building 
-* and parallel search
+* parallel implementation: parallel table building and parallel search
 */
 
 
@@ -91,20 +86,25 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
     } 
 }
 
-
 /* 
-* generate babystep hashkey table
-* standard method is using babystep point as key for point2index hashmap: big key size
-* to shorten key size, use hash to map babystep point to unique key
+** generate precompute table, it consists of two parts
+
+** part 1 - babystep hashkey: encoding values of [g^0, g^1, ..., g^{BABYSTEP_NUM}]
+** standard method is using babystep point as key for point2index hashmap, result in big key size
+** to shorten key size, use hash to map babystep point to unique key
+
+** part 2 - giantstep aux info: (1) giantstep = - g^{BABYSTEP_NUM}; (2) [giantstep^{i*factor}]: i=[SEARCH_TASK_NUM]
+
 */
 
-void BuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::string keytable_filename)
+void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::string table_filename)
 {
     
-    std::cout << keytable_filename << " does not exist, begin to build and serialize >>>" << std::endl;
+    std::cout << "begin to build and save " << table_filename << " >>> " << std::endl;
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
-    size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep num = giantstep size
+
+    size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep num = single giantstep size
 
     /*
     * to show full power of omp, this value is not real CPU core number
@@ -116,236 +116,190 @@ void BuildSerializeKeyTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, s
     std::vector<ECPoint> startpoint(BUILD_TASK_NUM); 
     std::vector<size_t> startindex(BUILD_TASK_NUM); 
 
+    // generate start index
     #pragma omp parallel for
     for (auto i = 0; i < BUILD_TASK_NUM; i++){
         startindex[i] = i * SLICED_BABYSTEP_NUM; 
     }
+
+    // compute start point
     #pragma omp parallel for
     for (auto i = 0; i < BUILD_TASK_NUM; i++){
         startpoint[i] = g.ThreadSafeMul(startindex[i]);
     }
     
-
     // allocate memory
     unsigned char *buffer = new unsigned char[BABYSTEP_NUM*INT_BYTE_LEN]();
     if(buffer == nullptr)
     {
-        std::cerr << "fail to create buffer for babystep table" << std::endl; 
+        std::cerr << "fail to create buffer for babystep key table" << std::endl; 
         exit(EXIT_FAILURE); 
     } 
 
+    // part 1: parallel build babystep key 
     #pragma omp parallel for
     for(auto i = 0; i < BUILD_TASK_NUM; i++){ 
         BuildSlicedKeyTable(g, startpoint[i], startindex[i], SLICED_BABYSTEP_NUM, buffer);
     }  
 
-    // save buffer to babystep table
-    // auto start_time = std::chrono::steady_clock::now(); // start to count the time
+    // part 2: build giantstep aux info 
+    size_t GIANTSTEP_NUM = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
+    
+    /*
+    ** each search task will search in #SLICED_GIANTSTEP_NUM GIANTSTEP
+    ** the maximum SEACRH_TASK_NUM = GIANTSTEP_NUM
+    */
+    size_t SLICED_GIANTSTEP_NUM = GIANTSTEP_NUM/SEARCH_TASK_NUM; 
+
+    // compute and save giantstep and anchor points for slicedrange
+    giantstep.ReInitialize(); 
+    giantstep = g * BigInt(BABYSTEP_NUM); 
+    giantstep = giantstep.Invert();   // set giantstep = -g^BABYSTEP_NUM
+    
+    ECPoint giantgiantstep = giantstep * BigInt(SLICED_GIANTSTEP_NUM);
+
+    vec_searchanchor.resize(SEARCH_TASK_NUM); 
+    #pragma omp parallel for
+    for (auto i = 0; i < SEARCH_TASK_NUM; i++){
+        vec_searchanchor[i] = giantgiantstep.ThreadSafeMul(BigInt(i));         
+    }
+
     std::ofstream fout; 
-    fout.open(keytable_filename, std::ios::binary); 
+    fout.open(table_filename, std::ios::binary); 
     if(!fout)
     {
-        std::cerr << keytable_filename << " open error" << std::endl;
+        std::cerr << table_filename << " open error" << std::endl;
         exit(1); 
     }
+
+    // save babystep key to table
     fout.write(reinterpret_cast<char *>(buffer), BABYSTEP_NUM*INT_BYTE_LEN); 
+    delete[] buffer;
+
+    // save giantstep aux info to table
+    fout << giantstep; 
+    for (auto i = 0; i < SEARCH_TASK_NUM; i++){
+        fout << vec_searchanchor[i];         
+    }
 
     fout.close(); 
-    delete[] buffer; 
         
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
-    std::cout << "serializing babystep keytable takes time = " 
+    std::cout << "build and save precompute table takes time = " 
         << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
 
-void BuildSerializeAuxTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::string auxtable_filename)
-{
 
-    size_t BABYSTEP_NUM  = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep_num = giantstep_size
-    size_t GIANTSTEP_NUM = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
-    
-    size_t SLICED_GIANTSTEP_NUM = GIANTSTEP_NUM/SEARCH_TASK_NUM; 
 
-    // compute and save ecp_giantstep and ecp_slicedrange
-    ECPoint ecp_giantstep = g * BigInt(BABYSTEP_NUM); // set giantstep = g^babystep_num
-    ecp_giantstep = ecp_giantstep.Invert();
-
-    ecp_giantstep.Print("giantstep"); 
-    
-    ECPoint ecp_slicedrange = ecp_giantstep * BigInt(SLICED_GIANTSTEP_NUM);
-
-    ecp_vec_searchanchor.resize(SEARCH_TASK_NUM); 
-
-    for (auto i = 0; i < SEARCH_TASK_NUM; i++){
-        ecp_vec_searchanchor[i] = ecp_slicedrange * BigInt(i);         
-    }
-
-    std::ofstream fout; 
-    fout.open(auxtable_filename, std::ios::binary); 
-    if(!fout)
-    {
-        std::cerr << auxtable_filename << " open error" << std::endl;
-        exit(1); 
-    }
-    fout << ecp_giantstep; 
-
-    for (auto i = 0; i < SEARCH_TASK_NUM; i++){
-        fout << ecp_vec_searchanchor[i];         
-    }
-
-    fout.close();
-
-    ecp_giantstep.Print("giantstep");  
-}
-
-/* deserialize keytable and build hashmap */
-void DeserializeKeyTableBuildHashMap(std::string keytable_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM)
+/* 
+** load table 
+** 1. build hashmap in RAM
+** 2. load aux info to global objects
+*/ 
+void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM)
 {   
-    std::cout << keytable_filename << " already exists, begin to load and build the hashmap >>>" << std::endl; 
+    std::cout << "begin to load " << table_filename << " >>>" << std::endl; 
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
+    
     size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); 
 
+    // read and check table file
+    std::ifstream fin; 
+    fin.open(table_filename, std::ios::binary); 
+    if(!fin)
+    {
+        std::cout << table_filename << " read error" << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    fin.seekg(0, fin.end);
+
+    size_t FILE_BYTE_LEN = fin.tellg(); // get the size of hash table file 
+
+    size_t BABYSTEP_KEY_SIZE = BABYSTEP_NUM * INT_BYTE_LEN;  
+    size_t GIANTSTEP_AUX_SIZE = (SEARCH_TASK_NUM+1) * POINT_COMPRESSED_BYTE_LEN; 
+
+    if (FILE_BYTE_LEN != (BABYSTEP_KEY_SIZE+GIANTSTEP_AUX_SIZE))
+    {
+        std::cout << "table size does not match" << std::endl; 
+        exit(EXIT_FAILURE); 
+    }
+
+    std::cout << table_filename << " size = " << (double)FILE_BYTE_LEN/pow(2,20) << " MB" << std::endl;
+
+    fin.seekg(0);                  // reset the file pointer to the beginning of file
+
+    // construct hashmap from babystep key 
     unsigned char* buffer = new unsigned char[BABYSTEP_NUM*INT_BYTE_LEN]();  
     if(buffer == nullptr)
     {
         std::cerr << "fail to create buffer for babystep table" << std::endl; 
         exit(EXIT_FAILURE); 
-    }   
-    // load hashmap_file to buffer
-    std::ifstream fin; 
-    fin.open(keytable_filename, std::ios::binary); 
-    if(!fin)
-    {
-        std::cout << keytable_filename << " read error" << std::endl;
-        exit(EXIT_FAILURE); 
     }
-    fin.seekg(0, fin.end);
-    size_t FILE_BYTE_LEN = fin.tellg(); // get the size of hash table file 
+    fin.read(reinterpret_cast<char*>(buffer), BABYSTEP_KEY_SIZE); // read file from disk to RAM
 
-    if (FILE_BYTE_LEN != BABYSTEP_NUM * INT_BYTE_LEN)
+    #pragma omp parallel
+    #pragma omp sections
     {
-        std::cout << "buffer size does not match babystep table size" << std::endl; 
-        exit(EXIT_FAILURE); 
+        #pragma omp section
+        {
+            std::size_t hashkey; 
+            /* point_to_index_map[ECn_to_String(babystep)] = i */
+            for(auto i = 0; i < BABYSTEP_NUM; i++)
+            {
+                std::memcpy(&hashkey, buffer+i*INT_BYTE_LEN, INT_BYTE_LEN);
+                encoding2index_map[hashkey] = i; 
+            }
+            delete[] buffer; 
+        }
+
+        #pragma omp section
+        {
+            giantstep.ReInitialize();
+            fin >> giantstep; 
+            vec_searchanchor.resize(SEARCH_TASK_NUM); 
+            for(auto i = 0; i < SEARCH_TASK_NUM; i++){
+                fin >> vec_searchanchor[i]; 
+            }
+            fin.close(); 
+        }
     }
-
-    std::cout << keytable_filename << " size = " << (double)FILE_BYTE_LEN/pow(2,20) << " MB" << std::endl;
-
-    fin.seekg(0);                  // reset the file pointer to the beginning of file
     
-    fin.read(reinterpret_cast<char*>(buffer), FILE_BYTE_LEN); // read file from disk to RAM
-
-    fin.close(); 
-    // auto end_time = std::chrono::steady_clock::now(); // end to count the time
-    // auto running_time = end_time - start_time;
-    // std::cout << "deserializing babystep table takes time = " 
-    // << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-
-    // construct hashmap from buffer 
-    start_time = std::chrono::steady_clock::now(); // start to count the time
-    std::size_t hashkey; 
-
-    /* point_to_index_map[ECn_to_String(babystep)] = i */
-    for(auto i = 0; i < BABYSTEP_NUM; i++)
-    {
-        std::memcpy(&hashkey, buffer+i*INT_BYTE_LEN, INT_BYTE_LEN);
-        encoding2index_map[hashkey] = i; 
-    }
-
-    delete[] buffer; 
-
     auto end_time = std::chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
-    std::cout << "building hashmap takes time = " 
+    std::cout << "load table (build hashmap + aux info) takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 } 
-
-void DeserializeAuxTable(std::string auxtable_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM)
-{   
-    std::cout << auxtable_filename << " already exists, begin to load and build the hashmap >>>" << std::endl; 
-
-    auto start_time = std::chrono::steady_clock::now(); // start to count the time
-
-    size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); 
- 
-    // load hashmap_file to buffer
-    std::ifstream fin; 
-    fin.open(auxtable_filename, std::ios::binary); 
-    // if(!fin)
-    // {
-    //     std::cout << auxtable_filename << " read error" << std::endl;
-    //     exit(EXIT_FAILURE); 
-    // }
-    // fin.seekg(0, fin.end);
-    // size_t FILE_BYTE_LEN = fin.tellg(); // get the size of hash table file 
-
-    // if (FILE_BYTE_LEN != (SEARCH_TASK_NUM+1) * POINT_COMPRESSED_BYTE_LEN)
-    // {
-    //     std::cout << "aux table size does not match" << std::endl; 
-    //     exit(EXIT_FAILURE); 
-    // }
-
-    // std::cout << auxtable_filename << " size = " << (double)FILE_BYTE_LEN/pow(2,20) << " MB" << std::endl;
-
-    // fin.seekg(0);                  // reset the file pointer to the beginning of file
-    
-    // ECPoint temp = ECPoint(generator);
-    // temp.Print();  
-    // fin >> temp; 
-
-
-    // std::cout << "here?" << std::endl;
-
-
-    // temp.Print(); 
-
-    ecp_giantstep = ECPoint(generator); 
-
-    std::cout << "where?" << std::endl;
-
-    // ecp_vec_searchanchor.resize(SEARCH_TASK_NUM); 
-    
-    // std::cout << "why" << std::endl;
-    // for(auto i = 0; i < SEARCH_TASK_NUM; i++){
-    //     fin >> ecp_vec_searchanchor[i]; 
-    // }
-
-    // std::cout << "oh no" << std::endl;
-
-    fin.close(); 
-
-
-    auto end_time = std::chrono::steady_clock::now(); // end to count the time
-    auto running_time = end_time - start_time;
-    std::cout << "load aux table takes time = " 
-    << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-} 
-
 
 
 /* parallelizable search task */
-bool SearchSlicedRange(size_t SEARCH_TASK_INDEX, ECPoint target, size_t SLICED_GIANTSTEP_NUM, size_t &i, size_t &j)
+bool SearchSlicedRange(size_t SEARCH_TASK_INDEX, ECPoint target, size_t &SLICED_GIANTSTEP_NUM, 
+                       size_t &babystep_index, size_t &giantstep_index, bool &FIND)
 {    
-    target = target.ThreadSafeAdd(ecp_vec_searchanchor[SEARCH_TASK_INDEX]); 
+    // obtain relative target in sliced range
+    target = target.ThreadSafeAdd(vec_searchanchor[SEARCH_TASK_INDEX]); 
     std::size_t hashkey; 
-    // giant-step and baby-step search
-    for(j = 0; j < SLICED_GIANTSTEP_NUM; j++)
+    // giantgiant-step 
+    for(giantstep_index = 0; giantstep_index < SLICED_GIANTSTEP_NUM; giantstep_index++)
     {
+        // giantstep search in each loop
+        if(FIND == true) break; 
         // map the point to keyvalue
         hashkey = target.ToUint64(); 
         // baby-step search in the hash map
         if (encoding2index_map.find(hashkey) == encoding2index_map.end())
         { 
-            target = target.ThreadSafeAdd(ecp_giantstep); 
+            target = target.ThreadSafeAdd(giantstep); 
         }
         else{
-            i = encoding2index_map[hashkey]; 
+            babystep_index = encoding2index_map[hashkey]; 
             return true;
         }
     }
     return false; 
 }
+
 
 
 // compute x = log_g h
@@ -354,18 +308,11 @@ bool ShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRA
     size_t BABYSTEP_NUM  = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep_num = giantstep_size
     size_t GIANTSTEP_NUM = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
 
-    size_t SLICED_GIANTSTEP_NUM = GIANTSTEP_NUM/SEARCH_TASK_NUM; 
-
-
-    ecp_giantstep.Print("giantstep"); 
-
-    PrintECPointVector(ecp_vec_searchanchor, "anchor");
-
- 
+    size_t SLICED_GIANTSTEP_NUM = GIANTSTEP_NUM/SEARCH_TASK_NUM;  
     
     /* begin to search */
-    std::vector<size_t> i_index(SEARCH_TASK_NUM); 
-    std::vector<size_t> j_index(SEARCH_TASK_NUM);
+    std::vector<size_t> babystep_index(SEARCH_TASK_NUM); 
+    std::vector<size_t> giantstep_index(SEARCH_TASK_NUM); // relative giantstep index in sub-search task
 
     // check if the hash map is empty
     if(encoding2index_map.empty() == true)
@@ -374,15 +321,16 @@ bool ShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRA
         exit (EXIT_FAILURE);
     }
 
+    // a beacon value: used to notify other tasks break if one task has already succeed
     volatile bool FIND = false;
 
-    //#pragma omp parallel for shared(FIND)
+    #pragma omp parallel for shared(FIND)
     for(auto i = 0; i < SEARCH_TASK_NUM; i++){
-        if(FIND==false)
+        if(FIND == false)
         {
-            if(SearchSlicedRange(i, h, SLICED_GIANTSTEP_NUM, i_index[i], j_index[i]))
+            if(SearchSlicedRange(i, h, SLICED_GIANTSTEP_NUM, babystep_index[i], giantstep_index[i], FIND) == true)
             {
-                x = BigInt(i_index[i]) + BigInt(j_index[i]+i*SLICED_GIANTSTEP_NUM) * BigInt(BABYSTEP_NUM); 
+                x = BigInt(babystep_index[i]) + BigInt(giantstep_index[i]+i*SLICED_GIANTSTEP_NUM) * BigInt(BABYSTEP_NUM); 
                 FIND = true;
             } 
         } 

@@ -34,6 +34,13 @@ public:
     // Creates an ECPoint object with given x, y affine coordinates.
     ECPoint(const BigInt& x, const BigInt& y);
 
+    /* 
+    ** Re-initialization function
+    ** this function is somewhat dirty, only used as a ad-hoc bypass to initialize 
+    ** global ECPoint object before group is created
+    */
+
+    void ReInitialize(); 
     // Returns an ECPoint that is a copy of this.
     void Clone(const ECPoint& other) const;
 
@@ -129,6 +136,12 @@ ECPoint::ECPoint(const EC_POINT* &other){
 ECPoint::ECPoint(const BigInt& x, const BigInt& y){
     this->point_ptr = EC_POINT_new(group);
     EC_POINT_set_affine_coordinates_GFp(group, this->point_ptr, x.bn_ptr, y.bn_ptr, bn_ctx);
+}
+
+void ECPoint::ReInitialize(){
+    if (this->point_ptr == nullptr){
+        this->point_ptr = EC_POINT_new(group);
+    }
 }
 
 // dirty but thread safe implementation by setting bn_ctx = nullptr 
