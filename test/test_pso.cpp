@@ -17,8 +17,7 @@ PSOTestCase GenTestCase(size_t LEN)
     PSOTestCase testcase;
     testcase.LEN = LEN; 
 
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, fix_key, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_indication_bit = PRG::GenRandomBits(seed, LEN); 
@@ -59,12 +58,18 @@ void SaveTestCase(PSOTestCase &testcase, std::string testcase_filename)
     fout << testcase.CARDINALITY; 
     fout << testcase.SUM; 
 
-    for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_X[i]; 
-    for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_Y[i];
-    for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_label[i];
-    for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_indication_bit[i]; 
-    for(auto i = 0; i < testcase.CARDINALITY; i++) fout << testcase.vec_intersection[i];
-    for(auto i = 0; i < 2*testcase.LEN - testcase.CARDINALITY; i++) fout << testcase.vec_union[i];  
+    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_X[i]; 
+    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_Y[i];
+    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_label[i];
+    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_indication_bit[i]; 
+    // for(auto i = 0; i < testcase.CARDINALITY; i++) fout << testcase.vec_intersection[i];
+    // for(auto i = 0; i < 2*testcase.LEN - testcase.CARDINALITY; i++) fout << testcase.vec_union[i];  
+    fout << testcase.vec_X; 
+    fout << testcase.vec_Y; 
+    fout << testcase.vec_label;
+    fout << testcase.vec_indication_bit;
+    fout << testcase.vec_intersection; 
+    fout << testcase.vec_union; 
 
     fout.close(); 
 }
@@ -89,12 +94,21 @@ void FetchTestCase(PSOTestCase &testcase, std::string testcase_filename)
     testcase.vec_intersection.resize(testcase.CARDINALITY); 
     testcase.vec_union.resize(2*testcase.LEN - testcase.CARDINALITY);  
 
-    for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_X[i]; 
-    for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_Y[i];
-    for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_label[i];
-    for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_indication_bit[i]; 
-    for(auto i = 0; i < testcase.CARDINALITY; i++) fin >> testcase.vec_intersection[i];
-    for(auto i = 0; i < 2*testcase.LEN - testcase.CARDINALITY; i++) fin >> testcase.vec_union[i];  
+    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_X[i]; 
+    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_Y[i];
+    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_label[i];
+    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_indication_bit[i]; 
+    // for(auto i = 0; i < testcase.CARDINALITY; i++) fin >> testcase.vec_intersection[i];
+    // for(auto i = 0; i < 2*testcase.LEN - testcase.CARDINALITY; i++) fin >> testcase.vec_union[i];  
+
+
+    fin >> testcase.vec_X; 
+    fin >> testcase.vec_Y; 
+    fin >> testcase.vec_label;
+    fin >> testcase.vec_indication_bit;
+    fin >> testcase.vec_intersection; 
+    fin >> testcase.vec_union; 
+
     fin.close(); 
 }
 

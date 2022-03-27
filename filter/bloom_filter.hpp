@@ -68,16 +68,15 @@ std::vector<uint32_t> GenUniqueSaltVector(size_t hash_num, uint32_t random_seed)
 
 class BloomFilter{
 public:
+   uint32_t random_seed; // used to generate vec_salt
    uint32_t hash_num;  // number of keyed hash functions
-   std::vector<uint32_t> vec_salt;
+   std::vector<uint32_t> vec_salt; // salt vector: size = hash_num
 
    // to change it uint64_t, you should also modify the range of hash
-   uint32_t table_size; // m 
+   uint32_t table_size; // m: bit length of bit_table
    std::vector<uint8_t> bit_table;
     
    size_t projected_element_num; // n
-   uint32_t random_seed;
-   //double desired_false_positive_probability;
    size_t inserted_element_num;
 /*
   find the number of hash functions and minimum amount of storage bits required 
@@ -95,6 +94,9 @@ public:
       vec_salt = GenUniqueSaltVector(hash_num, random_seed);   
       //table_size = static_cast<uint32_t>(projected_element_num * (-1.44 * log2(desired_false_positive_probability)));
       table_size = static_cast<uint32_t>(projected_element_num * (1.44 * statistical_security_parameter/2));
+      // the following operation is very important => make table size = 8*n 
+      table_size = ((table_size+0x07) >> 3) << 3; // (table_size+7)/8*8
+
       bit_table.resize(table_size/8, static_cast<uint8_t>(0x00)); // naive implementation
       
       inserted_element_num = 0; 
@@ -104,17 +106,21 @@ public:
 
    size_t ObjectSize()
    {
-      // hash_num + random_seed + table_size + table_content
-      return 3 * sizeof(uint32_t) + table_size/8;
+      /* 
+      ** hash_num + random_seed + table_size + projected_element_num + inserted_element_num + table_content
+      ** one can derive vec_salt from random_seed, so there is no need to save them
+      */
+      return 3 * sizeof(uint32_t) + 2 * sizeof(size_t) + table_size/8;
    }
 
    inline void PlainInsert(const void* input, size_t LEN)
    {
-      size_t bit_index = 0;
+      std::vector<size_t> bit_index(LEN);
+      #pragma omp parallel for
       for (auto i = 0; i < hash_num; i++){
-         bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
+         bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
          //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
-         bit_table[bit_index >> 3] |= bit_mask[bit_index & 0x07]; // more efficient implementation
+         bit_table[bit_index[i] >> 3] |= bit_mask[bit_index[i] & 0x07]; // more efficient implementation
       }
       inserted_element_num++;
    }
@@ -196,7 +202,7 @@ public:
       for(auto i = 0; i < vec_salt.size(); i++)
       {
          bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size; 
-         local_bit_index = bit_index & 0x07;
+         local_bit_index = bit_index & 0x07;  // bit_index mod 8
          if ((bit_table[bit_index >> 3] & bit_mask[local_bit_index]) != bit_mask[local_bit_index]) 
             return false;
       }
@@ -233,7 +239,8 @@ public:
       std::fill(bit_table.begin(), bit_table.end(), static_cast<uint8_t>(0x00));
       inserted_element_num = 0;
    }
-
+   
+   // write object to file
    inline bool WriteObject(std::string file_name)
    {
       std::ofstream fout; 
@@ -243,10 +250,13 @@ public:
         return false; 
       }
 
-      fout.write(reinterpret_cast<char *>(&hash_num), 8);
-      fout.write(reinterpret_cast<char *>(&random_seed), 8);
-      fout.write(reinterpret_cast<char *>(&table_size), 8); 
-      fout.write(reinterpret_cast<char *>(bit_table.data()), table_size/8); 
+      fout << random_seed; 
+      fout << hash_num;
+      fout << table_size; 
+      fout << projected_element_num;
+      fout << inserted_element_num;  
+      fout << bit_table; 
+      //fout.write(reinterpret_cast<char *>(bit_table.data()), table_size/8); 
 
       fout.close(); 
 
@@ -256,7 +266,8 @@ public:
 
       return true; 
    } 
-
+   
+   // read object from file (reconstruct)
    inline bool ReadObject(std::string file_name)
    {
       std::ifstream fin; 
@@ -265,33 +276,53 @@ public:
         std::cerr << file_name << " open error" << std::endl;
         return false; 
       }
-
-      fin.read(reinterpret_cast<char *>(&hash_num), sizeof(hash_num));
-      fin.read(reinterpret_cast<char *>(&random_seed), sizeof(random_seed)); 
+   
+      fin >> random_seed; 
+      fin >> hash_num;    
+      fin >> table_size;
+      fin >> projected_element_num; 
+      fin >> inserted_element_num;  
+   
+      // re-produce vec_salt
       vec_salt = GenUniqueSaltVector(hash_num, random_seed); 
-      fin.read(reinterpret_cast<char *>(&table_size), sizeof(table_size)); 
+      // re-build bit_table
       bit_table.resize(table_size/8, static_cast<uint8_t>(0x00));
-      fin.read(reinterpret_cast<char *>(bit_table.data()), table_size/8); 
+      fin >> bit_table;
+      // fin.read(reinterpret_cast<char *>(bit_table.data()), table_size/8); 
       
       return true;
    } 
 
-
+   // write object to buffer
    inline bool WriteObject(char* buffer)
    {
       if(buffer == nullptr){
          std::cerr << "allocate memory for bloom filter fails" << std::endl;
          return false; 
       }
+      size_t offset = 0; 
       
-      memcpy(buffer, &hash_num, sizeof(uint32_t));
-      memcpy(buffer+  sizeof(uint32_t), &random_seed, sizeof(uint32_t)); 
-      memcpy(buffer+2*sizeof(uint32_t), &table_size, sizeof(uint32_t)); 
-      memcpy(buffer+3*sizeof(uint32_t), bit_table.data(), table_size/8); 
+      memcpy(buffer + offset, &random_seed, sizeof(uint32_t));
+      offset += sizeof(uint32_t);     
+      
+      memcpy(buffer + offset, &hash_num, sizeof(uint32_t));
+      offset += sizeof(uint32_t);
+
+      memcpy(buffer + offset, &table_size, sizeof(uint32_t));
+      offset += sizeof(uint32_t);
+
+      memcpy(buffer + offset, &projected_element_num, sizeof(size_t));
+      offset += sizeof(size_t);
+
+      memcpy(buffer + offset, &inserted_element_num, sizeof(size_t));
+      offset += sizeof(size_t);
+      
+      memcpy(buffer + offset, bit_table.data(), table_size/8); 
 
       return true; 
    } 
 
+   // read object from buffer
    inline bool ReadObject(char* buffer)
    {
       if(buffer == nullptr){
@@ -299,12 +330,30 @@ public:
          return false; 
       }
 
-      memcpy(&hash_num, buffer, sizeof(uint32_t));
-      memcpy(&random_seed, buffer+sizeof(uint32_t), sizeof(uint32_t)); 
+      size_t offset = 0; 
+      
+      memcpy(&random_seed, buffer + offset, sizeof(uint32_t));
+      offset += sizeof(uint32_t);     
+      
+      memcpy(&hash_num, buffer + offset, sizeof(uint32_t));
+      offset += sizeof(uint32_t);
+
+      memcpy(&table_size, buffer + offset, sizeof(uint32_t));
+      offset += sizeof(uint32_t);
+
+      memcpy(&projected_element_num, buffer + offset, sizeof(size_t));
+      offset += sizeof(size_t);
+
+      memcpy(&inserted_element_num, buffer + offset, sizeof(size_t));
+      offset += sizeof(size_t);
+
+
+      // re-produce vec_salt
       vec_salt = GenUniqueSaltVector(hash_num, random_seed); 
-      memcpy(&table_size, buffer+2*sizeof(uint32_t), sizeof(uint32_t)); 
-      bit_table.resize(table_size/8, static_cast<uint8_t>(0x00));
-      memcpy(bit_table.data(), buffer+3*sizeof(uint32_t), table_size/8); 
+      
+      // re-build bit_table
+      bit_table.resize(table_size/8, static_cast<uint8_t>(0x00));      
+      memcpy(bit_table.data(), buffer + offset, table_size/8); 
 
       return true; 
    } 

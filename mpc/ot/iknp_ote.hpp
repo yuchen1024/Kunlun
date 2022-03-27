@@ -103,8 +103,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
 
     CheckParameters(ROW_NUM, COLUMN_NUM); 
 
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, nullptr, 0); // initialize PRG seed
+    PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG seed
 
     // generate Phase 1 selection bit vector
     std::vector<uint8_t> vec_selection_bit(BASE_LEN);
@@ -203,8 +202,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
 
     CheckParameters(ROW_NUM, COLUMN_NUM); 
 
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, nullptr, 0); 
+    PRG::Seed seed = PRG::SetSeed(nullptr, 0); 
     
     std::vector<uint8_t> T = PRG::GenRandomBitMatrix(seed, ROW_NUM, COLUMN_NUM); 
 
@@ -318,8 +316,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
 
     CheckParameters(ROW_NUM, COLUMN_NUM); 
 
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, nullptr, 0); // initialize PRG seed
+    PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG seed
 
     // generate Phase 1 selection bit vector
     std::vector<uint8_t> vec_selection_bit(BASE_LEN);
@@ -416,8 +413,7 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, const std::vector<uint8_t>
 
     CheckParameters(ROW_NUM, COLUMN_NUM); 
 
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, nullptr, 0); 
+    PRG::Seed seed = PRG::SetSeed(nullptr, 0); 
     
     std::vector<uint8_t> T = PRG::GenRandomBitMatrix(seed, ROW_NUM, COLUMN_NUM); 
 

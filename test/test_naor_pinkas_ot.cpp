@@ -4,8 +4,7 @@
 void GenTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1, std::vector<uint8_t> &vec_selection_bit, 
                  std::vector<block> &vec_result, size_t NUM)
 {	
-	PRG::Seed seed; 
-	PRG::SetSeed(seed, fix_key, 0); // initialize PRG
+	PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
 	vec_m0 = PRG::GenRandomBlocks(seed, NUM);
 	vec_m1 = PRG::GenRandomBlocks(seed, NUM);	
 	vec_selection_bit = PRG::GenRandomBits(seed, NUM);
@@ -29,10 +28,15 @@ void SaveTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1,
         exit(1); 
     }
     fout << NUM; 
-    for(auto i = 0; i < NUM; i++) fout << vec_m0[i]; 
-    for(auto i = 0; i < NUM; i++) fout << vec_m1[i]; 
-    for(auto i = 0; i < NUM; i++) fout << vec_selection_bit[i]; 
-	for(auto i = 0; i < NUM; i++) fout << vec_result[i]; 
+    // for(auto i = 0; i < NUM; i++) fout << vec_m0[i]; 
+    // for(auto i = 0; i < NUM; i++) fout << vec_m1[i]; 
+    // for(auto i = 0; i < NUM; i++) fout << vec_selection_bit[i]; 
+	// for(auto i = 0; i < NUM; i++) fout << vec_result[i]; 
+
+    fout << vec_m0; 
+    fout << vec_m1; 
+    fout << vec_selection_bit; 
+	fout << vec_result; 
 
     fout.close(); 
 }
@@ -53,10 +57,14 @@ void FetchTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1,
 	vec_m1.resize(NUM); 
 	vec_selection_bit.resize(NUM); 
 	vec_result.resize(NUM); 
-    for(auto i = 0; i < NUM; i++) fin >> vec_m0[i]; 
-    for(auto i = 0; i < NUM; i++) fin >> vec_m1[i]; 
-    for(auto i = 0; i < NUM; i++) fin >> vec_selection_bit[i]; 
-	for(auto i = 0; i < NUM; i++) fin >> vec_result[i]; 
+    // for(auto i = 0; i < NUM; i++) fin >> vec_m0[i]; 
+    // for(auto i = 0; i < NUM; i++) fin >> vec_m1[i]; 
+    // for(auto i = 0; i < NUM; i++) fin >> vec_selection_bit[i]; 
+	// for(auto i = 0; i < NUM; i++) fin >> vec_result[i]; 
+    fin >> vec_m0; 
+    fin >> vec_m1; 
+    fin >> vec_selection_bit; 
+	fin >> vec_result; 
 
     fin.close(); 
 }

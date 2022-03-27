@@ -55,66 +55,69 @@ std::vector<int64_t> GenRandomIntegerVectorLessThan(size_t LEN, int64_t MAX)
     return vec_result; 
 }
 
-#ifdef IS_MACOS
-std::ofstream &operator<<(std::ofstream &fout, const size_t &a)
-{ 
-    //std::cout << "OS name: " << OS_NAME << std::endl;
-    fout.write(reinterpret_cast<const char *>(&a), 8);  
-    return fout;            
-}
+// #ifdef IS_MACOS
+// std::ofstream &operator<<(std::ofstream &fout, const size_t &a)
+// { 
+//     //std::cout << "OS name: " << OS_NAME << std::endl;
+//     fout.write(reinterpret_cast<const char *>(&a), 8);  
+//     return fout;            
+// }
  
-std::ifstream &operator>>(std::ifstream &fin, size_t &a)
-{ 
-    fin.read(reinterpret_cast<char *>(&a), 8); 
-    return fin;            
-}
-#endif
+// std::ifstream &operator>>(std::ifstream &fin, size_t &a)
+// { 
+//     fin.read(reinterpret_cast<char *>(&a), 8); 
+//     return fin;            
+// }
+// #endif
 
-std::ofstream &operator<<(std::ofstream &fout, const int64_t &a)
-{ 
-    fout.write(reinterpret_cast<const char *>(&a), 8);  
-    return fout;            
-}
- 
-std::ifstream &operator>>(std::ifstream &fin, int64_t &a)
-{ 
-    fin.read(reinterpret_cast<char *>(&a), 8); 
-    return fin;            
-}
 
-std::ofstream &operator<<(std::ofstream &fout, const uint64_t &a)
-{ 
-    fout.write(reinterpret_cast<const char *>(&a), 8);  
-    return fout;            
-}
- 
-std::ifstream &operator>>(std::ifstream &fin, uint64_t &a)
-{ 
-    fin.read(reinterpret_cast<char *>(&a), 8); 
-    return fin;            
-}
-
-std::ofstream &operator<<(std::ofstream &fout, const uint8_t &a)
-{ 
-    fout.write(reinterpret_cast<const char *>(&a), 1);  
-    return fout;            
-}
- 
-std::ifstream &operator>>(std::ifstream &fin, uint8_t &a)
-{ 
-    fin.read(reinterpret_cast<char *>(&a), 1); 
-    return fin;            
-}
-
-void SerializeUintVector(const std::vector<uint8_t> &vec_a, std::ofstream &fout)
+template <typename ElementType> // Note: T must be a C++ POD type.
+std::ofstream &operator<<(std::ofstream &fout, const ElementType& element)
 {
-    for(auto i = 0; i < vec_a.size(); i++) fout << vec_a[i];  
+    fout.write(reinterpret_cast<const char *>(&element), sizeof(ElementType)); 
+    return fout; 
 }
 
-void DeserializeUintVector(std::vector<uint8_t> &vec_a, std::ifstream &fin)
+
+template <typename ElementType> // Note: T must be a C++ POD type.
+std::ifstream &operator>>(std::ifstream &fin, ElementType& element)
 {
-    for(auto i = 0; i < vec_a.size(); i++) fin >> vec_a[i];  
+    fin.read(reinterpret_cast<char *>(&element), sizeof(ElementType)); 
+    return fin; 
 }
+
+
+template <typename ElementType> // Note: T must be a C++ POD type.
+std::ofstream &operator<<(std::ofstream &fout, const std::vector<ElementType>& vec_element)
+{
+    fout.write(reinterpret_cast<const char *>(vec_element.data()), vec_element.size() * sizeof(ElementType)); 
+    return fout; 
+}
+
+template <typename ElementType> // Note: T must be a C++ POD type.
+std::ifstream &operator>>(std::ifstream &fin, std::vector<ElementType>& vec_element)
+{ 
+    fin.read(reinterpret_cast<char *>(vec_element.data()), vec_element.size() * sizeof(ElementType)); 
+    return fin; 
+}
+
+
+template < > // specialize for string
+std::ofstream &operator<<<std::string>(std::ofstream &fout, const std::string& str)
+{
+    fout.write(reinterpret_cast<const char *>(str.data()), str.size()); 
+    return fout; 
+}
+
+template < > // specialize for string
+std::ifstream &operator>><std::string>(std::ifstream &fin, std::string& str)
+{
+    std::ostringstream ss; 
+    ss << fin.rdbuf();
+    str = std::string(ss.str()); 
+    return fin; 
+}
+
 
   
 #endif

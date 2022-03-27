@@ -40,7 +40,6 @@ std::vector<ECPoint> vec_searchanchor;
 */
 std::unordered_map<size_t, size_t, naivehash> encoding2index_map; 
 
-
 /*
 * the default TRADEOFF_NUM=0
 */

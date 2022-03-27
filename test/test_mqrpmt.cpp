@@ -14,8 +14,7 @@ RPMTTestcase GenTestInstance(size_t LEN)
     RPMTTestcase testcase; 
     testcase.LEN = LEN; 
     testcase.HAMMING_WEIGHT = 0; 
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, fix_key, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_indication_bit = PRG::GenRandomBits(seed, LEN);  
@@ -39,9 +38,12 @@ void SaveTestInstance(RPMTTestcase &testcase, std::string testcase_filename)
     }
     fout << testcase.LEN; 
     fout << testcase.HAMMING_WEIGHT; 
-    for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_X[i]; 
-    for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_Y[i]; 
-    for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_indication_bit[i]; 
+    fout << testcase.vec_X; 
+    fout << testcase.vec_Y; 
+    fout << testcase.vec_indication_bit; 
+    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_X[i]; 
+    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_Y[i]; 
+    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_indication_bit[i]; 
 
     fout.close(); 
 }
@@ -60,9 +62,13 @@ void FetchTestInstance(RPMTTestcase &testcase, std::string testcase_filename)
     testcase.vec_X.resize(testcase.LEN); 
     testcase.vec_Y.resize(testcase.LEN); 
     testcase.vec_indication_bit.resize(testcase.LEN); 
-    for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_X[i]; 
-    for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_Y[i]; 
-    for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_indication_bit[i];
+
+    fin >> testcase.vec_X; 
+    fin >> testcase.vec_Y; 
+    fin >> testcase.vec_indication_bit; 
+    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_X[i]; 
+    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_Y[i]; 
+    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_indication_bit[i];
 
     fin.close(); 
 }
@@ -91,7 +97,7 @@ int main()
     }
 
     // set instance size
-    size_t LEN = size_t(pow(2, 20)); 
+    size_t LEN = size_t(pow(2, 18)); 
     std::cout << "number of elements = " << LEN << std::endl; 
 
     std::string testcase_filename = "mqRPMT.testcase"; 

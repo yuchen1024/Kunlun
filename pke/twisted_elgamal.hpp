@@ -113,8 +113,6 @@ void DeserializePP(PP &pp, std::ifstream &fin)
     fin >> pp.h; 
 }
 
-
-
 /* initialize the hashmap to accelerate decryption */
 void Initialize(PP &pp)
 {

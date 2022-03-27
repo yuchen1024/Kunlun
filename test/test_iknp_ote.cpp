@@ -20,8 +20,7 @@ OTETestcase GenTestCase(size_t EXTEND_LEN)
     testcase.EXTEND_LEN = EXTEND_LEN; 
     testcase.HAMMING_WEIGHT = 0; 
 
-	PRG::Seed seed; 
-	PRG::SetSeed(seed, fix_key, 0); // initialize PRG
+	PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
 	
     testcase.vec_m0 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
 	testcase.vec_m1 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
@@ -53,13 +52,20 @@ void SaveTestCase(OTETestcase &testcase, std::string testcase_filename)
     }
     fout << testcase.EXTEND_LEN; 
     fout << testcase.HAMMING_WEIGHT; 
-    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m0[i]; 
-    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m1[i]; 
-    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_selection_bit[i]; 
-	for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_result[i]; 
+    // for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m0[i]; 
+    // for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m1[i]; 
+    // for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_selection_bit[i]; 
+	// for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_result[i]; 
     
-    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m[i]; 
-    for(auto i = 0; i < testcase.HAMMING_WEIGHT; i++) fout << testcase.vec_one_sided_result[i]; 
+    // for(auto i = 0; i < testcase.EXTEND_LEN; i++) fout << testcase.vec_m[i]; 
+    // for(auto i = 0; i < testcase.HAMMING_WEIGHT; i++) fout << testcase.vec_one_sided_result[i]; 
+
+    fout << testcase.vec_m0; 
+    fout << testcase.vec_m1; 
+    fout << testcase.vec_selection_bit; 
+    fout << testcase.vec_result; 
+    fout << testcase.vec_m; 
+    fout << testcase.vec_one_sided_result;  
 
     fout.close(); 
 }
@@ -83,13 +89,20 @@ void FetchTestCase(OTETestcase &testcase, std::string testcase_filename)
     testcase.vec_m.resize(testcase.EXTEND_LEN); 
     testcase.vec_one_sided_result.resize(testcase.HAMMING_WEIGHT); 
 
-    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m0[i]; 
-    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m1[i]; 
-    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_selection_bit[i]; 
-	for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_result[i]; 
+    // for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m0[i]; 
+    // for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m1[i]; 
+    // for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_selection_bit[i]; 
+	// for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_result[i]; 
 
-    for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m[i]; 
-    for(auto i = 0; i < testcase.HAMMING_WEIGHT; i++) fin >> testcase.vec_one_sided_result[i]; 
+    // for(auto i = 0; i < testcase.EXTEND_LEN; i++) fin >> testcase.vec_m[i]; 
+    // for(auto i = 0; i < testcase.HAMMING_WEIGHT; i++) fin >> testcase.vec_one_sided_result[i]; 
+
+    fin >> testcase.vec_m0; 
+    fin >> testcase.vec_m1; 
+    fin >> testcase.vec_selection_bit; 
+	fin >> testcase.vec_result; 
+    fin >> testcase.vec_m; 
+    fin >> testcase.vec_one_sided_result; 
 
     fin.close(); 
 }

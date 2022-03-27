@@ -57,8 +57,7 @@ void benchmark_ecc(size_t TEST_NUM)
 
 void test_hash_to_point(size_t LEN)
 {
-    PRG::Seed seed; 
-    PRG::SetSeed(seed, fix_key, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
     std::vector<block> vec_M = PRG::GenRandomBlocks(seed, LEN);
     
 

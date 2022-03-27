@@ -32,8 +32,9 @@ void ReSeed(Seed &seed, const block* salt, uint64_t id = 0)
     seed.aes_key = AES::GenEncKey(key);
     seed.counter = 0;
 }
-
-void SetSeed(Seed &seed, const void* salt = nullptr, uint64_t id = 0) {
+// id is the identidier of PRG in use
+Seed SetSeed(const void* salt = nullptr, uint64_t id = 0) {
+    Seed seed; 
     // if there is a given salt
     if (salt != nullptr) {
         ReSeed(seed, (const block *)salt, id);
@@ -63,6 +64,7 @@ void SetSeed(Seed &seed, const void* salt = nullptr, uint64_t id = 0) {
         ReSeed(seed, &v, id);
     }
     seed.counter = 0; 
+    return seed; 
 }
 
 std::vector<block> GenRandomBlocks(Seed &seed, size_t LEN)
@@ -136,6 +138,9 @@ bool CompareBits(std::vector<uint8_t>& vec_A,  std::vector<uint8_t>& vec_B)
     for(auto i = 0; i < vec_A.size(); i++){
         if(vec_A[i] != vec_B[i]){
             std::cerr << i << "th position does not match" << std::endl;
+            std::cout << static_cast<int>(vec_A[i]) << std::endl; 
+            std::cout << static_cast<int>(vec_B[i]) << std::endl; 
+
             flag = false;
         }
     }

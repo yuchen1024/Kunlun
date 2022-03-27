@@ -237,16 +237,38 @@ std::ifstream &operator>>(std::ifstream &fin, block &a)
     return fin;            
 }
 
-
-void SerializeBlockVector(const std::vector<block> &vec_a, std::ofstream &fout)
-{
-    for(auto i = 0; i < vec_a.size(); i++) fout << vec_a[i];  
+std::ofstream &operator<<(std::ofstream &fout, const std::vector<block> &vec_a)
+{ 
+    size_t LEN = vec_a.size() * 16; 
+    char *buffer = new char[LEN]();
+    memcpy(reinterpret_cast<block *>(buffer), vec_a.data(), LEN);
+    fout.write(buffer, LEN);
+    delete[] buffer;
+    return fout;            
 }
 
-void DeserializeBlockVector(std::vector<block> &vec_a, std::ifstream &fin)
-{
-    for(auto i = 0; i < vec_a.size(); i++) fin >> vec_a[i];  
+std::ifstream &operator>>(std::ifstream &fin, std::vector<block> &vec_a)
+{ 
+    size_t LEN = vec_a.size() * 16; 
+    char *buffer = new char[LEN]();
+    fin.read(buffer, LEN);
+    memcpy(reinterpret_cast<block *>(vec_a.data()), buffer, LEN);
+    delete[] buffer; 
+    return fin;            
 }
+
+
+
+
+// void SerializeBlockVector(const std::vector<block> &vec_a, std::ofstream &fout)
+// {
+//     for(auto i = 0; i < vec_a.size(); i++) fout << vec_a[i];  
+// }
+
+// void DeserializeBlockVector(std::vector<block> &vec_a, std::ifstream &fin)
+// {
+//     for(auto i = 0; i < vec_a.size(); i++) fin >> vec_a[i];  
+// }
 
 
 

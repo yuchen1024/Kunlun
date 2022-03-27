@@ -34,11 +34,11 @@ PP Setup(std::string filter_type, size_t lambda)
     return pp; 
 }
 
-// save pp to file
+// seriazlize
 void SerializePP(PP &pp, std::ofstream &fout)
 {
-    fout << pp.statistical_security_parameter << std::endl; 
-    fout << pp.filter_type << std::endl;
+    fout << pp.statistical_security_parameter; 
+    fout << pp.filter_type;
     fout.close(); 
 }
 
@@ -177,7 +177,6 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
     #endif
 
     std::vector<ECPoint> vec_Fk2k1_X(LEN);
-    start_time = std::chrono::steady_clock::now(); 
     #pragma omp parallel for
     for(auto i = 0; i < LEN; i++){
         vec_Fk2k1_X[i] = vec_Fk1_X[i].ThreadSafeMul(k2); 
@@ -197,8 +196,11 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
 
     // generate and send bloom filter
     if(pp.filter_type == "bloom"){
+
         BloomFilter filter(vec_Fk2k1_X.size(), pp.statistical_security_parameter);
+
         filter.Insert(vec_Fk2k1_X);
+
         size_t filter_size = filter.ObjectSize(); 
         io.SendInteger(filter_size);
 
@@ -206,11 +208,8 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
         filter.WriteObject(buffer);
         io.SendBytes(buffer, filter_size); 
         std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> BloomFilter(F_k2k1(x_i)) ===> Server";
-        #ifdef POINT_COMPRESSED
-            std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
-        #else
-            std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
-        #endif
+        std::cout << " [" << (double)filter_size/(1024*1024) << " MB]" << std::endl;
+
         delete[] buffer; 
     } 
     
