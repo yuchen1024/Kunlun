@@ -28,10 +28,6 @@ void SaveTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1,
         exit(1); 
     }
     fout << NUM; 
-    // for(auto i = 0; i < NUM; i++) fout << vec_m0[i]; 
-    // for(auto i = 0; i < NUM; i++) fout << vec_m1[i]; 
-    // for(auto i = 0; i < NUM; i++) fout << vec_selection_bit[i]; 
-	// for(auto i = 0; i < NUM; i++) fout << vec_result[i]; 
 
     fout << vec_m0; 
     fout << vec_m1; 
@@ -57,10 +53,7 @@ void FetchTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1,
 	vec_m1.resize(NUM); 
 	vec_selection_bit.resize(NUM); 
 	vec_result.resize(NUM); 
-    // for(auto i = 0; i < NUM; i++) fin >> vec_m0[i]; 
-    // for(auto i = 0; i < NUM; i++) fin >> vec_m1[i]; 
-    // for(auto i = 0; i < NUM; i++) fin >> vec_selection_bit[i]; 
-	// for(auto i = 0; i < NUM; i++) fin >> vec_result[i]; 
+
     fin >> vec_m0; 
     fin >> vec_m1; 
     fin >> vec_selection_bit; 

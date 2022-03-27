@@ -43,7 +43,6 @@ void test_netio(std::string party)
 
 int main()
 {
-
     std::string party; 
     std::getline(std::cin, party); // first receiver (acts as server), then sender (acts as client)
 	test_netio(party);

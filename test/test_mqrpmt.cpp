@@ -41,9 +41,6 @@ void SaveTestInstance(RPMTTestcase &testcase, std::string testcase_filename)
     fout << testcase.vec_X; 
     fout << testcase.vec_Y; 
     fout << testcase.vec_indication_bit; 
-    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_X[i]; 
-    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_Y[i]; 
-    // for(auto i = 0; i < testcase.LEN; i++) fout << testcase.vec_indication_bit[i]; 
 
     fout.close(); 
 }
@@ -66,9 +63,6 @@ void FetchTestInstance(RPMTTestcase &testcase, std::string testcase_filename)
     fin >> testcase.vec_X; 
     fin >> testcase.vec_Y; 
     fin >> testcase.vec_indication_bit; 
-    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_X[i]; 
-    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_Y[i]; 
-    // for(auto i = 0; i < testcase.LEN; i++) fin >> testcase.vec_indication_bit[i];
 
     fin.close(); 
 }

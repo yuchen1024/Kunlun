@@ -115,7 +115,18 @@ public:
 
    inline void PlainInsert(const void* input, size_t LEN)
    {
-      std::vector<size_t> bit_index(LEN);
+      size_t bit_index;
+      for (auto i = 0; i < hash_num; i++){
+         bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
+         //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
+         bit_table[bit_index >> 3] |= bit_mask[bit_index & 0x07]; // more efficient implementation
+      }
+      inserted_element_num++;
+   }
+
+   inline void ParallelPlainInsert(const void* input, size_t LEN)
+   {
+      std::vector<size_t> bit_index(hash_num);
       #pragma omp parallel for
       for (auto i = 0; i < hash_num; i++){
          bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
@@ -124,6 +135,8 @@ public:
       }
       inserted_element_num++;
    }
+
+
 
    template <typename ElementType> // Note: T must be a C++ POD type.
    inline void Insert(const ElementType& element)
@@ -209,6 +222,29 @@ public:
       return true;
    }
 
+   inline bool ParallelPlainContain(const void* input, size_t LEN) const
+   {
+      bool CONTAIN = true; // assume input in filter at the beginning
+      std::vector<size_t> bit_index(hash_num);
+      std::vector<size_t> local_bit_index(hash_num); 
+      #pragma omp parallel for
+      for(auto i = 0; i < hash_num; i++)
+      {
+         if(CONTAIN == true)
+         {
+            bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size; 
+            local_bit_index[i] = bit_index[i] & 0x07;  // bit_index mod 8
+            if ((bit_table[bit_index[i] >> 3] & bit_mask[local_bit_index[i]]) != bit_mask[local_bit_index[i]])
+            { 
+               CONTAIN  = false;
+            }
+         }
+      }
+      return CONTAIN;
+   }
+
+
+
    template <typename ElementType>
    inline bool Contain(const ElementType& element) const
    {
@@ -224,10 +260,12 @@ public:
    {
       #ifdef ECPOINT_COMPRESSED
          unsigned char buffer[POINT_COMPRESSED_BYTE_LEN]; 
+         memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
          EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
          return PlainContain(buffer, POINT_COMPRESSED_BYTE_LEN);
       #else
          unsigned char buffer[POINT_BYTE_LEN]; 
+         memset(buffer, 0, POINT_BYTE_LEN); 
          EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
          return PlainContain(buffer, POINT_BYTE_LEN);
       #endif
