@@ -79,16 +79,16 @@ Signature Sign(PP &pp, BigInt &sk, std::vector<ECPoint> &vec_R, std::string &mes
     if(l == N) std::cerr << "sk does not match the vk ring" << std::endl; 
 
     BigInt r = GenRandomBigIntLessThan(order); 
-    sigma.ct_vk = TwistedElGamal::EncECPoint(pp.enc_part, pp.ek, vk, r); 
+    sigma.ct_vk = TwistedElGamal::Enc(pp.enc_part, pp.ek, vk, r); 
     
     BigInt t = GenRandomBigIntLessThan(order); 
     BigInt s = GenRandomBigIntLessThan(order); 
-    sigma.ct_s = TwistedElGamal::EncECPoint(pp.enc_part, pp.ek, pp.enc_part.g * s, t); 
+    sigma.ct_s = TwistedElGamal::Enc(pp.enc_part, pp.ek, pp.enc_part.g * s, t); 
 
     
     std::vector<TwistedElGamal::CT> vec_CT(N); 
     for(auto i = 0; i < N; i++){
-        vec_CT[i] = TwistedElGamal::EncECPoint(pp.enc_part, pp.ek, vec_R[i], bn_0); 
+        vec_CT[i] = TwistedElGamal::Enc(pp.enc_part, pp.ek, vec_R[i], bn_0); 
         vec_CT[i] = TwistedElGamal::HomoSub(sigma.ct_vk, vec_CT[i]); 
     }
 
@@ -123,7 +123,7 @@ bool Verify(PP &pp, std::vector<ECPoint> &vec_R, std::string &message, Signature
 
     std::vector<TwistedElGamal::CT> vec_CT(N); 
     for(auto i = 0; i < N; i++){
-        vec_CT[i] = TwistedElGamal::EncECPoint(pp.enc_part, pp.ek, vec_R[i], bn_0); 
+        vec_CT[i] = TwistedElGamal::Enc(pp.enc_part, pp.ek, vec_R[i], bn_0); 
         vec_CT[i] = TwistedElGamal::HomoSub(sigma.ct_vk, vec_CT[i]); 
     }
 
@@ -143,7 +143,7 @@ bool Verify(PP &pp, std::vector<ECPoint> &vec_R, std::string &message, Signature
 
     TwistedElGamal::CT ct_left = TwistedElGamal::ScalarMul(sigma.ct_vk, x); 
     ct_left = TwistedElGamal::HomoAdd(ct_left, sigma.ct_s); 
-    TwistedElGamal::CT ct_right = TwistedElGamal::EncECPoint(pp.enc_part, pp.ek, pp.enc_part.g * sigma.z_s, sigma.z_t); 
+    TwistedElGamal::CT ct_right = TwistedElGamal::Enc(pp.enc_part, pp.ek, pp.enc_part.g * sigma.z_s, sigma.z_t); 
     vec_condition[1] = (ct_left == ct_right); 
 
     bool Validity = vec_condition[0] && vec_condition[1]; 

@@ -6,7 +6,7 @@ I give a C++ wrapper for OpenSSL, making it handy to use, without worrying about
 
 ## Design Philosophy
 
-Provide a set of neat interfaces for big integer and ec group operations, with the hope that the code is as succinct as paper description. However, the style of interfaces is hard to unify. So far, the library is not stable. It will keep evolving. 
+Provide a set of neat interfaces for big integer and ec group operations, with the hope that the code is as succinct as paper description. Kunlun support multithreading via OpenMP. So far, the library is not stable. It will keep evolving. 
 
 ## Issues
 
@@ -85,10 +85,13 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 - /pke: public key encryption schemes
   * twisted_elgamal.hpp
+  * elgamal.hpp
   * calculate_dlog.hpp
 
 - /signature
+  * schnorr.hpp
   * accountable_ring_signature.hpp: implement accountable ring signature
+
 
 - /commitment
   * pedersen.hpp: multi-element Pedersen commitment
@@ -145,6 +148,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
    * 20210925: shift twisted elgamal, sigma protocols, bulletproofs, and adcp to Kunlun
    * 20211011: feed my first grammer sugar "namespace" to Kunlun, add OT primitive
    * 20220319: add private set operation and re-org many places 
+   * 20220329: speeding Shanks DLOG algorithm and add ElGamal PKE and Schnorr SIG
 
 ---
 

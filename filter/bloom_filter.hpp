@@ -260,12 +260,10 @@ public:
    {
       #ifdef ECPOINT_COMPRESSED
          unsigned char buffer[POINT_COMPRESSED_BYTE_LEN]; 
-         memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
          EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
          return PlainContain(buffer, POINT_COMPRESSED_BYTE_LEN);
       #else
          unsigned char buffer[POINT_BYTE_LEN]; 
-         memset(buffer, 0, POINT_BYTE_LEN); 
          EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
          return PlainContain(buffer, POINT_BYTE_LEN);
       #endif

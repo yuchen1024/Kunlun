@@ -1,5 +1,5 @@
-#ifndef TWISTED_ELGAMAL_HPP_
-#define TWISTED_ELGAMAL_HPP_
+#ifndef ELGAMAL_HPP_
+#define ELGAMAL_HPP_
 
 #include "../crypto/global.hpp"
 #include "../crypto/ec_point.hpp"
@@ -7,7 +7,7 @@
 #include "../utility/routines.hpp"
 #include "calculate_dlog.hpp"
 
-namespace TwistedElGamal{
+namespace ElGamal{
 
 // define the structure of PP
 struct PP
@@ -15,22 +15,22 @@ struct PP
     size_t MSG_LEN; // the length of message space, also the length of the DLOG interval  
     BigInt MSG_SIZE; // the size of message space
     size_t TRADEOFF_NUM; // default value = RANGE_LEN/2; tunning it in [0, RANGE_LEN/2], ++ leads bigger table and less time 
-    ECPoint g, h; // two random generators 
+    ECPoint g; // random generator 
 };
 
 // define the structure of ciphertext
 struct CT
 {
-    ECPoint X; // X = pk^r 
-    ECPoint Y; // Y = g^m h^r 
+    ECPoint X; // X = g^r 
+    ECPoint Y; // Y = pk^r + g^m  
 };
 
 
 // define the structure of multi-recipients one-message ciphertext (MR denotes multiple recipients)
 struct MRCT
 {
-    std::vector<ECPoint> vec_X; // X_i = pk_i^r
-    ECPoint Y; // Y = g^r h^m 
+    ECPoint X; // X = g^r
+    std::vector<ECPoint> vec_Y; // Y = pk_i^r g^m 
 };
 
 
@@ -39,7 +39,6 @@ void PrintPP(const PP &pp)
     std::cout << "the length of message space = " << pp.MSG_LEN << std::endl; 
     std::cout << "the trade-off parameter for fast decryption = " << pp.TRADEOFF_NUM << std::endl;
     pp.g.Print("pp.g"); 
-    pp.h.Print("pp.h"); 
 } 
 
 void PrintCT(const CT &ct)
@@ -51,14 +50,12 @@ void PrintCT(const CT &ct)
 
 void SerializeCT(CT &ct, std::ofstream &fout)
 {
-    ct.X.Serialize(fout); 
-    ct.Y.Serialize(fout); 
+    fout << ct.X << ct.Y;  
 } 
 
 void DeserializeCT(CT &ct, std::ifstream &fin)
 {
-    ct.X.Deserialize(fin); 
-    ct.Y.Deserialize(fin); 
+    fin >> ct.X >> ct.Y;
 } 
 
 std::string CTToByteString(CT &ct)
@@ -84,11 +81,8 @@ PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
   
     pp.g = ECPoint(generator); 
 
-    /* generate pp.h via deterministic and transparent manner */
-    pp.h = Hash::StringToECPoint(pp.g.ToByteString());   
-
     #ifdef PRINT
-        std::cout << "generate the public parameters for twisted ElGamal >>>" << std::endl; 
+        std::cout << "generate the public parameters for ElGamal >>>" << std::endl; 
         PrintPP(pp); 
     #endif
 
@@ -101,7 +95,6 @@ void SerializePP(PP &pp, std::ofstream &fout)
     fout << pp.TRADEOFF_NUM; 
     fout << pp.MSG_SIZE; 
     fout << pp.g;
-    fout << pp.h; 
 }
 
 void DeserializePP(PP &pp, std::ifstream &fin)
@@ -110,21 +103,20 @@ void DeserializePP(PP &pp, std::ifstream &fin)
     fin >> pp.TRADEOFF_NUM;
     fin >> pp.MSG_SIZE; 
     fin >> pp.g;
-    fin >> pp.h; 
 }
 
 /* initialize the hashmap to accelerate decryption */
 void Initialize(PP &pp)
 {
-    std::cout << "initialize Twisted ElGamal PKE >>>" << std::endl; 
+    std::cout << "initialize ElGamal PKE >>>" << std::endl; 
 
     CheckDlogParameters(pp.MSG_LEN, pp.TRADEOFF_NUM); 
  
-    std::string table_filename = GetTableFileName(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM);      
+    std::string table_filename = GetTableFileName(pp.g, pp.MSG_LEN, pp.TRADEOFF_NUM);      
     /* generate and save table */
     if(FileExist(table_filename) == false){
         std::cout << table_filename << " does not exist" << std::endl;
-        BuildSaveTable(pp.h, pp.MSG_LEN, pp.TRADEOFF_NUM, table_filename);
+        BuildSaveTable(pp.g, pp.MSG_LEN, pp.TRADEOFF_NUM, table_filename);
     }
     
     // load the table from file 
@@ -156,15 +148,15 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)
     BigInt r = GenRandomBigIntLessThan(order); 
 
     // begin encryption
-    ct.X = pk * r; // X = pk^r
+    ct.X = pp.g * r; // X = g^r
     
     // vectormul using wNAF method, which is fast than naive ct.Y = pp.g * r + pp.h * m;  
-    std::vector<ECPoint> vec_A{pp.g, pp.h}; 
+    std::vector<ECPoint> vec_A{pk, pp.g}; 
     std::vector<BigInt> vec_a{r, m};
     ct.Y = ECPointVectorMul(vec_A, vec_a);     // Y = g^r h^m
 
     #ifdef DEBUG
-        std::cout << "twisted ElGamal encryption finishes >>>"<< std::endl;
+        std::cout << "ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
 
@@ -176,14 +168,13 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r)
 { 
     CT ct; 
     // begin encryption
-    ct.X = pk * r; // X = pk^r
-    //CT.Y = pp.g * r + pp.h * m; // Y = g^r h^m
-    std::vector<ECPoint> vec_A{pp.g, pp.h}; 
+    ct.X = pp.g * r; // X = g^r
+    std::vector<ECPoint> vec_A{pk, pp.g}; 
     std::vector<BigInt> vec_a{r, m};
-    ct.Y = ECPointVectorMul(vec_A, vec_a); 
+    ct.Y = ECPointVectorMul(vec_A, vec_a); // Y = g^r h^m
 
     #ifdef DEBUG
-        std::cout << "twisted ElGamal encryption finishes >>>"<< std::endl;
+        std::cout << "ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
 
@@ -195,8 +186,8 @@ CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
 { 
     CT ct; 
     // begin encryption
-    ct.X = pk * r; // X = pk^r
-    ct.Y = pp.g * r + m; // Y = g^r m
+    ct.X = pp.g * r; // X = g^r
+    ct.Y = pk * r + m; // Y = pk^r + m
     return ct;
 }
 
@@ -204,7 +195,7 @@ CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
 // add an method to decrypt message in G
 ECPoint DecECPoint(const PP &pp, const BigInt &sk, const CT &ct)
 { 
-    return ct.Y - ct.X * sk.ModInverse(order); 
+    return ct.Y - ct.X * sk; 
 }
 
 
@@ -213,9 +204,9 @@ BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
 { 
     BigInt m;
     //begin decryption  
-    ECPoint M = ct.Y - ct.X * sk.ModInverse(order); // M = Y - X^{sk^{-1}} = h^m 
+    ECPoint M = ct.Y - ct.X * sk; // M = Y - X^sk = g^m 
 
-    bool SUCCESS = ShanksDLOG(pp.h, M, pp.MSG_LEN, pp.TRADEOFF_NUM, m); 
+    bool SUCCESS = ShanksDLOG(pp.g, M, pp.MSG_LEN, pp.TRADEOFF_NUM, m); 
     if(SUCCESS == false)
     {
         std::cout << "decyption fails in the specified range" << std::endl; 
@@ -231,11 +222,11 @@ CT ReEnc(const PP &pp, const ECPoint &pk, const BigInt &sk, const CT &ct, const 
 { 
     CT ct_new; 
     // begin partial decryption  
-    ECPoint M = ct.Y - ct.X * (sk.ModInverse(order)); // M = Y - X^{sk^{-1}} = h^m
+    ECPoint M = ct.Y - ct.X * sk; // M = Y - X^sk = g^m
 
     // begin re-encryption with the given randomness 
-    ct_new.X = pk * r; // CT_new.X = pk^r 
-    ct_new.Y = pp.g * r + M; // CT_new.Y = g^r 
+    ct_new.X = pp.g * r; // CT_new.X = g^r 
+    ct_new.Y = pk * r + M; // CT_new.Y = pk^r + M 
 
     #ifdef DEBUG
         std::cout << "refresh ciphertext succeeds >>>"<< std::endl;
@@ -283,25 +274,24 @@ CT ScalarMul(CT &ct, const BigInt &k)
 void PrintCT(const MRCT &ct)
 {
     std::string note;
-    for(auto i = 0; i < ct.vec_X.size(); i++){
-        note = "CT.X" + std::to_string(i);
-        ct.vec_X[i].Print(note);
+    ct.X.Print("CT.X");
+    for(auto i = 0; i < ct.vec_Y.size(); i++){
+        note = "CT.Y" + std::to_string(i);
+        ct.vec_Y[i].Print(note);
     }
-    ct.Y.Print("CT.Y");
 } 
 
 MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, const BigInt &r)
 {  
     MRCT ct; 
-    size_t n = vec_pk.size();
+    ct.X = pp.g * r; // Y = g^r
+    ECPoint M = pp.g * m; // M = g^m
+    size_t n = vec_pk.size(); 
     for(auto i = 0; i < n; i++){
-        ct.vec_X.emplace_back(vec_pk[i] * r); 
+        ct.vec_Y.emplace_back(vec_pk[i] * r + M); 
     }
- 
-    ct.Y = pp.g * r + pp.h * m; // Y = g^r h^m
-   
     #ifdef DEBUG
-        std::cout << n <<"-recipient 1-message twisted ElGamal encryption finishes >>>"<< std::endl;
+        std::cout << n <<"-recipient 1-message ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
 
@@ -310,23 +300,24 @@ MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, cons
 
 void SerializeCT(MRCT &ct, std::ofstream& fout)
 {
-    fout << ct.vec_X; 
-    fout << ct.Y; 
+    fout << ct.X; 
+    fout << ct.vec_Y; 
 } 
 
 void DeserializeCT(MRCT &ct, std::ifstream& fin)
 {
-    fin >> ct.vec_X; 
-    fin >> ct.Y; 
+    fin >> ct.X; 
+    fin >> ct.vec_Y;  
 }
 
 std::string MRCTToByteString(MRCT &ct)
 {
     std::string str; 
-    for(auto i = 0; i < ct.vec_X.size(); i++){
-        str += ct.vec_X[i].ToByteString(); 
+    str = ct.X.ToByteString(); 
+    for(auto i = 0; i < ct.vec_Y.size(); i++){
+        str += ct.vec_Y[i].ToByteString(); 
     }
-    str += ct.Y.ToByteString(); 
+
     return str;
 }
 

@@ -334,6 +334,23 @@ std::ifstream &operator>>(std::ifstream &fin, ECPoint &A)
     return fin;            
 }
 
+
+std::ofstream &operator<<(std::ofstream &fout, const std::vector<ECPoint> &vec_A)
+{ 
+    for(auto i = 0; i < vec_A.size(); i++){
+        fout << vec_A[i];
+    }
+    return fout;            
+}
+ 
+std::ifstream &operator>>(std::ifstream &fin, std::vector<ECPoint> &vec_A)
+{ 
+    for(auto i = 0; i < vec_A.size(); i++){
+        fin >> vec_A[i];
+    }
+    return fin;            
+}
+
 /* 
  *  non-class functions
 */

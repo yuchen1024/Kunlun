@@ -86,12 +86,18 @@ TARGET_LINK_LIBRARIES(test_misc ${OPENSSL_LIBRARIES} -lomp)
 ADD_EXECUTABLE(test_twisted_elgamal test/test_twisted_elgamal.cpp)
 TARGET_LINK_LIBRARIES(test_twisted_elgamal ${OPENSSL_LIBRARIES} -lomp)
 
+ADD_EXECUTABLE(test_elgamal test/test_elgamal.cpp)
+TARGET_LINK_LIBRARIES(test_elgamal ${OPENSSL_LIBRARIES} -lomp)
+
 ADD_EXECUTABLE(test_calculate_dlog test/test_calculate_dlog.cpp)
 TARGET_LINK_LIBRARIES(test_calculate_dlog ${OPENSSL_LIBRARIES} -lomp)
 
-# accountable ring signature
+# signature
 ADD_EXECUTABLE(test_accountable_ring_sig test/test_accountable_ring_sig.cpp)
 TARGET_LINK_LIBRARIES(test_accountable_ring_sig ${OPENSSL_LIBRARIES} -lomp)
+
+ADD_EXECUTABLE(test_schnorr_sig test/test_schnorr_sig.cpp)
+TARGET_LINK_LIBRARIES(test_schnorr_sig ${OPENSSL_LIBRARIES} -lomp)
 
 # nike
 ADD_EXECUTABLE(test_nizk_enc_relation test/test_nizk_enc_relation.cpp)

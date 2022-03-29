@@ -142,7 +142,7 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
     ECPoint m; 
     m.SetInfinity(); 
     for(auto i = 0; i < pp.m; i++){
-        vec_mask_CT[i] = TwistedElGamal::EncECPoint(pp.enc_part, instance.ek, m, vec_rho[i]); 
+        vec_mask_CT[i] = TwistedElGamal::Enc(pp.enc_part, instance.ek, m, vec_rho[i]); 
     }
 
     // prepare the polynomial p(i)
@@ -230,7 +230,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     // check condition 3
     ECPoint m; 
     m.SetInfinity();
-    TwistedElGamal::CT ct_right = TwistedElGamal::EncECPoint(pp.enc_part, instance.ek, m, proof.z);  
+    TwistedElGamal::CT ct_right = TwistedElGamal::Enc(pp.enc_part, instance.ek, m, proof.z);  
     TwistedElGamal::CT ct_left; 
     ct_left.X.SetInfinity();
     ct_left.Y.SetInfinity();
