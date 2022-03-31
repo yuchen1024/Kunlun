@@ -15,13 +15,6 @@ struct PP
 };
 
 
-// define keypair 
-struct Schnorr_KP
-{
-    EC_POINT *pk; // define pk
-    BIGNUM *sk;   // define sk
-};
-
 // define signature 
 struct SIG
 {
@@ -29,6 +22,47 @@ struct SIG
     BigInt z;
 };
 
+// serialization interfaces
+
+void PrintPP(PP &pp)
+{
+    pp.g.Print("pp.g"); 
+} 
+
+void PrintSIG(SIG &sig)
+{
+    sig.A.Print("sig.A");
+    sig.z.Print("sig.z");
+} 
+
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
+{
+    fout << pp.g; 
+    return fout;
+}
+
+std::ifstream &operator>>(std::ifstream &fin, PP &pp)
+{
+    fin >> pp.g;
+    return fin;  
+}
+
+std::ofstream &operator<<(std::ofstream &fout, const SIG &sigma)
+{
+    fout << sigma.A; 
+    fout << sigma.z;
+    return fout; 
+} 
+
+std::ifstream &operator<<(std::ifstream &fin, SIG &sigma)
+{
+    fin >> sigma.A; 
+    fin >> sigma.z;
+    return fin;  
+}
+
+
+// core algorithms
 
 /* Setup algorithm */
 PP Setup()
@@ -45,7 +79,7 @@ std::tuple<ECPoint, BigInt> KeyGen(const PP &pp)
     BigInt sk = GenRandomBigIntLessThan(order); // sk \sample Z_p
     ECPoint pk = pp.g * sk; // pk = g^sk  
 
-    #ifdef PRINT
+    #ifdef DEBUG
         std::cout << "key generation finished >>>" << std::endl;  
         pk.Print("pk"); 
         sk.Print("sk"); 
@@ -61,7 +95,6 @@ SIG Sign(const PP &pp, const BigInt &sk, const std::string &message)
     SIG sigma; // define the signature
     BigInt r = GenRandomBigIntLessThan(order);
     sigma.A = pp.g*r; 
-
 
     // compute e = H(A||m)
     BigInt e = Hash::StringToBigInt(sigma.A.ToByteString() + message);
@@ -82,7 +115,6 @@ bool Verify(const PP &pp, const ECPoint &pk, std::string &message, SIG &sigma)
     bool Validity;       
 
     // compute e = H(A||m)
-    // compute e = H(A||m)
     BigInt e = Hash::StringToBigInt(sigma.A.ToByteString() + message);
 
     ECPoint LEFT = pp.g*sigma.z; // LEFT = g^z 
@@ -92,51 +124,14 @@ bool Verify(const PP &pp, const ECPoint &pk, std::string &message, SIG &sigma)
     else Validity = false; 
  
     #ifdef DEBUG
-    if (Validity)
-    {
-        std::cout << "signature is valid >>>" << std::endl;
-    }
-    else
-    {
-        std::cout << "signature is invalid >>>" << std::endl;
-    }
+        if (Validity) std::cout << "signature is valid >>>" << std::endl;
+        else std::cout << "signature is invalid >>>" << std::endl;
     #endif
 
     return Validity;
 }
 
-void SerializePP(PP &pp, std::ofstream &fout)
-{
-    fout << pp.g; 
-}
 
-void DeserializePP(PP &pp, std::ifstream &fin)
-{
-    fin >> pp.g; 
-}
-
-void PrintPP(PP &pp)
-{
-    pp.g.Print("pp.g"); 
-} 
-
-void PrintSIG(SIG &sig)
-{
-    sig.A.Print("sig.A");
-    sig.z.Print("sig.z");
-} 
-
-void SerializeSIG(SIG &sigma, std::ofstream &fout)
-{
-    fout << sigma.A; 
-    fout << sigma.z; 
-} 
-
-void DeserializeSIG(SIG &sigma, std::ifstream &fin)
-{
-    fin >> sigma.A; 
-    fin >> sigma.z; 
-}
  
 }
 

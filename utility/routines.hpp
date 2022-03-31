@@ -23,7 +23,7 @@ inline bool FileExist(const std::string& filename)
 }
 
 
-std::string FormatToHexString(std::string byte_str)
+std::string ToHexString(std::string byte_str)
 {
     std::string hex_str;
     std::stringstream ss;
@@ -77,7 +77,6 @@ std::ofstream &operator<<(std::ofstream &fout, const ElementType& element)
     fout.write(reinterpret_cast<const char *>(&element), sizeof(ElementType)); 
     return fout; 
 }
-
 
 template <typename ElementType> // Note: T must be a C++ POD type.
 std::ifstream &operator>>(std::ifstream &fin, ElementType& element)

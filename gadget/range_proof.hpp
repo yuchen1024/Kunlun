@@ -84,19 +84,6 @@ bool CheckRange(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN)
 
 PP Setup(TwistedElGamal::PP &pp_enc, Bullet::PP &pp_bullet)
 {
-    // pp.RANGE_LEN = RANGE_LEN; 
-    // pp.LOG_RANGE_LEN = log2(RANGE_LEN);
-    // pp.DEC_THREAD_NUM = DEC_THREAD_NUM; 
-    // pp.TRADEOFF_NUM = TRADEOFF_NUM; 
-    // pp.AGG_NUM = 2;
-
-    // pp.g = generator; 
-    // pp.h = Hash::StringToECPoint(pp.g.ToByteString()); 
-    // pp.u = GenRandomGenerator();
-
-    // pp.vec_g = GenRandomECPointVector(RANGE_LEN*AGG_NUM); 
-    // pp.vec_h = GenRandomECPointVector(RANGE_LEN*AGG_NUM);
-
     PP pp;
     pp.enc_part = pp_enc;
     pp.bullet_part = pp_bullet;
@@ -210,7 +197,6 @@ void Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
     ptke_witness.r = r_star; 
 
     proof.ptke_proof = PlaintextKnowledge::Prove(ptke_pp, ptke_instance, ptke_witness, transcript_str); 
-
 
     Bullet::Instance bullet_instance; 
     bullet_instance.C = {proof.refresh_ct.Y, proof.refresh_ct.Y}; 

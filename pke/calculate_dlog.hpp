@@ -58,7 +58,7 @@ std::string GetTableFileName(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM)
     std::string str_exp1 = std::to_string(RANGE_LEN/2+TRADEOFF_NUM);  // babystep key table size
     std::string str_exp2 = std::to_string(RANGE_LEN/2-TRADEOFF_NUM-(size_t)log2(SEARCH_TASK_NUM));  // (log) giant step amplification factor: default value=0 
     // use 8-byte uint64_t hash value as an identifier of EC Point 
-    std::string str_suffix = FormatToHexString(Hash::ECPointToString(g));
+    std::string str_suffix = ToHexString(Hash::ECPointToString(g));
     str_suffix = str_suffix.substr(0,16);
 
     std::string table_filename  = str_suffix +"[" + 

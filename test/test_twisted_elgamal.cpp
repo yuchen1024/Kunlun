@@ -135,7 +135,7 @@ int main()
 
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
-    size_t TEST_NUM = 10000;
+    size_t TEST_NUM = pow(2,16);
 
     benchmark_twisted_elgamal(MSG_LEN, TRADEOFF_NUM, TEST_NUM);
 

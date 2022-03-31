@@ -155,12 +155,6 @@ public:
     std::string ToByteString() const;
     std::string ToHexString() const;
 
-    /* save bigint object binary form */  
-    void Serialize(std::ofstream &fout);
-
-    /* recover bigint object from binary file */
-    void Deserialize(std::ifstream &fin);
-
     friend std::ofstream &operator<<(std::ofstream &fout, const BigInt &A); 
     friend std::ifstream &operator>>(std::ifstream &fin, BigInt &A); 
 
@@ -562,22 +556,6 @@ int BigInt::GetTheNthBit(size_t j) const
 }
 
 
-/* save bigint object binary form */  
-void BigInt::Serialize(std::ofstream &fout)
-{
-    unsigned char buffer[BN_BYTE_LEN];
-    BN_bn2binpad(this->bn_ptr, buffer, BN_BYTE_LEN);
-    fout.write(reinterpret_cast<char *>(buffer), BN_BYTE_LEN);   // write to outfile
-}
-
-/* recover bigint object from binary file */
-void BigInt::Deserialize(std::ifstream &fin)
-{
-    char buffer[BN_BYTE_LEN];
-    fin.read(buffer, BN_BYTE_LEN);
-    BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_BYTE_LEN, this->bn_ptr);
-}
-
 std::ofstream &operator<<(std::ofstream &fout, const BigInt& a)
 { 
     unsigned char buffer[BN_BYTE_LEN];
@@ -592,6 +570,22 @@ std::ifstream &operator>>(std::ifstream &fin, BigInt &a)
     fin.read(buffer, BN_BYTE_LEN);
     BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_BYTE_LEN, a.bn_ptr); // red from input file
     return fin;            
+}
+
+std::ofstream &operator<<(std::ofstream &fout, const std::vector<BigInt>& vec_a)
+{ 
+    for(auto i = 0; i < vec_a.size(); i++){
+        fout << vec_a[i]; 
+    }
+    return fout;            
+}
+ 
+std::ifstream &operator>>(std::ifstream &fin, std::vector<BigInt>& vec_a)
+{ 
+    for(auto i = 0; i < vec_a.size(); i++){
+        fin >> vec_a[i]; 
+    }
+    return fin;             
 }
 
 // print a Big Number vector

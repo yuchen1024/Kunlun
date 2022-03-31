@@ -6,7 +6,7 @@ I give a C++ wrapper for OpenSSL, making it handy to use, without worrying about
 
 ## Design Philosophy
 
-Provide a set of neat interfaces for big integer and ec group operations, with the hope that the code is as succinct as paper description. Kunlun support multithreading via OpenMP. So far, the library is not stable. It will keep evolving. 
+Provide a set of neat interfaces for big integer and ec group operations, with the hope that the code is as succinct as paper description. Kunlun supports multithreading via OpenMP. So far, the library is not stable. It will keep evolving. 
 
 ## Issues
 
@@ -32,6 +32,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
 11. silient OT
 12. change the interfaces of hash: string => char[]?
 13. speed serialization of ECPoint
+14. overload << >> for serialization
 
 
 ## Specifications

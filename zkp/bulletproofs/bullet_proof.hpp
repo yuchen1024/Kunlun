@@ -63,11 +63,12 @@ void PrintProof(Proof &proof)
     InnerProduct::PrintProof(proof.ip_proof); 
 }
 
-void SerializeProof(Proof &proof, std::ofstream &fout)
+std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
 {
     fout << proof.A << proof.S << proof.T1 << proof.T2;
     fout << proof.taux << proof.mu << proof.tx; 
-    InnerProduct::SerializeProof(proof.ip_proof, fout); 
+    fout << proof.ip_proof; 
+    return fout; 
 }
 
 std::string ProofToByteString(Proof &proof)
@@ -79,13 +80,14 @@ std::string ProofToByteString(Proof &proof)
     return str;  
 }
 
-void DeserializeProof(Proof &proof, std::ifstream &fin)
+
+std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
 {
     fin >> proof.A >> proof.S >> proof.T1 >> proof.T2;
     fin >> proof.taux >> proof.mu >> proof.tx; 
-    InnerProduct::DeserializeProof(proof.ip_proof, fin); 
+    fin >> proof.ip_proof;
+    return fin; 
 }
-
 
 PP Setup(size_t &RANGE_LEN, size_t &MAX_AGG_NUM)
 {
@@ -105,33 +107,24 @@ PP Setup(size_t &RANGE_LEN, size_t &MAX_AGG_NUM)
 }
 
 
-void SerializePP(PP &pp, std::ofstream &fout)
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 {
-    fout.write((char *)(&pp.RANGE_LEN), sizeof(pp.RANGE_LEN));
-    fout.write((char *)(&pp.LOG_RANGE_LEN), sizeof(pp.LOG_RANGE_LEN)); 
-    fout.write((char *)(&pp.MAX_AGG_NUM), sizeof(pp.MAX_AGG_NUM)); 
-
-    fout << pp.g; 
-    fout << pp.h;
-    fout << pp.u; 
-    SerializeECPointVector(pp.vec_g, fout); 
-    SerializeECPointVector(pp.vec_h, fout); 
+    fout << pp.RANGE_LEN << pp.LOG_RANGE_LEN << pp.MAX_AGG_NUM; 
+    fout << pp.g << pp.h << pp.u; 
+    fout << pp.vec_g << pp.vec_h;
+    return fout;
 }
 
-void DeserializePP(PP &pp, std::ifstream &fin)
+std::ifstream &operator>>(std::ifstream &fin, PP& pp)
 {
-    fin.read((char *)(&pp.RANGE_LEN), sizeof(pp.RANGE_LEN));
-    fin.read((char *)(&pp.LOG_RANGE_LEN), sizeof(pp.LOG_RANGE_LEN)); 
-    fin.read((char *)(&pp.MAX_AGG_NUM), sizeof(pp.MAX_AGG_NUM)); 
+    fin >> pp.RANGE_LEN >> pp.LOG_RANGE_LEN >> pp.MAX_AGG_NUM; 
+    fin >> pp.g >> pp.h >> pp.u;
 
-    fin >> pp.g; 
-    fin >> pp.h;
-    fin >> pp.u;
+    pp.vec_g.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM); 
+    pp.vec_h.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM); 
+    fin >> pp.vec_g >> pp.vec_h;
 
-    pp.vec_g.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM);  
-    DeserializeECPointVector(pp.vec_g, fin); 
-    pp.vec_h.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM);  
-    DeserializeECPointVector(pp.vec_h, fin); 
+    return fin;  
 }
 
 // statement C = g^r h^v and v \in [0, 2^n-1]

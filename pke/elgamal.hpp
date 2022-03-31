@@ -33,7 +33,13 @@ struct MRCT
     std::vector<ECPoint> vec_Y; // Y = pk_i^r g^m 
 };
 
+// compare two ciphertexts
+bool operator==(const CT& ct_left, const CT& ct_right)
+{
+    return (ct_left.X == ct_right.X) && (ct_left.Y == ct_right.Y);  
+}
 
+// define serialization interfaces
 void PrintPP(const PP &pp)
 {
     std::cout << "the length of message space = " << pp.MSG_LEN << std::endl; 
@@ -47,15 +53,57 @@ void PrintCT(const CT &ct)
     ct.Y.Print("CT.Y");
 } 
 
-
-void SerializeCT(CT &ct, std::ofstream &fout)
+void PrintCT(const MRCT &ct)
 {
-    fout << ct.X << ct.Y;  
+    std::string note;
+    ct.X.Print("CT.X");
+
+    for(auto i = 0; i < ct.vec_Y.size(); i++){
+        note = "CT.Y" + std::to_string(i);
+        ct.vec_Y[i].Print(note);
+    }
+
 } 
 
-void DeserializeCT(CT &ct, std::ifstream &fin)
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
+{
+    fout << pp.MSG_LEN << pp.TRADEOFF_NUM;
+    fout << pp.MSG_SIZE; 
+    fout << pp.g; 
+    return fout; 
+}
+
+std::ifstream &operator>>(std::ifstream &fin, PP &pp)
+{
+    fin >> pp.MSG_LEN >> pp.TRADEOFF_NUM; 
+    fin >> pp.MSG_SIZE;
+    fin >> pp.g; 
+    return fin;
+}
+
+
+std::ofstream &operator<<(std::ofstream &fout, const CT &ct)
+{
+    fout << ct.X << ct.Y; 
+    return fout; 
+} 
+
+std::ifstream &operator>>(std::ifstream &fin, CT &ct)
 {
     fin >> ct.X >> ct.Y;
+    return fin;  
+} 
+
+std::ofstream &operator<<(std::ofstream &fout, const MRCT &ct)
+{
+    fout << ct.X << ct.vec_Y; 
+    return fout; 
+} 
+
+std::ifstream &operator>>(std::ifstream &fin, MRCT &ct)
+{
+    fin >> ct.X >> ct.vec_Y;
+    return fin;  
 } 
 
 std::string CTToByteString(CT &ct)
@@ -64,6 +112,19 @@ std::string CTToByteString(CT &ct)
     return str;
 }
 
+
+std::string MRCTToByteString(MRCT &ct)
+{
+    std::string str; 
+    str += ct.X.ToByteString(); 
+    for(auto i = 0; i < ct.vec_Y.size(); i++){
+        str += ct.vec_Y[i].ToByteString(); 
+    }
+    return str;
+}
+
+
+// core algorithms
 
 /* Setup algorithm */ 
 PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
@@ -89,21 +150,6 @@ PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
     return pp;
 }
 
-void SerializePP(PP &pp, std::ofstream &fout)
-{
-    fout << pp.MSG_LEN; 
-    fout << pp.TRADEOFF_NUM; 
-    fout << pp.MSG_SIZE; 
-    fout << pp.g;
-}
-
-void DeserializePP(PP &pp, std::ifstream &fin)
-{
-    fin >> pp.MSG_LEN;
-    fin >> pp.TRADEOFF_NUM;
-    fin >> pp.MSG_SIZE; 
-    fin >> pp.g;
-}
 
 /* initialize the hashmap to accelerate decryption */
 void Initialize(PP &pp)
@@ -271,15 +317,6 @@ CT ScalarMul(CT &ct, const BigInt &k)
 * Here we make the randomness explict for the ease of generating the ZKP 
 */
 
-void PrintCT(const MRCT &ct)
-{
-    std::string note;
-    ct.X.Print("CT.X");
-    for(auto i = 0; i < ct.vec_Y.size(); i++){
-        note = "CT.Y" + std::to_string(i);
-        ct.vec_Y[i].Print(note);
-    }
-} 
 
 MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, const BigInt &r)
 {  
@@ -298,34 +335,6 @@ MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, cons
     return ct; 
 }
 
-void SerializeCT(MRCT &ct, std::ofstream& fout)
-{
-    fout << ct.X; 
-    fout << ct.vec_Y; 
-} 
-
-void DeserializeCT(MRCT &ct, std::ifstream& fin)
-{
-    fin >> ct.X; 
-    fin >> ct.vec_Y;  
-}
-
-std::string MRCTToByteString(MRCT &ct)
-{
-    std::string str; 
-    str = ct.X.ToByteString(); 
-    for(auto i = 0; i < ct.vec_Y.size(); i++){
-        str += ct.vec_Y[i].ToByteString(); 
-    }
-
-    return str;
-}
-
-
-bool operator==(const CT& ct_left, const CT& ct_right)
-{
-    return (ct_left.X == ct_right.X) && (ct_left.Y == ct_right.Y);  
-}
 
 }
 # endif

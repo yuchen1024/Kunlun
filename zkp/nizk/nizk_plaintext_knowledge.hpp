@@ -73,14 +73,16 @@ std::string ProofToByteString(Proof &proof)
     return str;  
 }
 
-void SerializeProof(Proof &proof, std::ofstream &fout)
+std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
 {
-    fout << proof.A << proof.B << proof.z1 << proof.z2; 
+    fout << proof.A << proof.B << proof.z1 << proof.z2;
+    return fout;  
 }
 
-void DeserializeProof(Proof &proof, std::ifstream &fin)
+std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
 {
     fin >> proof.A >> proof.B >> proof.z1 >> proof.z2; 
+    return fin; 
 }
 
 /*  Setup algorithm */

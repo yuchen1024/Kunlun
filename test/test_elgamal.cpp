@@ -139,7 +139,6 @@ int main()
 
     benchmark_elgamal(MSG_LEN, TRADEOFF_NUM, TEST_NUM);
 
-    
     PrintSplitLine('-'); 
     std::cout << "ElGamal PKE test finishes <<<<<<" << std::endl; 
     PrintSplitLine('-'); 

@@ -44,13 +44,13 @@ struct Proof
     BigInt b;     
 };
 
-void SerializeProof(Proof &proof, std::ofstream &fout)
+std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
 {
-    SerializeECPointVector(proof.vec_L, fout);
-    SerializeECPointVector(proof.vec_R, fout);
-
+    fout << proof.vec_L << proof.vec_R; 
     fout << proof.a << proof.b; 
+    return fout; 
 }
+
 
 std::string ProofToByteString(Proof &proof)
 {
@@ -66,12 +66,13 @@ std::string ProofToByteString(Proof &proof)
     return str;  
 }
 
-void DeserializeProof(Proof &proof, std::ifstream &fin)
-{
-    DeserializeECPointVector(proof.vec_L, fin);
-    DeserializeECPointVector(proof.vec_R, fin);
 
+
+std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
+{
+    fin >> proof.vec_L >> proof.vec_R; 
     fin >> proof.a >> proof.b; 
+    return fin; 
 }
 
 void PrintPP(PP &pp)

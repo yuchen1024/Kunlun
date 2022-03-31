@@ -160,8 +160,10 @@ void SavePP(PP &pp, std::string ADCP_PP_File)
     fout << pp.MAXIMUM_COINS;  
     fout << pp.pka; 
 
-    Bullet::SerializePP(pp.bullet_part, fout); 
-    TwistedElGamal::SerializePP(pp.enc_part, fout);
+    //Bullet::SerializePP(pp.bullet_part, fout); 
+    fout << pp.bullet_part; 
+    fout << pp.enc_part; 
+    //TwistedElGamal::SerializePP(pp.enc_part, fout);
 
     fout.close();   
 }
@@ -177,8 +179,10 @@ void FetchPP(PP &pp, std::string ADCP_PP_File)
     fin >> pp.MAXIMUM_COINS;  
     fin >> pp.pka; 
 
-    Bullet::DeserializePP(pp.bullet_part, fin); 
-    TwistedElGamal::DeserializePP(pp.enc_part, fin);
+    //Bullet::DeserializePP(pp.bullet_part, fin); 
+    fin >> pp.bullet_part;
+    fin >> pp.enc_part; 
+    //TwistedElGamal::DeserializePP(pp.enc_part, fin);
 
     fin.close();   
 }
@@ -190,8 +194,9 @@ void SaveAccount(Account &user, std::string ADCP_Account_File)
     fout.write((char *)(&user.identity), sizeof(user.identity));
      
     fout << user.pk;              
-    fout << user.sk;             
-    TwistedElGamal::SerializeCT(user.balance_ct, fout);
+    fout << user.sk;   
+    fout << user.balance_ct;           
+    //TwistedElGamal::SerializeCT(user.balance_ct, fout);
     fout << user.m; 
     fout << user.sn;
     fout.close();  
@@ -205,7 +210,8 @@ void FetchAccount(Account &user, std::string adcp_Account_File)
 
     fin >> user.pk;              
     fin >> user.sk;             
-    TwistedElGamal::DeserializeCT(user.balance_ct, fin);
+    fin >> user.balance_ct;
+    //TwistedElGamal::DeserializeCT(user.balance_ct, fin);
     fin >> user.m; 
     fin >> user.sn;
     fin.close();  
@@ -223,14 +229,14 @@ void SaveCTx(ToOneCTx &newCTx, std::string ADCP_CTx_File)
     // save memo info
     fout << newCTx.pks; 
     fout << newCTx.pkr; 
-    TwistedElGamal::SerializeCT(newCTx.transfer_ct, fout);
+    fout << newCTx.transfer_ct; 
     
     // save proofs
-    PlaintextEquality::SerializeProof(newCTx.plaintext_equality_proof, fout);
-    TwistedElGamal::SerializeCT(newCTx.refresh_sender_updated_balance_ct, fout); 
-    DLOGEquality::SerializeProof(newCTx.correct_refresh_proof, fout); 
-    PlaintextKnowledge::SerializeProof(newCTx.plaintext_knowledge_proof, fout); 
-    Bullet::SerializeProof(newCTx.bullet_right_solvent_proof, fout); 
+    fout << newCTx.plaintext_equality_proof;
+    fout << newCTx.refresh_sender_updated_balance_ct; 
+    fout << newCTx.correct_refresh_proof; 
+    fout << newCTx.plaintext_knowledge_proof; 
+    fout << newCTx.bullet_right_solvent_proof;
     fout.close();
 
     // calculate the size of ctx_file
@@ -253,14 +259,14 @@ void FetchCTx(ToOneCTx &newCTx, std::string ADCP_CTx_File)
     // recover memo
     fin >> newCTx.pks; 
     fin >> newCTx.pkr; 
-    TwistedElGamal::DeserializeCT(newCTx.transfer_ct, fin);
+    fin >> newCTx.transfer_ct;
 
     // recover proof
-    PlaintextEquality::DeserializeProof(newCTx.plaintext_equality_proof, fin);
-    TwistedElGamal::DeserializeCT(newCTx.refresh_sender_updated_balance_ct, fin); 
-    DLOGEquality::DeserializeProof(newCTx.correct_refresh_proof, fin); 
-    PlaintextKnowledge::DeserializeProof(newCTx.plaintext_knowledge_proof, fin); 
-    Bullet::DeserializeProof(newCTx.bullet_right_solvent_proof, fin); 
+    fin >> newCTx.plaintext_equality_proof;
+    fin >> newCTx.refresh_sender_updated_balance_ct; 
+    fin >> newCTx.correct_refresh_proof; 
+    fin >> newCTx.plaintext_knowledge_proof; 
+    fin >> newCTx.bullet_right_solvent_proof; 
     fin.close(); 
 }
 
@@ -978,23 +984,23 @@ void SaveCTx(ToManyCTx &newCTx, std::string ADCP_CTx_File)
      
     // save memo info
     fout << newCTx.pks;
-    TwistedElGamal::SerializeCT(newCTx.sender_transfer_ct, fout);
+    fout << newCTx.sender_transfer_ct;
 
     for(auto i = 0; i < newCTx.vec_pkr.size(); i++){
         fout << newCTx.vec_pkr[i];
     }
     for(auto i = 0; i < newCTx.vec_receiver_transfer_ct.size(); i++){
-        TwistedElGamal::SerializeCT(newCTx.vec_receiver_transfer_ct[i], fout);
+        fout << newCTx.vec_receiver_transfer_ct[i];
     } 
     
     // save proofs
     for(auto i = 0; i < newCTx.vec_plaintext_equality_proof.size(); i++){
-        PlaintextEquality::SerializeProof(newCTx.vec_plaintext_equality_proof[i], fout);
+        fout << newCTx.vec_plaintext_equality_proof[i];
     }
-    TwistedElGamal::SerializeCT(newCTx.refresh_sender_updated_balance_ct, fout); 
-    DLOGEquality::SerializeProof(newCTx.correct_refresh_proof, fout); 
-    Bullet::SerializeProof(newCTx.bullet_right_solvent_proof, fout); 
-    PlaintextKnowledge::SerializeProof(newCTx.plaintext_knowledge_proof, fout); 
+    fout << newCTx.refresh_sender_updated_balance_ct; 
+    fout << newCTx.correct_refresh_proof; 
+    fout << newCTx.bullet_right_solvent_proof; 
+    fout << newCTx.plaintext_knowledge_proof; 
 
     fout.close();
 
