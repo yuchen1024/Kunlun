@@ -1,8 +1,7 @@
 #ifndef COMMITMENT_HPP_
 #define COMMITMENT_HPP_
 
-#include "../crypto/ec_point.hpp"
-#include "../utility/routines.hpp"
+#include "../include/kunlun.hpp"
 
 namespace Pedersen{
 

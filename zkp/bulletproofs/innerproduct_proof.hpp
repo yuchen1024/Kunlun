@@ -4,12 +4,10 @@ this hpp implements the inner product proof system
 #ifndef IP_PROOF_HPP
 #define IP_PROOF_HPP
 
-#include "../../crypto/ec_point.hpp"
-#include "../../crypto/hash.hpp"
-#include "../../utility/print.hpp"
-#include "../../utility/routines.hpp"
+#include "../../include/kunlun.hpp"
 
 namespace InnerProduct{
+
 // define the structure of InnerProduct Proof
 struct PP
 {
@@ -44,11 +42,18 @@ struct Proof
     BigInt b;     
 };
 
-std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
+std::ofstream &operator<<(std::ofstream &fout, const InnerProduct::Proof &proof)
 {
     fout << proof.vec_L << proof.vec_R; 
     fout << proof.a << proof.b; 
     return fout; 
+}
+
+std::ifstream &operator>>(std::ifstream &fin, InnerProduct::Proof &proof)
+{
+    fin >> proof.vec_L >> proof.vec_R; 
+    fin >> proof.a >> proof.b; 
+    return fin; 
 }
 
 
@@ -66,14 +71,6 @@ std::string ProofToByteString(Proof &proof)
     return str;  
 }
 
-
-
-std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
-{
-    fin >> proof.vec_L >> proof.vec_R; 
-    fin >> proof.a >> proof.b; 
-    return fin; 
-}
 
 void PrintPP(PP &pp)
 {
@@ -237,8 +234,8 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
 
 
         // compute cL, cR
-        BigInt cL = BigIntVectorModInnerProduct(vec_aL, vec_bR); // Eq (21)        
-        BigInt cR = BigIntVectorModInnerProduct(vec_aR, vec_bL); // Eq (22)
+        BigInt cL = BigIntVectorModInnerProduct(vec_aL, vec_bR, BigInt(order)); // Eq (21)        
+        BigInt cR = BigIntVectorModInnerProduct(vec_aR, vec_bL, BigInt(order)); // Eq (22)
 
         // compute L, R
         std::vector<ECPoint> vec_A(2*n+1); 
@@ -313,13 +310,13 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
         // generate new witness
         Witness witness_sub; 
     
-        vec_aL = BigIntVectorModScalar(vec_aL, x); 
-        vec_aR = BigIntVectorModScalar(vec_aR, x_inverse); 
-        witness_sub.vec_a = BigIntVectorModAdd(vec_aL, vec_aR); // Eq (33)
+        vec_aL = BigIntVectorModScalar(vec_aL, x, BigInt(order)); 
+        vec_aR = BigIntVectorModScalar(vec_aR, x_inverse, BigInt(order)); 
+        witness_sub.vec_a = BigIntVectorModAdd(vec_aL, vec_aR, BigInt(order)); // Eq (33)
 
-        vec_bL = BigIntVectorModScalar(vec_bL, x_inverse); 
-        vec_bR = BigIntVectorModScalar(vec_bR, x); 
-        witness_sub.vec_b = BigIntVectorModAdd(vec_bL, vec_bR); // Eq (34)
+        vec_bL = BigIntVectorModScalar(vec_bL, x_inverse, BigInt(order)); 
+        vec_bR = BigIntVectorModScalar(vec_bR, x, BigInt(order)); 
+        witness_sub.vec_b = BigIntVectorModAdd(vec_bL, vec_bR, BigInt(order)); // Eq (34)
 
         // recursively invoke the InnerProduct proof
         Prove(pp_sub, instance_sub, witness_sub, transcript_str, proof); 
@@ -363,7 +360,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
 
     ComputeVectorSS(vec_s, vec_x, vec_x_inverse); // page 15: the s vector
-    vec_s_inverse = BigIntVectorModInverse(vec_s);  // the s^{-1} vector
+    vec_s_inverse = BigIntVectorModInverse(vec_s, BigInt(order));  // the s^{-1} vector
     vec_s = BigIntVectorScalar(vec_s, proof.a); 
     vec_s_inverse = BigIntVectorScalar(vec_s_inverse, proof.b); 
 
@@ -483,7 +480,7 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
 
     // compute scalar for g and h
     std::vector<BigInt> vec_s = FastComputeVectorSS(vec_x_square, vec_x_inverse); // page 15: the s vector
-    std::vector<BigInt> vec_s_inverse = BigIntVectorModInverse(vec_s);  // the s^{-1} vector
+    std::vector<BigInt> vec_s_inverse = BigIntVectorModInverse(vec_s, BigInt(order));  // the s^{-1} vector
     vec_s = BigIntVectorScalar(vec_s, proof.a); 
     vec_s_inverse = BigIntVectorScalar(vec_s_inverse, proof.b); 
 
@@ -527,4 +524,5 @@ bool FastVerify(PP &pp, Instance &instance, std::string &transcript_str, Proof &
 }
 
 }
+
 #endif

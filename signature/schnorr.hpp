@@ -1,10 +1,7 @@
 #ifndef SCHNORR_HPP_
 #define SCHNORR_HPP_
 
-#include "../crypto/global.hpp"
-#include "../crypto/ec_point.hpp"
-#include "../crypto/hash.hpp"
-#include "../utility/routines.hpp"
+#include "../include/kunlun.hpp"
 
 namespace Schnorr{
 
@@ -54,7 +51,7 @@ std::ofstream &operator<<(std::ofstream &fout, const SIG &sigma)
     return fout; 
 } 
 
-std::ifstream &operator<<(std::ifstream &fin, SIG &sigma)
+std::ifstream &operator>>(std::ifstream &fin, SIG &sigma)
 {
     fin >> sigma.A; 
     fin >> sigma.z;

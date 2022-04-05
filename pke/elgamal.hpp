@@ -1,13 +1,13 @@
 #ifndef ELGAMAL_HPP_
 #define ELGAMAL_HPP_
 
-#include "../crypto/global.hpp"
-#include "../crypto/ec_point.hpp"
-#include "../crypto/hash.hpp"
-#include "../utility/routines.hpp"
+#include "../include/kunlun.hpp"
 #include "calculate_dlog.hpp"
 
 namespace ElGamal{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 // define the structure of PP
 struct PP
@@ -32,6 +32,47 @@ struct MRCT
     ECPoint X; // X = g^r
     std::vector<ECPoint> vec_Y; // Y = pk_i^r g^m 
 };
+
+std::ofstream &operator<<(std::ofstream &fout, const ElGamal::PP &pp)
+{
+    fout << pp.MSG_LEN << pp.TRADEOFF_NUM;
+    fout << pp.MSG_SIZE; 
+    fout << pp.g; 
+    return fout; 
+}
+
+std::ifstream &operator>>(std::ifstream &fin, ElGamal::PP &pp)
+{
+    fin >> pp.MSG_LEN >> pp.TRADEOFF_NUM; 
+    fin >> pp.MSG_SIZE;
+    fin >> pp.g; 
+    return fin;
+}
+
+
+std::ofstream &operator<<(std::ofstream &fout, const CT &ct)
+{
+    fout << ct.X << ct.Y; 
+    return fout; 
+} 
+
+std::ifstream &operator>>(std::ifstream &fin, CT &ct)
+{
+    fin >> ct.X >> ct.Y;
+    return fin;  
+} 
+
+std::ofstream &operator<<(std::ofstream &fout, const MRCT &ct)
+{
+    fout << ct.X << ct.vec_Y; 
+    return fout; 
+} 
+
+std::ifstream &operator>>(std::ifstream &fin, MRCT &ct)
+{
+    fin >> ct.X >> ct.vec_Y;
+    return fin;  
+} 
 
 // compare two ciphertexts
 bool operator==(const CT& ct_left, const CT& ct_right)
@@ -63,47 +104,6 @@ void PrintCT(const MRCT &ct)
         ct.vec_Y[i].Print(note);
     }
 
-} 
-
-std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
-{
-    fout << pp.MSG_LEN << pp.TRADEOFF_NUM;
-    fout << pp.MSG_SIZE; 
-    fout << pp.g; 
-    return fout; 
-}
-
-std::ifstream &operator>>(std::ifstream &fin, PP &pp)
-{
-    fin >> pp.MSG_LEN >> pp.TRADEOFF_NUM; 
-    fin >> pp.MSG_SIZE;
-    fin >> pp.g; 
-    return fin;
-}
-
-
-std::ofstream &operator<<(std::ofstream &fout, const CT &ct)
-{
-    fout << ct.X << ct.Y; 
-    return fout; 
-} 
-
-std::ifstream &operator>>(std::ifstream &fin, CT &ct)
-{
-    fin >> ct.X >> ct.Y;
-    return fin;  
-} 
-
-std::ofstream &operator<<(std::ofstream &fout, const MRCT &ct)
-{
-    fout << ct.X << ct.vec_Y; 
-    return fout; 
-} 
-
-std::ifstream &operator>>(std::ifstream &fin, MRCT &ct)
-{
-    fin >> ct.X >> ct.vec_Y;
-    return fin;  
 } 
 
 std::string CTToByteString(CT &ct)
@@ -334,7 +334,6 @@ MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, cons
 
     return ct; 
 }
-
 
 }
 # endif

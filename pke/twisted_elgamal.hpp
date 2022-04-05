@@ -1,13 +1,14 @@
 #ifndef TWISTED_ELGAMAL_HPP_
 #define TWISTED_ELGAMAL_HPP_
 
-#include "../crypto/global.hpp"
-#include "../crypto/ec_point.hpp"
-#include "../crypto/hash.hpp"
-#include "../utility/routines.hpp"
+
+#include "../include/kunlun.hpp"
 #include "calculate_dlog.hpp"
 
 namespace TwistedElGamal{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 // define the structure of PP
 struct PP
@@ -65,7 +66,26 @@ void PrintCT(const MRCT &ct)
     ct.Y.Print("CT.Y");
 } 
 
-std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
+
+std::string CTToByteString(CT &ct)
+{
+    std::string str = ct.X.ToByteString() + ct.Y.ToByteString(); 
+    return str;
+}
+
+
+std::string MRCTToByteString(MRCT &ct)
+{
+    std::string str; 
+    for(auto i = 0; i < ct.vec_X.size(); i++){
+        str += ct.vec_X[i].ToByteString(); 
+    }
+    str += ct.Y.ToByteString(); 
+    return str;
+}
+
+
+std::ofstream &operator<<(std::ofstream &fout, const TwistedElGamal::PP &pp)
 {
     fout << pp.MSG_LEN << pp.TRADEOFF_NUM;
     fout << pp.MSG_SIZE; 
@@ -73,14 +93,13 @@ std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
     return fout; 
 }
 
-std::ifstream &operator>>(std::ifstream &fin, PP &pp)
+std::ifstream &operator>>(std::ifstream &fin, TwistedElGamal::PP &pp)
 {
     fin >> pp.MSG_LEN >> pp.TRADEOFF_NUM; 
     fin >> pp.MSG_SIZE;
     fin >> pp.g >> pp.h; 
     return fin;
 }
-
 
 std::ofstream &operator<<(std::ofstream &fout, const CT &ct)
 {
@@ -105,23 +124,6 @@ std::ifstream &operator>>(std::ifstream &fin, MRCT &ct)
     fin >> ct.vec_X >> ct.Y;
     return fin;  
 } 
-
-std::string CTToByteString(CT &ct)
-{
-    std::string str = ct.X.ToByteString() + ct.Y.ToByteString(); 
-    return str;
-}
-
-
-std::string MRCTToByteString(MRCT &ct)
-{
-    std::string str; 
-    for(auto i = 0; i < ct.vec_X.size(); i++){
-        str += ct.vec_X[i].ToByteString(); 
-    }
-    str += ct.Y.ToByteString(); 
-    return str;
-}
 
 
 
@@ -331,7 +333,7 @@ MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, cons
     for(auto i = 0; i < n; i++){
         ct.vec_X.emplace_back(vec_pk[i] * r); 
     }
- 
+
     ct.Y = pp.g * r + pp.h * m; // Y = g^r h^m
    
     #ifdef DEBUG
@@ -341,7 +343,6 @@ MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, cons
 
     return ct; 
 }
-
 
 }
 # endif

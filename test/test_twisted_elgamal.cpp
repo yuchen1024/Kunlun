@@ -3,7 +3,7 @@
 #include "../utility/print.hpp"
 
 
-void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
+void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 {
     PrintSplitLine('-'); 
     std::cout << "begin the benchmark test >>>"<< std::endl;
@@ -119,6 +119,66 @@ void benchmark_twisted_elgamal(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_
     << std::chrono::duration <double, std::milli> (running_time).count()/TEST_NUM << " ms" << std::endl;
 }
 
+void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
+{
+    PrintSplitLine('-'); 
+    std::cout << "begin the functionality test >>>"<< std::endl;
+    PrintSplitLine('-'); 
+
+    std::cout << "MSG_LEN = " << MSG_LEN << std::endl;
+    std::cout << "TRADEOFF_NUM = " << TRADEOFF_NUM << std::endl; 
+
+    PrintSplitLine('-'); 
+
+    TwistedElGamal::PP pp = TwistedElGamal::Setup(MSG_LEN, TRADEOFF_NUM);
+    TwistedElGamal::Initialize(pp); 
+    PrintSplitLine('-'); 
+
+    ECPoint pk;                      // pk
+    BigInt sk;                       // sk
+    BigInt m_random, m_left, m_right;                       // messages  
+    BigInt m_prime;                  // decrypted messages
+    TwistedElGamal::CT CT;            // CTs    
+
+
+    m_random = GenRandomBigIntLessThan(pp.MSG_SIZE); 
+    m_left = bn_0; 
+    m_right = pp.MSG_SIZE - bn_1; 
+
+    /* test keygen efficiency */ 
+    std::tie(pk, sk) = TwistedElGamal::KeyGen(pp); 
+
+    CT = TwistedElGamal::Enc(pp, pk, m_random);
+
+    m_prime = TwistedElGamal::Dec(pp, sk, CT); 
+    if(m_random != m_prime){ 
+        std::cout << "decryption fails for random message" << std::endl;
+    }
+    else{
+        std::cout << "decryption succeeds for random message" << std::endl;
+    }
+
+    CT = TwistedElGamal::Enc(pp, pk, m_left);
+
+    m_prime = TwistedElGamal::Dec(pp, sk, CT); 
+
+    if(m_left != m_prime){ 
+        std::cout << "decryption fails for left boundary" << std::endl;
+    }
+    else{
+        std::cout << "decryption succeeds for left boundary" << std::endl;
+    }
+
+    CT = TwistedElGamal::Enc(pp, pk, m_right);
+    m_prime = TwistedElGamal::Dec(pp, sk, CT); 
+    if(m_right != m_prime){ 
+        std::cout << "decryption fails for right boundary" << std::endl;
+    }
+    else{
+        std::cout << "decryption succeeds for right boundary" << std::endl;
+    }
+
+}
 
 
 int main()
@@ -137,7 +197,8 @@ int main()
     size_t TRADEOFF_NUM = 7; 
     size_t TEST_NUM = pow(2,16);
 
-    benchmark_twisted_elgamal(MSG_LEN, TRADEOFF_NUM, TEST_NUM);
+    function_test(MSG_LEN, TRADEOFF_NUM);
+    benchmark_test(MSG_LEN, TRADEOFF_NUM, TEST_NUM);
 
     
     PrintSplitLine('-'); 

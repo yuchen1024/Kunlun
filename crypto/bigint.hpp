@@ -568,7 +568,7 @@ std::ifstream &operator>>(std::ifstream &fin, BigInt &a)
 { 
     char buffer[BN_BYTE_LEN];
     fin.read(buffer, BN_BYTE_LEN);
-    BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_BYTE_LEN, a.bn_ptr); // red from input file
+    BN_bin2bn(reinterpret_cast<unsigned char *>(buffer), BN_BYTE_LEN, a.bn_ptr); // read from input file
     return fin;            
 }
 
@@ -598,8 +598,8 @@ void PrintBigIntVector(std::vector<BigInt> &vec_a, std::string note)
     }
 }
 
-/* a[i] = (a[i]+b[i]) mod order */
-std::vector<BigInt> BigIntVectorModAdd(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+/* a[i] = (a[i]+b[i]) mod modulus */
+std::vector<BigInt> BigIntVectorModAdd(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b, const BigInt &modulus)
 {
     if (vec_a.size() != vec_b.size()) {
         std::cerr << "vector size does not match!" << std::endl;
@@ -609,13 +609,13 @@ std::vector<BigInt> BigIntVectorModAdd(std::vector<BigInt> &vec_a, std::vector<B
     std::vector<BigInt> vec_result(LEN);
     
     for (auto i = 0; i < vec_a.size(); i++) {
-        vec_result[i] = (vec_a[i] + vec_b[i]) % order;  
+        vec_result[i] = (vec_a[i] + vec_b[i]) % modulus;  
     }
     return vec_result; 
 }
 
-/* a[i] = (a[i]-b[i]) mod order */ 
-std::vector<BigInt> BigIntVectorModSub(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+/* a[i] = (a[i]-b[i]) mod modulus */ 
+std::vector<BigInt> BigIntVectorModSub(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b, const BigInt& modulus)
 {
     if (vec_a.size() != vec_b.size()) {
         std::cout << "vector size does not match!" << std::endl;
@@ -625,13 +625,13 @@ std::vector<BigInt> BigIntVectorModSub(std::vector<BigInt> &vec_a, std::vector<B
     std::vector<BigInt> vec_result(LEN);
 
     for (auto i = 0; i < LEN; i++) {
-        vec_result[i] = (vec_a[i] - vec_b[i]) % order;
+        vec_result[i] = (vec_a[i] - vec_b[i]) % modulus;
     } 
     return vec_result; 
 }
 
-/* c[i] = a[i]*b[i] mod order */ 
-std::vector<BigInt> BigIntVectorModProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+/* c[i] = a[i]*b[i] mod modulus */ 
+std::vector<BigInt> BigIntVectorModProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b, const BigInt& modulus)
 {
     if (vec_a.size() != vec_b.size()) {
         std::cerr << "vector size does not match!" << std::endl;
@@ -641,7 +641,7 @@ std::vector<BigInt> BigIntVectorModProduct(std::vector<BigInt> &vec_a, std::vect
     std::vector<BigInt> vec_result(LEN);
 
     for (auto i = 0; i < vec_a.size(); i++) {
-        vec_result[i] = (vec_a[i] * vec_b[i]) % order; // product = (vec_a[i]*vec_b[i]) mod order
+        vec_result[i] = (vec_a[i] * vec_b[i]) % modulus; // product = (vec_a[i]*vec_b[i]) mod modulus
     }
     return vec_result; 
 }
@@ -665,13 +665,13 @@ std::vector<BigInt> BigIntVectorProduct(std::vector<BigInt> &vec_a, std::vector<
 
 
 /* compute the inverse of a[i] */ 
-std::vector<BigInt> BigIntVectorModInverse(std::vector<BigInt> &vec_a)
+std::vector<BigInt> BigIntVectorModInverse(std::vector<BigInt> &vec_a, const BigInt& modulus)
 {
     size_t LEN = vec_a.size(); 
     std::vector<BigInt> vec_result(LEN);
 
     for (auto i = 0; i < vec_a.size(); i++) {
-        vec_result[i] = vec_a[i].ModInverse(order); 
+        vec_result[i] = vec_a[i].ModInverse(modulus); 
 
     }
     return vec_result;
@@ -679,13 +679,13 @@ std::vector<BigInt> BigIntVectorModInverse(std::vector<BigInt> &vec_a)
 
 
 /* result[i] = c * a[i] */  
-std::vector<BigInt> BigIntVectorModScalar(std::vector<BigInt> &vec_a, BigInt &c)
+std::vector<BigInt> BigIntVectorModScalar(std::vector<BigInt> &vec_a, BigInt &c, const BigInt& modulus)
 {
     size_t LEN = vec_a.size();
     std::vector<BigInt> vec_result(LEN);
 
     for (auto i = 0; i < LEN; i++) {
-        vec_result[i] = (vec_a[i] * c) % order;
+        vec_result[i] = (vec_a[i] * c) % modulus;
     } 
     return vec_result; 
 }
@@ -716,7 +716,7 @@ std::vector<BigInt> BigIntVectorModNegate(std::vector<BigInt> &vec_a, BigInt &mo
 
 
 /* sum_i^n a[i]*b[i] */
-BigInt BigIntVectorModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+BigInt BigIntVectorModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b, const BigInt& modulus)
 {
     BigInt result = bn_0; 
 
@@ -726,14 +726,14 @@ BigInt BigIntVectorModInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigIn
     } 
 
     for (auto i = 0; i < vec_a.size(); i++) {
-        result += vec_a[i] * vec_b[i]; // product = (vec_a[i]*vec_b[i]) mod order
+        result += vec_a[i] * vec_b[i]; // product = (vec_a[i]*vec_b[i]) mod modulus
     }
-    result = result % BigInt(order);
+    result = result % modulus;
     return result; 
 }
 
 /* sum_i^n a[i]*b[i] */
-BigInt BigIntVectorInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b)
+BigInt BigIntVectorInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> &vec_b, const BigInt& modulus)
 {
     BigInt result = bn_0; 
 
@@ -743,14 +743,14 @@ BigInt BigIntVectorInnerProduct(std::vector<BigInt> &vec_a, std::vector<BigInt> 
     } 
 
     for (auto i = 0; i < vec_a.size(); i++) {
-        result += vec_a[i] * vec_b[i]; // product = (vec_a[i]*vec_b[i]) mod order
+        result += vec_a[i] * vec_b[i]; 
     }
-    return result; 
+    return result % modulus; 
 }
 
 
 /* generate a vector of random EC points */  
-std::vector<BigInt> GenRandomBigIntVectorLessThan(size_t LEN, const BigInt &order)
+std::vector<BigInt> GenRandomBigIntVectorLessThan(size_t LEN, const BigInt &modulus)
 {
     std::vector<BigInt> vec_result(LEN);
     
@@ -758,7 +758,7 @@ std::vector<BigInt> GenRandomBigIntVectorLessThan(size_t LEN, const BigInt &orde
     #pragma omp parallel for
     #endif
     for(auto i = 0; i < LEN; i++){ 
-        vec_result[i] = GenRandomBigIntLessThan(order); 
+        vec_result[i] = GenRandomBigIntLessThan(modulus); 
     }
     return vec_result; 
 }

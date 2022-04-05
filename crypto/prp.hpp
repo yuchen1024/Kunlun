@@ -6,7 +6,6 @@
 #ifndef KUNLUN_PRP_HPP_
 #define KUNLUN_PRP_HPP_
 
-#include "block.hpp"
 #include "aes.hpp"
 #include "constants.h"
 

@@ -43,8 +43,10 @@ void SavePP(PP &pp, std::string pp_filename)
         exit(1); 
     }
 
-    IKNPOTE::SerializePP(pp.ote_part, fout); 
-    cwPRFmqRPMT::SerializePP(pp.mqrpmt_part, fout); 
+    // IKNPOTE::SerializePP(pp.ote_part, fout); 
+    // cwPRFmqRPMT::SerializePP(pp.mqrpmt_part, fout); 
+    fout << pp.ote_part; 
+    fout << pp.mqrpmt_part; 
     fout.close(); 
 }
 // load pp from file
@@ -57,8 +59,10 @@ void FetchPP(PP &pp, std::string pp_filename)
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }
-    IKNPOTE::DeserializePP(pp.ote_part, fin); 
-    cwPRFmqRPMT::DeserializePP(pp.mqrpmt_part, fin); 
+    // IKNPOTE::DeserializePP(pp.ote_part, fin); 
+    // cwPRFmqRPMT::DeserializePP(pp.mqrpmt_part, fin); 
+    fin >> pp.ote_part;
+    fin >> pp.mqrpmt_part; 
     fin.close(); 
 }
 
@@ -104,11 +108,11 @@ std::vector<block> PSUServer(NetIO &io, PP &pp, std::vector<block> &vec_X, size_
         vec_indication_bit[i] = 1 - vec_indication_bit[i]; 
     } 
     // get the intersection X \cup Y via one-sided OT from receiver
-    std::vector<block> vec_coset = IKNPOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, LEN); 
+    std::vector<block> vec_Y_diff = IKNPOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, LEN); 
     std::vector<block> vec_union = vec_X; 
-    for(auto i = 0; i < vec_coset.size(); i++)
-        vec_union.emplace_back(vec_coset[i]); 
-
+    for(auto i = 0; i < vec_Y_diff.size(); i++)
+        vec_union.emplace_back(vec_Y_diff[i]);
+    
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
     std::cout << "mqRPMT-based PSU: Server side takes time = " 

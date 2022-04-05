@@ -24,7 +24,9 @@ void Build_ADCP_Test_Enviroment()
     std::string adcp_PP_Filename = "ADCP.pp"; 
     ADCP::SavePP(pp, adcp_PP_Filename); 
 
+    std::cout << "press any key to continue >>>" << std::endl; 
     system ("read");
+
 
     // create accounts for Alice and Bob and Tax
     std::cout << "generate four accounts" << std::endl; 
@@ -54,6 +56,7 @@ void Build_ADCP_Test_Enviroment()
     std::string Tax_Acct_FileName = "Tax.account"; 
     ADCP::SaveAccount(Acct_Tax, Tax_Acct_FileName); 
 
+    std::cout << "press any key to continue >>>" << std::endl; 
     system ("read");
 } 
 
@@ -67,6 +70,7 @@ void Emulate_ADCP_System()
 
     ADCP::PP pp;  
     ADCP::FetchPP(pp, "adcp.pp"); 
+    ADCP::PrintPP(pp); 
 
     ADCP::Account Acct_Alice;  
     ADCP::FetchAccount(Acct_Alice, "Alice.account"); 
@@ -99,7 +103,8 @@ void Emulate_ADCP_System()
     ADCP::Miner(pp, wrong_ctx1, Acct_Alice, Acct_Bob); 
     PrintSplitLine('-'); 
 
-    system("read");
+    std::cout << "press any key to continue >>>" << std::endl; 
+    system ("read");
 
     std::cout << "Wrong Case 2: invalid ctx --- wrong interval of transfer amount => range proof will reject" << std::endl; 
     v = BigInt(4294967296); 
@@ -108,6 +113,7 @@ void Emulate_ADCP_System()
     ADCP::Miner(pp, wrong_ctx2, Acct_Alice, Acct_Bob); 
     PrintSplitLine('-'); 
 
+    std::cout << "press any key to continue >>>" << std::endl; 
     system ("read");
 
     std::cout << "Wrong Case 3: invalid ctx --- balance is not enough => range proof will reject" << std::endl; 
@@ -117,7 +123,8 @@ void Emulate_ADCP_System()
     ADCP::Miner(pp, wrong_ctx3, Acct_Alice, Acct_Bob);  
     PrintSplitLine('-'); 
 
-    system("read");
+    std::cout << "press any key to continue >>>" << std::endl; 
+    system ("read");
 
     std::cout << "1st valid 1-to-1 ctx" << std::endl; 
     v = BigInt(128); 
@@ -133,7 +140,8 @@ void Emulate_ADCP_System()
     ADCP::PrintAccount(Acct_Carl); 
     ADCP::PrintAccount(Acct_Tax); 
 
-    system("read");
+    std::cout << "press any key to continue >>>" << std::endl; 
+    system ("read");
 
     std::cout << "2nd valid 1-to-1 ctx" << std::endl; 
     v = BigInt(32);  
@@ -149,7 +157,8 @@ void Emulate_ADCP_System()
     ADCP::PrintAccount(Acct_Carl); 
     ADCP::PrintAccount(Acct_Tax); 
 
-    system("read");
+    std::cout << "press any key to continue >>>" << std::endl; 
+    system ("read");
 
     std::cout << "3nd valid 1-to-1 ctx" << std::endl; 
     v = BigInt(384);  
@@ -165,7 +174,9 @@ void Emulate_ADCP_System()
     ADCP::PrintAccount(Acct_Carl); 
     ADCP::PrintAccount(Acct_Tax); 
 
-    system("read"); 
+    std::cout << "press any key to continue >>>" << std::endl; 
+    system ("read");
+
     std::cout << "4th valid 1-to-1 ctx" << std::endl; 
     v = BigInt(128);  
     std::cout << "Carl is going to transfer "<< BN_bn2dec(v.bn_ptr) << " coins to Tax" << std::endl; 
@@ -221,6 +232,7 @@ void Emulate_ADCP_System()
     std::cout << "audit ends >>>" << std::endl; 
     PrintSplitLine('-');
 
+    std::cout << "press any key to continue >>>" << std::endl; 
     system ("read");
 
     std::cout << "begin the test of 1-to-n ctx" << std::endl;
@@ -248,7 +260,8 @@ void Emulate_ADCP_System()
     ADCP::PrintAccount(Acct_Carl); 
     ADCP::PrintAccount(Acct_Tax); 
 
-    system("read");
+    std::cout << "press any key to continue >>>" << std::endl; 
+    system ("read");
 
     std::cout << "supervision of 1-to-n ctx begins >>>" << std::endl; 
     PrintSplitLine('-'); 

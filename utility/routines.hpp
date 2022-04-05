@@ -10,7 +10,6 @@ this hpp implements some routine algorithms
 #include "../include/std.inc"
 #include "../config/config.h"
 
-
 // check the existence of a given file
 inline bool FileExist(const std::string& filename)
 {
@@ -54,69 +53,6 @@ std::vector<int64_t> GenRandomIntegerVectorLessThan(size_t LEN, int64_t MAX)
     }
     return vec_result; 
 }
-
-// #ifdef IS_MACOS
-// std::ofstream &operator<<(std::ofstream &fout, const size_t &a)
-// { 
-//     //std::cout << "OS name: " << OS_NAME << std::endl;
-//     fout.write(reinterpret_cast<const char *>(&a), 8);  
-//     return fout;            
-// }
- 
-// std::ifstream &operator>>(std::ifstream &fin, size_t &a)
-// { 
-//     fin.read(reinterpret_cast<char *>(&a), 8); 
-//     return fin;            
-// }
-// #endif
-
-
-template <typename ElementType> // Note: T must be a C++ POD type.
-std::ofstream &operator<<(std::ofstream &fout, const ElementType& element)
-{
-    fout.write(reinterpret_cast<const char *>(&element), sizeof(ElementType)); 
-    return fout; 
-}
-
-template <typename ElementType> // Note: T must be a C++ POD type.
-std::ifstream &operator>>(std::ifstream &fin, ElementType& element)
-{
-    fin.read(reinterpret_cast<char *>(&element), sizeof(ElementType)); 
-    return fin; 
-}
-
-
-template <typename ElementType> // Note: T must be a C++ POD type.
-std::ofstream &operator<<(std::ofstream &fout, const std::vector<ElementType>& vec_element)
-{
-    fout.write(reinterpret_cast<const char *>(vec_element.data()), vec_element.size() * sizeof(ElementType)); 
-    return fout; 
-}
-
-template <typename ElementType> // Note: T must be a C++ POD type.
-std::ifstream &operator>>(std::ifstream &fin, std::vector<ElementType>& vec_element)
-{ 
-    fin.read(reinterpret_cast<char *>(vec_element.data()), vec_element.size() * sizeof(ElementType)); 
-    return fin; 
-}
-
-
-template < > // specialize for string
-std::ofstream &operator<<<std::string>(std::ofstream &fout, const std::string& str)
-{
-    fout.write(reinterpret_cast<const char *>(str.data()), str.size()); 
-    return fout; 
-}
-
-template < > // specialize for string
-std::ifstream &operator>><std::string>(std::ifstream &fin, std::string& str)
-{
-    std::ostringstream ss; 
-    ss << fin.rdbuf();
-    str = std::string(ss.str()); 
-    return fin; 
-}
-
 
   
 #endif

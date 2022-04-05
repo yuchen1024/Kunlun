@@ -152,11 +152,13 @@ int main()
     Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
 
-    size_t TEST_NUM = 1024*1024;  
+    //size_t TEST_NUM = 1024*1024;  
 
     //benchmark_ecc(TEST_NUM); 
 
-    test_hash_to_point(TEST_NUM); 
+    // test_hash_to_point(TEST_NUM);
+
+
     
 
     ECGroup_Finalize(); 

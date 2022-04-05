@@ -12,17 +12,6 @@ this hpp implements print functionality
 const static size_t LINE_LEN = 120;     // the length of split line
 
 
-// std::string ToHex(const std::string& str, bool upper_case)
-// {
-//     std::ostringstream ret;
-
-//     for (std::string::size_type i = 0; i < str.length(); ++i)
-//         ret << std::hex << std::setfill('0') << std::setw(2) 
-//             << (upper_case ? std::uppercase : std::nouppercase) << (int)str[i];
-
-//     return ret.str();
-// }
-
 /* print split line */
 void PrintSplitLine(char ch)
 {

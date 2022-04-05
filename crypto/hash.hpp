@@ -7,13 +7,11 @@ this hpp implements hash functions
 #ifndef KUNLUN_CRYPTO_HASH_HPP_
 #define KUNLUN_CRYPTO_HASH_HPP_
 
+#include "global.hpp"
+#include "constants.h"
 #include "block.hpp"
 #include "bigint.hpp"
 #include "ec_point.hpp"
-#include "global.hpp"
-#include "constants.h"
-#include "openssl/evp.h"
-#include "../utility/murmurhash2.hpp"
 
 
 //#define BasicHash(input, HASH_INPUT_LEN, output) SM3(input, HASH_INPUT_LEN, output)

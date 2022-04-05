@@ -26,6 +26,22 @@ struct PP
     size_t statistical_security_parameter; // default=40 
 };
 
+// seriazlize
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
+{
+    fout << pp.statistical_security_parameter; 
+    fout << pp.filter_type;
+    return fout; 
+}
+
+// load pp from file
+std::ifstream &operator>>(std::ifstream &fin, PP &pp)
+{
+    fin >> pp.statistical_security_parameter; 
+    fin >> pp.filter_type;
+    return fin; 
+}
+
 PP Setup(std::string filter_type, size_t lambda)
 {
     PP pp; 
@@ -34,13 +50,7 @@ PP Setup(std::string filter_type, size_t lambda)
     return pp; 
 }
 
-// seriazlize
-void SerializePP(PP &pp, std::ofstream &fout)
-{
-    fout << pp.statistical_security_parameter; 
-    fout << pp.filter_type;
-    fout.close(); 
-}
+
 
 void SavePP(PP &pp, std::string pp_filename)
 {
@@ -51,17 +61,11 @@ void SavePP(PP &pp, std::string pp_filename)
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }
-    SerializePP(pp, fout); 
+    fout << pp; 
     fout.close(); 
 }
 
-// load pp from file
-void DeserializePP(PP &pp, std::ifstream &fin)
-{
-    fin >> pp.statistical_security_parameter; 
-    fin >> pp.filter_type;
-    fin.close(); 
-}
+
 
 void FetchPP(PP &pp, std::string pp_filename)
 {
@@ -72,7 +76,7 @@ void FetchPP(PP &pp, std::string pp_filename)
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }
-    DeserializePP(pp, fin); 
+    fin >> pp; 
     fin.close(); 
 }
 
@@ -135,11 +139,12 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t
         filter.ReadObject(buffer);  
         delete[] buffer; 
 
-        #pragma omp parallel for
-        for(auto i = 0; i < LEN; i++){
-            if(filter.Contain(vec_Fk1k2_Y[i]) == false) vec_indication_bit[i] = 0;  
-            else vec_indication_bit[i] = 1;
-        }
+        vec_indication_bit = filter.Contain(vec_Fk1k2_Y); 
+        // #pragma omp parallel for
+        // for(auto i = 0; i < LEN; i++){
+        //     if(filter.Contain(vec_Fk1k2_Y[i]) == false) vec_indication_bit[i] = 0;  
+        //     else vec_indication_bit[i] = 1;
+        // }
     } 
 
     auto end_time = std::chrono::steady_clock::now(); 

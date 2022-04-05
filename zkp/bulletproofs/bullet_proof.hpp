@@ -3,9 +3,13 @@ this hpp implements aggregated logarithmic size Bulletproofs
 ***********************************************************************************/
 #ifndef BULLET_PROOF_HPP_
 #define BULLET_PROOF_HPP_
+
 #include "innerproduct_proof.hpp" 
 
 namespace Bullet{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 // define the structure of Bulletproofs
 struct PP
@@ -18,6 +22,30 @@ struct PP
     ECPoint u; // used for inside innerproduct statement
     std::vector<ECPoint> vec_g, vec_h; // the pp of innerproduct part    
 };
+
+
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
+{
+    fout << pp.RANGE_LEN << pp.LOG_RANGE_LEN << pp.MAX_AGG_NUM; 
+    fout << pp.g << pp.h << pp.u; 
+    fout << pp.vec_g;
+    fout << pp.vec_h;
+    return fout;
+}
+
+std::ifstream &operator>>(std::ifstream &fin, PP& pp)
+{
+    fin >> pp.RANGE_LEN >> pp.LOG_RANGE_LEN >> pp.MAX_AGG_NUM; 
+
+    fin >> pp.g >> pp.h >> pp.u;
+
+    pp.vec_g.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM); 
+    pp.vec_h.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM); 
+    fin >> pp.vec_g;
+    fin >> pp.vec_h;
+
+    return fin;  
+}
 
 struct Instance
 {
@@ -36,6 +64,23 @@ struct Proof
     BigInt taux, mu, tx; 
     InnerProduct::Proof ip_proof;    
 };
+
+std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
+{
+    fout << proof.A << proof.S << proof.T1 << proof.T2;
+    fout << proof.taux << proof.mu << proof.tx; 
+    fout << proof.ip_proof; 
+    return fout; 
+}
+
+std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
+{
+    fin >> proof.A >> proof.S >> proof.T1 >> proof.T2;
+    fin >> proof.taux >> proof.mu >> proof.tx; 
+    fin >> proof.ip_proof;
+    return fin; 
+}
+
 
 /* generate a^n = (a^0, a^1, a^2, ..., a^{n-1}) */ 
 std::vector<BigInt> GenBigIntPowerVector(size_t LEN, const BigInt &a)
@@ -63,13 +108,6 @@ void PrintProof(Proof &proof)
     InnerProduct::PrintProof(proof.ip_proof); 
 }
 
-std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
-{
-    fout << proof.A << proof.S << proof.T1 << proof.T2;
-    fout << proof.taux << proof.mu << proof.tx; 
-    fout << proof.ip_proof; 
-    return fout; 
-}
 
 std::string ProofToByteString(Proof &proof)
 {
@@ -80,20 +118,11 @@ std::string ProofToByteString(Proof &proof)
     return str;  
 }
 
-
-std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
-{
-    fin >> proof.A >> proof.S >> proof.T1 >> proof.T2;
-    fin >> proof.taux >> proof.mu >> proof.tx; 
-    fin >> proof.ip_proof;
-    return fin; 
-}
-
 PP Setup(size_t &RANGE_LEN, size_t &MAX_AGG_NUM)
 {
     PP pp; 
     pp.RANGE_LEN = RANGE_LEN; 
-    pp.LOG_RANGE_LEN = log2(RANGE_LEN); 
+    pp.LOG_RANGE_LEN = size_t(log2(RANGE_LEN)); 
     pp.MAX_AGG_NUM = MAX_AGG_NUM; 
  
     pp.g = generator; 
@@ -104,27 +133,6 @@ PP Setup(size_t &RANGE_LEN, size_t &MAX_AGG_NUM)
     pp.vec_h = GenRandomECPointVector(RANGE_LEN*MAX_AGG_NUM);
 
     return pp; 
-}
-
-
-std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
-{
-    fout << pp.RANGE_LEN << pp.LOG_RANGE_LEN << pp.MAX_AGG_NUM; 
-    fout << pp.g << pp.h << pp.u; 
-    fout << pp.vec_g << pp.vec_h;
-    return fout;
-}
-
-std::ifstream &operator>>(std::ifstream &fin, PP& pp)
-{
-    fin >> pp.RANGE_LEN >> pp.LOG_RANGE_LEN >> pp.MAX_AGG_NUM; 
-    fin >> pp.g >> pp.h >> pp.u;
-
-    pp.vec_g.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM); 
-    pp.vec_h.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM); 
-    fin >> pp.vec_g >> pp.vec_h;
-
-    return fin;  
 }
 
 // statement C = g^r h^v and v \in [0, 2^n-1]
@@ -153,7 +161,7 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
         }
     }
 
-    vec_aR = BigIntVectorModSub(vec_aL, vec_1_power); // Eq (42) -- aR = aL - 1^n
+    vec_aR = BigIntVectorModSub(vec_aL, vec_1_power,  BigInt(order)); // Eq (42) -- aR = aL - 1^n
 
     // prepare vec_A and vec_a for multi-exponention (used hereafter)
     
@@ -211,14 +219,14 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     // compute l(X) Eq (70)
     std::vector<BigInt> vec_z_unary(LEN, z); // z \cdot 1^nm
 
-    std::vector<BigInt> poly_ll0 = BigIntVectorModSub(vec_aL, vec_z_unary);  
+    std::vector<BigInt> poly_ll0 = BigIntVectorModSub(vec_aL, vec_z_unary, BigInt(order));  
     std::vector<BigInt> poly_ll1(LEN); 
     poly_ll1.assign(vec_sL.begin(), vec_sL.end()); 
 
     // compute r(X)     
     std::vector<BigInt> vec_y_power = GenBigIntPowerVector(LEN, y); // y^nm
-    std::vector<BigInt> vec_zz_temp = BigIntVectorModAdd(vec_z_unary, vec_aR); // vec_t = aR + z1^nm
-    std::vector<BigInt> poly_rr0 = BigIntVectorModProduct(vec_y_power, vec_zz_temp); // y^nm(aR + z1^nm)
+    std::vector<BigInt> vec_zz_temp = BigIntVectorModAdd(vec_z_unary, vec_aR, BigInt(order)); // vec_t = aR + z1^nm
+    std::vector<BigInt> poly_rr0 = BigIntVectorModProduct(vec_y_power, vec_zz_temp, BigInt(order)); // y^nm(aR + z1^nm)
     
     std::vector<BigInt> vec_short_2_power = GenBigIntPowerVector(pp.RANGE_LEN, bn_2); // 2^n
 
@@ -232,18 +240,18 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
         for (auto i = 0; i < (n-j)*pp.RANGE_LEN; i++) 
             vec_zz_temp[j*pp.RANGE_LEN+i] = bn_0;
 
-        vec_zz_temp = BigIntVectorModScalar(vec_zz_temp, vec_adjust_z_power[j]); 
-        poly_rr0 = BigIntVectorModAdd(poly_rr0, vec_zz_temp);  
+        vec_zz_temp = BigIntVectorModScalar(vec_zz_temp, vec_adjust_z_power[j], BigInt(order)); 
+        poly_rr0 = BigIntVectorModAdd(poly_rr0, vec_zz_temp, BigInt(order));  
     }
-    std::vector<BigInt> poly_rr1 = BigIntVectorModProduct(vec_y_power, vec_sR); //y^nsR X
+    std::vector<BigInt> poly_rr1 = BigIntVectorModProduct(vec_y_power, vec_sR, BigInt(order)); //y^nsR X
 
     // compute t(X) 
-    BigInt t0 = BigIntVectorModInnerProduct(poly_ll0, poly_rr0); 
-    BigInt bn_temp1 = BigIntVectorModInnerProduct(poly_ll1, poly_rr0); 
-    BigInt bn_temp2 = BigIntVectorModInnerProduct(poly_ll0, poly_rr1);
-    BigInt t1 = (bn_temp1 + bn_temp2) % order;  
+    BigInt t0 = BigIntVectorModInnerProduct(poly_ll0, poly_rr0, BigInt(order)); 
+    BigInt bn_temp1 = BigIntVectorModInnerProduct(poly_ll1, poly_rr0, BigInt(order)); 
+    BigInt bn_temp2 = BigIntVectorModInnerProduct(poly_ll0, poly_rr1, BigInt(order));
+    BigInt t1 = (bn_temp1 + bn_temp2) % BigInt(order);  
   
-    BigInt t2 = BigIntVectorModInnerProduct(poly_ll1, poly_rr1); 
+    BigInt t2 = BigIntVectorModInnerProduct(poly_ll1, poly_rr1, BigInt(order)); 
 
     // Eq (53) -- commit to t1, t2
     // P picks tau1 and tau2
@@ -265,13 +273,13 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     BigInt x_square = x.ModSquare(order);   
 
     // compute the value of l(x) and r(x) at point x
-    vec_zz_temp = BigIntVectorModScalar(poly_ll1, x);
-    std::vector<BigInt> llx = BigIntVectorModAdd(poly_ll0, vec_zz_temp);
+    vec_zz_temp = BigIntVectorModScalar(poly_ll1, x, BigInt(order));
+    std::vector<BigInt> llx = BigIntVectorModAdd(poly_ll0, vec_zz_temp, BigInt(order));
 
-    vec_zz_temp = BigIntVectorModScalar(poly_rr1, x); 
-    std::vector<BigInt> rrx = BigIntVectorModAdd(poly_rr0, vec_zz_temp); 
+    vec_zz_temp = BigIntVectorModScalar(poly_rr1, x, BigInt(order)); 
+    std::vector<BigInt> rrx = BigIntVectorModAdd(poly_rr0, vec_zz_temp, BigInt(order)); 
 
-    proof.tx = BigIntVectorModInnerProduct(llx, rrx);  // Eq (60)  
+    proof.tx = BigIntVectorModInnerProduct(llx, rrx, BigInt(order));  // Eq (60)  
  
     // compute taux
     proof.taux = (tau1 * x + tau2 * x_square) % order; //proof.taux = tau2*x_square + tau1*x; 
@@ -372,8 +380,8 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     sum_z = (sum_z * z) % order;  
 
     // compute delta_yz (pp. 21)    
-    BigInt bn_temp1 = BigIntVectorModInnerProduct(vec_1_power, vec_y_power); 
-    BigInt bn_temp2 = BigIntVectorModInnerProduct(vec_short_1_power, vec_short_2_power); 
+    BigInt bn_temp1 = BigIntVectorModInnerProduct(vec_1_power, vec_y_power, BigInt(order)); 
+    BigInt bn_temp2 = BigIntVectorModInnerProduct(vec_short_1_power, vec_short_2_power, BigInt(order)); 
 
     BigInt bn_c0 = z.ModSub(z_square, order); // z-z^2
     bn_temp1 = bn_c0 * bn_temp1; 
@@ -439,11 +447,11 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     std::vector<BigInt> vec_z_minus_unary(LEN, z_minus); 
     std::move(vec_z_minus_unary.begin(), vec_z_minus_unary.end(), vec_a.begin()); // LEFT += g^{-1 z^n} 
 
-    std::vector<BigInt> vec_rr = BigIntVectorModScalar(vec_y_power, z); // z y^nm
+    std::vector<BigInt> vec_rr = BigIntVectorModScalar(vec_y_power, z, BigInt(order)); // z y^nm
     std::vector<BigInt> temp_vec_zz; 
     for(auto j = 1; j <= n; j++)
     {
-        temp_vec_zz = BigIntVectorModScalar(vec_2_power, vec_adjust_z_power[j]); 
+        temp_vec_zz = BigIntVectorModScalar(vec_2_power, vec_adjust_z_power[j], BigInt(order)); 
         for(auto i = 0; i < pp.RANGE_LEN; i++)
         {
             vec_rr[(j-1)*pp.RANGE_LEN+i] = (vec_rr[(j-1)*pp.RANGE_LEN+i] + temp_vec_zz[i]) % order;            
@@ -530,8 +538,8 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
     sum_z = (sum_z * z) % order;  
 
     // compute delta_yz (pp. 21)    
-    BigInt bn_temp1 = BigIntVectorModInnerProduct(vec_1_power, vec_y_power); 
-    BigInt bn_temp2 = BigIntVectorModInnerProduct(vec_short_1_power, vec_short_2_power); 
+    BigInt bn_temp1 = BigIntVectorModInnerProduct(vec_1_power, vec_y_power, BigInt(order)); 
+    BigInt bn_temp2 = BigIntVectorModInnerProduct(vec_short_1_power, vec_short_2_power, BigInt(order)); 
 
     BigInt bn_c0 = z.ModSub(z_square, order); // z-z^2
     bn_temp1 = bn_c0 * bn_temp1; 
@@ -602,7 +610,7 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
 
     // compute vec_s and vec_s_inverse
     std::vector<BigInt> vec_s = InnerProduct::FastComputeVectorSS(vec_x_square, vec_x_inverse); // page 15: the s vector    
-    std::vector<BigInt> vec_s_inverse = BigIntVectorModInverse(vec_s);  // the s^{-1} vector
+    std::vector<BigInt> vec_s_inverse = BigIntVectorModInverse(vec_s, BigInt(order));  // the s^{-1} vector
     vec_s = BigIntVectorScalar(vec_s, proof.ip_proof.a); 
     vec_s_inverse = BigIntVectorScalar(vec_s_inverse, proof.ip_proof.b); 
 
@@ -614,10 +622,10 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
     index_a += VECTOR_LEN; 
  
 
-    std::vector<BigInt> vec_rr = BigIntVectorModScalar(vec_y_power, z); // z y^nm
+    std::vector<BigInt> vec_rr = BigIntVectorModScalar(vec_y_power, z, BigInt(order)); // z y^nm
     std::vector<BigInt> temp_vec_zz; 
     for(auto j = 1; j <= n; j++){
-        temp_vec_zz = BigIntVectorModScalar(vec_2_power, vec_adjust_z_power[j]); 
+        temp_vec_zz = BigIntVectorModScalar(vec_2_power, vec_adjust_z_power[j], BigInt(order)); 
         for(auto i = 0; i < pp.RANGE_LEN; i++)
             vec_rr[(j-1)*pp.RANGE_LEN+i] = (vec_rr[(j-1)*pp.RANGE_LEN+i] + temp_vec_zz[i]) % order;            
     }
@@ -670,6 +678,9 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
 
     return Validity; 
 }
+
+
+
 
 }
 #endif

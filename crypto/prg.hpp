@@ -6,11 +6,9 @@
 #ifndef KUNLUN_CRYPTO_PRG_HPP_
 #define KUNLUN_CRYPTO_PRG_HPP_
 
-#include "../include/std.inc"
-#include "block.hpp"
+
 #include "aes.hpp"
 #include "constants.h"
-#include "../utility/print.hpp"
 
 #ifdef ENABLE_RDSEED
 #include <x86intrin.h>

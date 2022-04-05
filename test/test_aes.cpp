@@ -25,17 +25,17 @@ int main()
     data[3] = _mm_loadu_si128(((block *)(&buffer[48])));
     PrintSplitLine('-');
     std::cout << "plaintext ==" << std::endl; 
-    PrintBlocks(data, 4); 
+    Block::PrintBlocks(data, 4); 
     PrintSplitLine('-');
     
     std::cout << "after encryption ==" << std::endl; 
     AES::CBCEnc(fix_aes_enc_key, data, 4);
-    PrintBlocks(data, 4); 
+    Block::PrintBlocks(data, 4); 
     PrintSplitLine('-');
 
     std::cout << "after decryption ==" << std::endl; 
     AES::CBCDec(fix_aes_dec_key, data, 4);
-    PrintBlocks(data, 4); 
+    Block::PrintBlocks(data, 4); 
     PrintSplitLine('-');
 
     ECGroup_Finalize(); 

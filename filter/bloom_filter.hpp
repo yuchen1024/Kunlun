@@ -8,9 +8,7 @@
 #define KUNLUN_BLOOM_FILTER_HPP
 
 #include "../include/std.inc"
-#include "../crypto/ec_point.hpp"
-#include "../utility/murmurhash3.hpp"
-#include "../utility/print.hpp"
+#include "../include/kunlun.hpp"
 
 //00000001 00000010 00000100 00001000 00010000 00100000 01000000 10000000
 static const uint8_t bit_mask[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
@@ -83,325 +81,340 @@ public:
   to construct a bloom filter consistent with the user defined false positive probability
   and estimated element insertion num
 */
-   BloomFilter() {}; 
+BloomFilter() {}; 
 
-   BloomFilter(size_t projected_element_num, size_t statistical_security_parameter)
-   {
-      //desired_false_positive_probability = 1/2^{statistical_security_parameter/2};
-      //hash_num = static_cast<size_t>(-log2(desired_false_positive_probability));
-      hash_num = statistical_security_parameter/2; 
-      random_seed = static_cast<uint32_t>(0xA5A5A5A55A5A5A5A * 0xA5A5A5A5 + 1); 
-      vec_salt = GenUniqueSaltVector(hash_num, random_seed);   
-      //table_size = static_cast<uint32_t>(projected_element_num * (-1.44 * log2(desired_false_positive_probability)));
-      table_size = static_cast<uint32_t>(projected_element_num * (1.44 * statistical_security_parameter/2));
-      // the following operation is very important => make table size = 8*n 
-      table_size = ((table_size+0x07) >> 3) << 3; // (table_size+7)/8*8
+BloomFilter(size_t projected_element_num, size_t statistical_security_parameter)
+{
+   //desired_false_positive_probability = 1/2^{statistical_security_parameter/2};
+   //hash_num = static_cast<size_t>(-log2(desired_false_positive_probability));
+   hash_num = statistical_security_parameter/2; 
+   random_seed = static_cast<uint32_t>(0xA5A5A5A55A5A5A5A * 0xA5A5A5A5 + 1); 
+   vec_salt = GenUniqueSaltVector(hash_num, random_seed);   
+   //table_size = static_cast<uint32_t>(projected_element_num * (-1.44 * log2(desired_false_positive_probability)));
+   table_size = static_cast<uint32_t>(projected_element_num * (1.44 * statistical_security_parameter/2));
+   // the following operation is very important => make table size = 8*n 
+   table_size = ((table_size+0x07) >> 3) << 3; // (table_size+7)/8*8
 
-      bit_table.resize(table_size/8, static_cast<uint8_t>(0x00)); // naive implementation
+   bit_table.resize(table_size/8, static_cast<uint8_t>(0x00)); // naive implementation
       
-      inserted_element_num = 0; 
+   inserted_element_num = 0; 
+}
+
+~BloomFilter() {}; 
+
+size_t ObjectSize()
+{
+   /* 
+   ** hash_num + random_seed + table_size + projected_element_num + inserted_element_num + table_content
+   ** one can derive vec_salt from random_seed, so there is no need to save them
+   */
+   return 3 * sizeof(uint32_t) + 2 * sizeof(size_t) + table_size/8;
+}
+
+inline void PlainInsert(const void* input, size_t LEN)
+{
+   size_t bit_index;
+   for (auto i = 0; i < hash_num; i++){
+      bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
+      //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
+      bit_table[bit_index >> 3] |= bit_mask[bit_index & 0x07]; // more efficient implementation
    }
+   inserted_element_num++;
+}
 
-   ~BloomFilter() {}; 
-
-   size_t ObjectSize()
-   {
-      /* 
-      ** hash_num + random_seed + table_size + projected_element_num + inserted_element_num + table_content
-      ** one can derive vec_salt from random_seed, so there is no need to save them
-      */
-      return 3 * sizeof(uint32_t) + 2 * sizeof(size_t) + table_size/8;
+inline void ParallelPlainInsert(const void* input, size_t LEN)
+{
+   std::vector<size_t> bit_index(hash_num);
+   #pragma omp parallel for
+   for (auto i = 0; i < hash_num; i++){
+      bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
+      //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
+      bit_table[bit_index[i] >> 3] |= bit_mask[bit_index[i] & 0x07]; // more efficient implementation
    }
+   inserted_element_num++;
+}
 
-   inline void PlainInsert(const void* input, size_t LEN)
-   {
-      size_t bit_index;
-      for (auto i = 0; i < hash_num; i++){
-         bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
-         //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
-         bit_table[bit_index >> 3] |= bit_mask[bit_index & 0x07]; // more efficient implementation
-      }
-      inserted_element_num++;
-   }
+template <typename ElementType> // Note: T must be a C++ POD type.
+inline void Insert(const ElementType& element)
+{
+   PlainInsert(&element, sizeof(ElementType));
+}
 
-   inline void ParallelPlainInsert(const void* input, size_t LEN)
-   {
-      std::vector<size_t> bit_index(hash_num);
-      #pragma omp parallel for
-      for (auto i = 0; i < hash_num; i++){
-         bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
-         //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
-         bit_table[bit_index[i] >> 3] |= bit_mask[bit_index[i] & 0x07]; // more efficient implementation
-      }
-      inserted_element_num++;
-   }
-
-
-
-   template <typename ElementType> // Note: T must be a C++ POD type.
-   inline void Insert(const ElementType& element)
-   {
-      PlainInsert(&element, sizeof(ElementType));
-   }
-
-   inline void Insert(const std::string& str)
-   {
-      PlainInsert(str.data(), str.size());
-   }
+template <> // specialize for string
+inline void Insert(const std::string& str)
+{
+   PlainInsert(str.data(), str.size());
+}
 
 /*
 ** You can insert any custom-type data you like as below
 */
-   inline void Insert(const ECPoint &A)
-   {
-      #ifdef ECPOINT_COMPRESSED
-         unsigned char buffer[POINT_COMPRESSED_BYTE_LEN]; 
-         EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
-         PlainInsert(buffer, POINT_COMPRESSED_BYTE_LEN);
-      #else
-         unsigned char buffer[POINT_BYTE_LEN]; 
-         EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-         PlainInsert(buffer, POINT_BYTE_LEN);
-      #endif
-   }
+template <> // specialize for ECPoint
+inline void Insert(const ECPoint &A)
+{
+   #ifdef ECPOINT_COMPRESSED
+      unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+      memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN);  
+      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+      PlainInsert(buffer, POINT_COMPRESSED_BYTE_LEN);
+   #else
+      unsigned char buffer[POINT_BYTE_LEN]; 
+      memset(buffer, 0, POINT_BYTE_LEN); 
+      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
+      PlainInsert(buffer, POINT_BYTE_LEN);
+   #endif
+}
 
-   inline void Insert(const std::vector<ECPoint> &vec_A)
+template <typename InputIterator>
+inline void Insert(const InputIterator begin, const InputIterator end)
+{
+   InputIterator itr = begin;
+   while (end != itr)
    {
-      size_t num = vec_A.size();
-   
-      #ifdef ECPOINT_COMPRESSED
-         unsigned char *buffer = new unsigned char[num*POINT_COMPRESSED_BYTE_LEN]; 
-         #pragma omp parallel for
-         for(auto i = 0; i < num; i++){
-            EC_POINT_point2oct(group, vec_A[i].point_ptr, POINT_CONVERSION_COMPRESSED, 
-                            buffer+i*POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN, nullptr);
-            PlainInsert(buffer+i*POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN);
-         }
-      #else
-         unsigned char *buffer = new unsigned char[num*POINT_BYTE_LEN]; 
-         #pragma omp parallel for
-         for(auto i = 0; i < num; i++){
-            EC_POINT_point2oct(group, vec_A[i].point_ptr, POINT_CONVERSION_UNCOMPRESSED, 
-                            buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, nullptr);
-            PlainInsert(buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN);
-         }
-      #endif
-
-      delete[] buffer; 
-   }
-
-   template <typename InputIterator>
-   inline void Insert(const InputIterator begin, const InputIterator end)
-   {
-      InputIterator itr = begin;
-      while (end != itr)
-      {
          Insert(*(itr++));
-      }
    }
+}
 
-   template <class T, class Allocator, template <class,class> class Container>
-   inline void Insert(Container<T, Allocator>& container)
-   {
-      #pragma omp parallel for
-      for(auto i = 0; i < container.size(); i++)
-         Insert(container[i]); 
+template <class T, class Allocator, template <class,class> class Container>
+inline void Insert(const Container<T, Allocator>& container)
+{
+   #pragma omp parallel for
+   for(auto i = 0; i < container.size(); i++){
+      Insert(container[i]); 
    }
+}
 
-   inline bool PlainContain(const void* input, size_t LEN) const
+template <> // specialize for vector<ECPoint>
+inline void Insert(const std::vector<ECPoint> &vec_A)
+{
+   #pragma omp parallel for
+   for(auto i = 0; i < vec_A.size(); i++){
+      Insert(vec_A[i]); 
+   }
+}
+
+inline bool PlainContain(const void* input, size_t LEN) const
+{
+   size_t bit_index = 0;
+   size_t local_bit_index = 0; 
+   for(auto i = 0; i < vec_salt.size(); i++)
    {
-      size_t bit_index = 0;
-      size_t local_bit_index = 0; 
-      for(auto i = 0; i < vec_salt.size(); i++)
+      bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size; 
+      local_bit_index = bit_index & 0x07;  // bit_index mod 8
+      if ((bit_table[bit_index >> 3] & bit_mask[local_bit_index]) != bit_mask[local_bit_index]) 
+         return false;
+   }
+   return true;
+}
+
+inline bool ParallelPlainContain(const void* input, size_t LEN) const
+{
+   bool CONTAIN = true; // assume input in filter at the beginning
+   std::vector<size_t> bit_index(hash_num);
+   std::vector<size_t> local_bit_index(hash_num); 
+   #pragma omp parallel for
+   for(auto i = 0; i < hash_num; i++)
+   {
+      if(CONTAIN == true)
       {
-         bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size; 
-         local_bit_index = bit_index & 0x07;  // bit_index mod 8
-         if ((bit_table[bit_index >> 3] & bit_mask[local_bit_index]) != bit_mask[local_bit_index]) 
-            return false;
-      }
-      return true;
-   }
-
-   inline bool ParallelPlainContain(const void* input, size_t LEN) const
-   {
-      bool CONTAIN = true; // assume input in filter at the beginning
-      std::vector<size_t> bit_index(hash_num);
-      std::vector<size_t> local_bit_index(hash_num); 
-      #pragma omp parallel for
-      for(auto i = 0; i < hash_num; i++)
-      {
-         if(CONTAIN == true)
-         {
-            bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size; 
-            local_bit_index[i] = bit_index[i] & 0x07;  // bit_index mod 8
-            if ((bit_table[bit_index[i] >> 3] & bit_mask[local_bit_index[i]]) != bit_mask[local_bit_index[i]])
-            { 
-               CONTAIN  = false;
-            }
+         bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size; 
+         local_bit_index[i] = bit_index[i] & 0x07;  // bit_index mod 8
+         if ((bit_table[bit_index[i] >> 3] & bit_mask[local_bit_index[i]]) != bit_mask[local_bit_index[i]])
+         { 
+            CONTAIN  = false;
          }
       }
-      return CONTAIN;
+   }
+   return CONTAIN;
+}
+
+template <typename ElementType>
+inline bool Contain(const ElementType& element) const
+{
+   return PlainContain(&element, sizeof(ElementType));
+}
+
+inline bool Contain(const std::string& str) const
+{
+   return PlainContain(str.data(), str.size());
+}
+
+template <> // specialize for ECPoint
+inline bool Contain(const ECPoint& A) const
+{
+   #ifdef ECPOINT_COMPRESSED
+      unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+      memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN);  
+      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+      return PlainContain(buffer, POINT_COMPRESSED_BYTE_LEN);
+   #else
+      unsigned char buffer[POINT_BYTE_LEN];
+      memset(buffer, 0, POINT_BYTE_LEN);  
+      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
+      return PlainContain(buffer, POINT_BYTE_LEN);
+   #endif
+}
+
+template <class T, class Allocator, template <class,class> class Container>
+inline std::vector<uint8_t> Contain(const Container<T, Allocator>& container)
+{
+   size_t LEN = container.size();
+   std::vector<uint8_t> vec_indication_bit(LEN); 
+   #pragma omp parallel for
+   for(auto i = 0; i < container.size(); i++){
+      if(Contain(container[i]) == true) vec_indication_bit[i] = 1;
+      else vec_indication_bit[i] = 0; 
+   }
+   return vec_indication_bit; 
+}
+
+
+template <> // specialize for vector<ECPoint>
+inline std::vector<uint8_t> Contain(const std::vector<ECPoint> &vec_A)
+{
+   size_t LEN = vec_A.size();
+   std::vector<uint8_t> vec_indication_bit(LEN); 
+
+   #pragma omp parallel for
+   for(auto i = 0; i < vec_A.size(); i++){
+      if(Contain(vec_A[i]) == true) vec_indication_bit[i] = 1;
+      else vec_indication_bit[i] = 0; 
+   }
+   return vec_indication_bit; 
+}
+
+
+inline void Clear()
+{
+   std::fill(bit_table.begin(), bit_table.end(), static_cast<uint8_t>(0x00));
+   inserted_element_num = 0;
+}
+   
+// write object to file
+inline bool WriteObject(std::string file_name)
+{
+   std::ofstream fout; 
+   fout.open(file_name, std::ios::binary); 
+   if(!fout){
+      std::cerr << file_name << " open error" << std::endl;
+      return false; 
    }
 
+   fout << random_seed; 
+   fout << hash_num;
+   fout << table_size; 
+   fout << projected_element_num;
+   fout << inserted_element_num;  
+   fout << bit_table; 
 
+   fout.close(); 
 
-   template <typename ElementType>
-   inline bool Contain(const ElementType& element) const
-   {
-      return PlainContain(&element, sizeof(ElementType));
-   }
+   #ifdef DEBUG
+      std::cout << "'" <<file_name << "' size = " << ObjectSize() << " bytes" << std::endl;
+   #endif
 
-   inline bool Contain(const std::string& str) const
-   {
-      return PlainContain(str.data(), str.size());
-   }
-
-   inline bool Contain(const ECPoint& A) const
-   {
-      #ifdef ECPOINT_COMPRESSED
-         unsigned char buffer[POINT_COMPRESSED_BYTE_LEN]; 
-         EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
-         return PlainContain(buffer, POINT_COMPRESSED_BYTE_LEN);
-      #else
-         unsigned char buffer[POINT_BYTE_LEN]; 
-         EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-         return PlainContain(buffer, POINT_BYTE_LEN);
-      #endif
-   }
-
-
-   inline void Clear()
-   {
-      std::fill(bit_table.begin(), bit_table.end(), static_cast<uint8_t>(0x00));
-      inserted_element_num = 0;
+   return true; 
+} 
+   
+// read object from file (reconstruct)
+inline bool ReadObject(std::string file_name)
+{
+   std::ifstream fin; 
+   fin.open(file_name, std::ios::binary); 
+   if(!fin){
+      std::cerr << file_name << " open error" << std::endl;
+      return false; 
    }
    
-   // write object to file
-   inline bool WriteObject(std::string file_name)
-   {
-      std::ofstream fout; 
-      fout.open(file_name, std::ios::binary); 
-      if(!fout){
-        std::cerr << file_name << " open error" << std::endl;
-        return false; 
-      }
-
-      fout << random_seed; 
-      fout << hash_num;
-      fout << table_size; 
-      fout << projected_element_num;
-      fout << inserted_element_num;  
-      fout << bit_table; 
-      //fout.write(reinterpret_cast<char *>(bit_table.data()), table_size/8); 
-
-      fout.close(); 
-
-      #ifdef DEBUG
-         std::cout << "'" <<file_name << "' size = " << ObjectSize() << " bytes" << std::endl;
-      #endif
-
-      return true; 
-   } 
+   fin >> random_seed; 
+   fin >> hash_num;    
+   fin >> table_size;
+   fin >> projected_element_num; 
+   fin >> inserted_element_num;  
    
-   // read object from file (reconstruct)
-   inline bool ReadObject(std::string file_name)
-   {
-      std::ifstream fin; 
-      fin.open(file_name, std::ios::binary); 
-      if(!fin){
-        std::cerr << file_name << " open error" << std::endl;
-        return false; 
-      }
-   
-      fin >> random_seed; 
-      fin >> hash_num;    
-      fin >> table_size;
-      fin >> projected_element_num; 
-      fin >> inserted_element_num;  
-   
-      // re-produce vec_salt
-      vec_salt = GenUniqueSaltVector(hash_num, random_seed); 
-      // re-build bit_table
-      bit_table.resize(table_size/8, static_cast<uint8_t>(0x00));
-      fin >> bit_table;
-      // fin.read(reinterpret_cast<char *>(bit_table.data()), table_size/8); 
+   // re-produce vec_salt
+   vec_salt = GenUniqueSaltVector(hash_num, random_seed); 
+   // re-build bit_table
+   bit_table.resize(table_size/8, static_cast<uint8_t>(0x00));
+   fin >> bit_table;
+   // fin.read(reinterpret_cast<char *>(bit_table.data()), table_size/8); 
       
-      return true;
-   } 
+   return true;
+} 
 
-   // write object to buffer
-   inline bool WriteObject(char* buffer)
-   {
-      if(buffer == nullptr){
-         std::cerr << "allocate memory for bloom filter fails" << std::endl;
-         return false; 
-      }
-      size_t offset = 0; 
-      
-      memcpy(buffer + offset, &random_seed, sizeof(uint32_t));
-      offset += sizeof(uint32_t);     
-      
-      memcpy(buffer + offset, &hash_num, sizeof(uint32_t));
-      offset += sizeof(uint32_t);
-
-      memcpy(buffer + offset, &table_size, sizeof(uint32_t));
-      offset += sizeof(uint32_t);
-
-      memcpy(buffer + offset, &projected_element_num, sizeof(size_t));
-      offset += sizeof(size_t);
-
-      memcpy(buffer + offset, &inserted_element_num, sizeof(size_t));
-      offset += sizeof(size_t);
-      
-      memcpy(buffer + offset, bit_table.data(), table_size/8); 
-
-      return true; 
-   } 
-
-   // read object from buffer
-   inline bool ReadObject(char* buffer)
-   {
-      if(buffer == nullptr){
-         std::cerr << "allocate memory for bloom filter fails" << std::endl;
-         return false; 
-      }
-
-      size_t offset = 0; 
-      
-      memcpy(&random_seed, buffer + offset, sizeof(uint32_t));
-      offset += sizeof(uint32_t);     
-      
-      memcpy(&hash_num, buffer + offset, sizeof(uint32_t));
-      offset += sizeof(uint32_t);
-
-      memcpy(&table_size, buffer + offset, sizeof(uint32_t));
-      offset += sizeof(uint32_t);
-
-      memcpy(&projected_element_num, buffer + offset, sizeof(size_t));
-      offset += sizeof(size_t);
-
-      memcpy(&inserted_element_num, buffer + offset, sizeof(size_t));
-      offset += sizeof(size_t);
-
-
-      // re-produce vec_salt
-      vec_salt = GenUniqueSaltVector(hash_num, random_seed); 
-      
-      // re-build bit_table
-      bit_table.resize(table_size/8, static_cast<uint8_t>(0x00));      
-      memcpy(bit_table.data(), buffer + offset, table_size/8); 
-
-      return true; 
-   } 
-
-   void PrintInfo() const{
-      PrintSplitLine('-');
-      std::cout << "BloomFilter Status:" << std::endl;
-      std::cout << "inserted element num = " << inserted_element_num << std::endl;
-      std::cout << "hashtable size = " << (bit_table.size() >> 10) << " KB\n" << std::endl;
-      std::cout << "bits per element = " << double(bit_table.size()) * 8 / inserted_element_num << std::endl;
-      PrintSplitLine('-');
+// write object to buffer
+inline bool WriteObject(char* buffer)
+{
+   if(buffer == nullptr){
+      std::cerr << "allocate memory for bloom filter fails" << std::endl;
+      return false; 
    }
+   size_t offset = 0; 
+      
+   memcpy(buffer + offset, &random_seed, sizeof(uint32_t));
+   offset += sizeof(uint32_t);     
+      
+   memcpy(buffer + offset, &hash_num, sizeof(uint32_t));
+   offset += sizeof(uint32_t);
+
+   memcpy(buffer + offset, &table_size, sizeof(uint32_t));
+   offset += sizeof(uint32_t);
+
+   memcpy(buffer + offset, &projected_element_num, sizeof(size_t));
+   offset += sizeof(size_t);
+
+   memcpy(buffer + offset, &inserted_element_num, sizeof(size_t));
+   offset += sizeof(size_t);
+      
+   memcpy(buffer + offset, bit_table.data(), table_size/8); 
+
+   return true; 
+} 
+
+// read object from buffer
+inline bool ReadObject(char* buffer)
+{
+   if(buffer == nullptr){
+      std::cerr << "allocate memory for bloom filter fails" << std::endl;
+      return false; 
+   }
+
+   size_t offset = 0; 
+      
+   memcpy(&random_seed, buffer + offset, sizeof(uint32_t));
+   offset += sizeof(uint32_t);     
+      
+   memcpy(&hash_num, buffer + offset, sizeof(uint32_t));
+   offset += sizeof(uint32_t);
+
+   memcpy(&table_size, buffer + offset, sizeof(uint32_t));
+   offset += sizeof(uint32_t);
+
+   memcpy(&projected_element_num, buffer + offset, sizeof(size_t));
+   offset += sizeof(size_t);
+
+   memcpy(&inserted_element_num, buffer + offset, sizeof(size_t));
+   offset += sizeof(size_t);
+
+   // re-produce vec_salt
+   vec_salt = GenUniqueSaltVector(hash_num, random_seed); 
+      
+   // re-build bit_table
+   bit_table.resize(table_size/8, static_cast<uint8_t>(0x00));      
+   memcpy(bit_table.data(), buffer + offset, table_size/8); 
+
+   return true; 
+} 
+
+void PrintInfo() const{
+   PrintSplitLine('-');
+   std::cout << "BloomFilter Status:" << std::endl;
+   std::cout << "inserted element num = " << inserted_element_num << std::endl;
+   std::cout << "hashtable size = " << (bit_table.size() >> 10) << " KB\n" << std::endl;
+   std::cout << "bits per element = " << double(bit_table.size()) * 8 / inserted_element_num << std::endl;
+   PrintSplitLine('-');
+}
+
 }; 
 
   

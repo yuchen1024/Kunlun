@@ -1,5 +1,22 @@
 #include "../mpc/pso/pso_from_mqrpmt.hpp"
 
+std::set<block, BlockCompare> ComputeSetDifference(std::vector<block> &vec_A, std::vector<block> &vec_B)
+{ 
+    std::set<block, BlockCompare> set_A;
+    for(auto var: vec_A) set_A.insert(var); 
+
+    std::set<block, BlockCompare> set_B;
+    for(auto var: vec_B) set_B.insert(var); 
+
+    BlockCompare blockcmp; 
+    std::set<block, BlockCompare> set_diff_result;  
+    std::set_difference(set_A.begin(), set_A.end(), set_B.begin(), set_B.end(), 
+                        std::inserter<std::set<block, BlockCompare>>(set_diff_result, set_diff_result.end()), 
+                        blockcmp);
+    
+    return set_diff_result; 
+}
+
 struct PSOTestCase{
     std::vector<block> vec_X; // server set
     std::vector<block> vec_Y; // client set
@@ -121,7 +138,7 @@ int main()
     std::string pp_filename = "PSO.pp"; 
     PSO::PP pp; 
     if(!FileExist(pp_filename)){
-        pp = PSO::Setup("bloom", 40); // 50 is the statistical parameter
+        pp = PSO::Setup("shuffle", 40); // 40 is the statistical parameter
         PSO::SavePP(pp, pp_filename); 
     }
     else{
@@ -154,9 +171,13 @@ int main()
             NetIO server_io("server", "", 8080);
             std::vector<block> vec_intersection_prime = PSO::PSIServer(server_io, pp, testcase.vec_X, testcase.LEN);
 
-            bool result = Block::Compare(testcase.vec_intersection, vec_intersection_prime); 
-            if(result) std::cout << "PSI test succeeds" << std::endl; 
-            else std::cout << "PSI test fails" << std::endl; 
+            std::set<block, BlockCompare> set_diff_result = 
+            ComputeSetDifference(vec_intersection_prime, testcase.vec_intersection);  
+            if(set_diff_result.size() == 0) std::cout << "PSI test succeeds" << std::endl; 
+            else{
+                std::cout << "PSI test fails" << std::endl;
+                for(auto var: set_diff_result) Block::PrintBlock(var); 
+            }
         }
     
         if(party == "client"){
@@ -170,10 +191,13 @@ int main()
         if(party == "server"){
             NetIO server_io("server", "", 8080);
             std::vector<block> vec_union_prime = PSO::PSUServer(server_io, pp, testcase.vec_X, testcase.LEN);
-
-            // bool result = Block::Compare(testcase.vec_union, vec_union_prime); 
-            // if(result) std::cout << "PSU test succeeds" << std::endl; 
-            // else std::cout << "PSU test fails" << std::endl; 
+            
+            std::set<block, BlockCompare> set_diff_result = ComputeSetDifference(vec_union_prime, testcase.vec_union);  
+            if(set_diff_result.size() == 0) std::cout << "PSU test succeeds" << std::endl; 
+            else{
+                std::cout << "PSU test fails" << std::endl;
+                for(auto var: set_diff_result) Block::PrintBlock(var); 
+            }
         }
     
         if(party == "client"){

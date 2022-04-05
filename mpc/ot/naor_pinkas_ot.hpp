@@ -6,11 +6,8 @@
 #ifndef KUNLUN_NP_OT_HPP__
 #define KUNLUN_NP_OT_HPP__
 
-#include "../../crypto/ec_point.hpp"
-#include "../../crypto/hash.hpp"
-#include "../../crypto/prg.hpp"
-#include "../../crypto/block.hpp"
-#include "../../netio/stream_channel.hpp"
+#include "../../include/kunlun.hpp"
+
 
 /*
  * Noar Pinkas OT
@@ -25,6 +22,25 @@ struct PP
 	ECPoint g;
 };
 
+void PrintPP(const PP &pp)
+{
+	pp.g.Print("g"); 
+}
+
+// serialize pp to stream
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
+{
+	fout << pp.g; 
+	return fout; 
+}
+
+// deserialize pp from stream
+std::ifstream &operator>>(std::ifstream &fin, PP &pp)
+{
+	fin >> pp.g; 
+	return fin; 
+}
+
 PP Setup()
 {
 	PP pp; 
@@ -32,11 +48,8 @@ PP Setup()
 	return pp; 
 }
 
-// serialize pp to stream
-void SerializePP(PP &pp, std::ofstream &fout)
-{
-	fout << pp.g; 
-}
+
+
 // save pp to file
 void SavePP(PP &pp, std::string pp_filename)
 {
@@ -47,15 +60,11 @@ void SavePP(PP &pp, std::string pp_filename)
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }
-    SerializePP(pp, fout); 
+    fout << pp; 
     fout.close(); 
 }
 
-// deserialize pp from stream
-void DeserializePP(PP &pp, std::ifstream &fin)
-{
-	fin >> pp.g; 
-}
+
 
 // fetch pp from file
 void FetchPP(PP &pp, std::string pp_filename)
@@ -67,7 +76,7 @@ void FetchPP(PP &pp, std::string pp_filename)
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }
-    DeserializePP(pp, fin); 
+	fin >> pp; 
     fin.close(); 
 }
 

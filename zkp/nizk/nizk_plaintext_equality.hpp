@@ -5,11 +5,7 @@ this hpp implements NIZKPoK for three twisited ElGamal ciphertexts
 #ifndef KUNLUN_NIZK_PTEQ_HPP_
 #define KUNLUN_NIZK_PTEQ_HPP_
 
-#include "../../crypto/ec_point.hpp"
-#include "../../crypto/bigint.hpp"
-#include "../../crypto/hash.hpp"
-#include "../../utility/routines.hpp"
-#include "../../utility/print.hpp"
+#include "../../include/kunlun.hpp"
 #include "../../pke/twisted_elgamal.hpp"
 
 namespace PlaintextEquality{
@@ -43,6 +39,20 @@ struct Proof
     ECPoint B; // P's first round message
     BigInt z, t;    // P's response in Zq
 };
+
+std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
+{
+    fout << proof.vec_A; 
+    fout << proof.B << proof.z << proof.t; 
+    return fout;
+} 
+
+std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
+{
+    fin >> proof.vec_A; 
+    fin >> proof.B >> proof.z >> proof.t; 
+    return fin;
+} 
 
 
 
@@ -97,23 +107,6 @@ std::string ProofToByteString(Proof &proof)
     return str; 
 } 
 
-std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
-{
-    for(auto i = 0; i < proof.vec_A.size(); i++){
-        fout << proof.vec_A[i]; 
-    }
-    fout << proof.B << proof.z << proof.t; 
-    return fout;
-} 
-
-std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
-{
-    for(auto i = 0; i < proof.vec_A.size(); i++){
-        fin >> proof.vec_A[i]; 
-    }
-    fin >> proof.B >> proof.z >> proof.t; 
-    return fin;
-} 
 
 /* Setup algorithm */ 
 PP Setup(TwistedElGamal::PP pp_enc)
@@ -235,6 +228,8 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     return Validity;
 }
+
+
 
 }
 

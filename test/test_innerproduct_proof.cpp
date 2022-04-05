@@ -9,11 +9,11 @@ void GenRandomInnerProductInstanceWitness(InnerProduct::PP &pp, InnerProduct::In
     std::cout << "generate random (instance, witness) pair >>>" << std::endl;  
 
     // InnerProduct_Instance_new(instance); 
-    witness.vec_a = GenRandomBigIntVectorLessThan(pp.VECTOR_LEN, order); 
-    witness.vec_b = GenRandomBigIntVectorLessThan(pp.VECTOR_LEN, order); 
+    witness.vec_a = GenRandomBigIntVectorLessThan(pp.VECTOR_LEN, BigInt(order)); 
+    witness.vec_b = GenRandomBigIntVectorLessThan(pp.VECTOR_LEN, BigInt(order)); 
 
     //instance.u = GenRandomGenerator();
-    BigInt c = BigIntVectorModInnerProduct(witness.vec_a, witness.vec_b); 
+    BigInt c = BigIntVectorModInnerProduct(witness.vec_a, witness.vec_b, BigInt(order)); 
 
     instance.P = pp.u * c;  // P = u^c
  

@@ -4,10 +4,9 @@ this hpp implements the merge of (relation R1 and R2) in ESORICS 2015
 #ifndef NIZK_ENC_RELATION_HPP_
 #define NIZK_ENC_RELATION_HPP_
 
-#include "../../commitment/pedersen.hpp"
+#include "../../include/kunlun.hpp"
 #include "../../pke/twisted_elgamal.hpp"
-#include "../../utility/polymul.hpp"
-#include "../../utility/print.hpp"
+#include "../../commitment/pedersen.hpp"
 
 namespace EncRelation{
 

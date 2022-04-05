@@ -11,7 +11,6 @@ this hpp implements the ADCP functionality
 #include "../zkp/nizk/nizk_dlog_knowledge.hpp"     // NIZKPoK for dlog knowledge
 #include "../zkp/bulletproofs/bullet_proof.hpp"    // implement Log Size Bulletproof
 #include "../gadget/range_proof.hpp"
-#include "../utility/routines.hpp"
 
 #define DEMO           // demo mode 
 //#define DEBUG        // show debug information 
@@ -83,7 +82,6 @@ void PrintAccount(Account &Acct)
 {
     std::cout << Acct.identity << " account information >>> " << std::endl;     
     Acct.pk.Print("pk"); 
-    //BN_print(Acct.sk, "sk"); 
     std::cout << "encrypted balance:" << std::endl; 
     TwistedElGamal::PrintCT(Acct.balance_ct);  // current balance
     Acct.m.PrintInDec("m"); 
@@ -155,15 +153,13 @@ void SavePP(PP &pp, std::string ADCP_PP_File)
     std::ofstream fout; 
     fout.open(ADCP_PP_File, std::ios::binary); 
 
-    fout.write((char *)(&pp.MAX_RECEIVER_NUM), sizeof(pp.MAX_RECEIVER_NUM));
-    fout.write((char *)(&pp.SN_LEN), sizeof(pp.SN_LEN));
+    fout << pp.MAX_RECEIVER_NUM; 
+    fout << pp.SN_LEN;
     fout << pp.MAXIMUM_COINS;  
     fout << pp.pka; 
 
-    //Bullet::SerializePP(pp.bullet_part, fout); 
     fout << pp.bullet_part; 
     fout << pp.enc_part; 
-    //TwistedElGamal::SerializePP(pp.enc_part, fout);
 
     fout.close();   
 }
@@ -173,16 +169,17 @@ void FetchPP(PP &pp, std::string ADCP_PP_File)
     std::ifstream fin; 
     fin.open(ADCP_PP_File, std::ios::binary); 
 
-    fin.read((char *)(&pp.MAX_RECEIVER_NUM), sizeof(pp.MAX_RECEIVER_NUM));
-    fin.read((char *)(&pp.SN_LEN), sizeof(pp.SN_LEN));
-
+    fin >> pp.MAX_RECEIVER_NUM;
+    fin >> pp.SN_LEN; 
     fin >> pp.MAXIMUM_COINS;  
     fin >> pp.pka; 
+ 
+    // std::cout << pp.MAX_RECEIVER_NUM << std::endl;
+    // std::cout << pp.SN_LEN << std::endl;
 
-    //Bullet::DeserializePP(pp.bullet_part, fin); 
+
     fin >> pp.bullet_part;
     fin >> pp.enc_part; 
-    //TwistedElGamal::DeserializePP(pp.enc_part, fin);
 
     fin.close();   
 }
@@ -191,12 +188,10 @@ void SaveAccount(Account &user, std::string ADCP_Account_File)
 {
     std::ofstream fout; 
     fout.open(ADCP_Account_File, std::ios::binary);
-    fout.write((char *)(&user.identity), sizeof(user.identity));
-     
+    fout << user.identity;  
     fout << user.pk;              
     fout << user.sk;   
-    fout << user.balance_ct;           
-    //TwistedElGamal::SerializeCT(user.balance_ct, fout);
+    fout << user.balance_ct;  
     fout << user.m; 
     fout << user.sn;
     fout.close();  
@@ -206,12 +201,10 @@ void FetchAccount(Account &user, std::string adcp_Account_File)
 {
     std::ifstream fin; 
     fin.open(adcp_Account_File, std::ios::binary);
-    fin.read((char *)(&user.identity), sizeof(user.identity));
-
+    fin >> user.identity; 
     fin >> user.pk;              
     fin >> user.sk;             
     fin >> user.balance_ct;
-    //TwistedElGamal::DeserializeCT(user.balance_ct, fin);
     fin >> user.m; 
     fin >> user.sn;
     fin.close();  
@@ -424,6 +417,7 @@ ToOneCTx CreateCTx(PP &pp, Account &Acct_sender, BigInt &v, ECPoint &pkr)
     std::vector<ECPoint> vec_pk = {newCTx.pks, newCTx.pkr, pp.pka}; 
     BigInt r = GenRandomBigIntLessThan(order);
     newCTx.transfer_ct = TwistedElGamal::Enc(pp.enc_part, vec_pk, v, r); 
+    // TwistedElGamal::PrintCT(newCTx.transfer_ct); 
 
     #ifdef DEMO
         std::cout << "2. generate NIZKPoK for plaintext equality" << std::endl;  
@@ -443,6 +437,8 @@ ToOneCTx CreateCTx(PP &pp, Account &Acct_sender, BigInt &v, ECPoint &pkr)
 
     newCTx.plaintext_equality_proof = PlaintextEquality::Prove(plaintext_equality_pp, plaintext_equality_instance, plaintext_equality_witness, 
                              transcript_str);
+
+    // PlaintextEquality::PrintProof(newCTx.plaintext_equality_proof); 
 
     #ifdef DEMO
         std::cout << "3. compute updated balance" << std::endl;  

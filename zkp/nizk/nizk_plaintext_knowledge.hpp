@@ -4,10 +4,7 @@ this hpp implements NIZKPoK for twisted ElGamal ciphertext
 #ifndef KUNLUN_NIZK_PTKE_HPP_
 #define KUNLUN_NIZK_PTKE_HPP_
 
-#include "../../crypto/ec_point.hpp"
-#include "../../crypto/hash.hpp"
-#include "../../utility/print.hpp"
-#include "../../utility/routines.hpp"
+#include "../../include/kunlun.hpp"
 #include "../../pke/twisted_elgamal.hpp"
 
 
@@ -39,6 +36,18 @@ struct Proof
     ECPoint A, B; // P's first round message
     BigInt z1, z2;  // P's response in Zq
 };
+
+std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
+{
+    fout << proof.A << proof.B << proof.z1 << proof.z2;
+    return fout;  
+}
+
+std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
+{
+    fin >> proof.A >> proof.B >> proof.z1 >> proof.z2; 
+    return fin; 
+}
 
 
 void PrintInstance(Instance &instance)
@@ -73,17 +82,6 @@ std::string ProofToByteString(Proof &proof)
     return str;  
 }
 
-std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
-{
-    fout << proof.A << proof.B << proof.z1 << proof.z2;
-    return fout;  
-}
-
-std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
-{
-    fin >> proof.A >> proof.B >> proof.z1 >> proof.z2; 
-    return fin; 
-}
 
 /*  Setup algorithm */
 PP Setup(TwistedElGamal::PP pp_enc)
@@ -185,6 +183,8 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     return Validity;
 }
+
+
 
 }
 #endif

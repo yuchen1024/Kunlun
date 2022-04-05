@@ -11,7 +11,7 @@ this hpp implements DLOG algorithm
 ** Shanks algorithm for DLOG problem: given (g, h) find x \in [0, n = 2^RANGE_LEN) s.t. g^x = h 
 ** g^{j*giantstep_size + i} = g^x; giantstep_num = n/giantstep_size
 ** babystep keytable size = 2^(RANGE_LEN/2+TRADEOFF_NUM)
-** giantstep num/loop num     = 2^(RANGE_LEN/2-TRADEOFF_NUM)
+** giantstep num/loop num = 2^(RANGE_LEN/2-TRADEOFF_NUM)
 */
 
 #include "../crypto/ec_point.hpp"
@@ -303,7 +303,7 @@ bool SearchSlicedRange(size_t SEARCH_TASK_INDEX, ECPoint target, size_t &SLICED_
 
 // compute x = log_g h
 bool ShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRADEOFF_NUM, BigInt &x)
-{
+{    
     size_t BABYSTEP_NUM  = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep_num = giantstep_size
     size_t GIANTSTEP_NUM = pow(2, RANGE_LEN/2 - TRADEOFF_NUM); 
 
@@ -321,7 +321,7 @@ bool ShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRA
     }
 
     // a beacon value: used to notify other tasks break if one task has already succeed
-    volatile bool FIND = false;
+    bool FIND = false;
 
     #pragma omp parallel for shared(FIND)
     for(auto i = 0; i < SEARCH_TASK_NUM; i++){

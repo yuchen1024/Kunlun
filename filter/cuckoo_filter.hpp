@@ -9,10 +9,8 @@
 #define KUNLUN_CUCKOO_FILTER_HPP
 
 #include "../include/std.inc"
-#include "../utility/murmurhash3.hpp"
-#include "../utility/bit_operation.hpp"
-#include "../crypto/ec_point.hpp"
-#include "../utility/print.hpp"
+#include "../include/kunlun.hpp"
+
 
 // selection of keyed hash for cuckoo filter
 #define FastHash LiteMurmurHash 
@@ -381,19 +379,18 @@ public:
             return false; 
         }
 
-        fout.write(reinterpret_cast<char *>(&inserted_element_num), 8);
-        
-        fout.write(reinterpret_cast<char *>(&max_kick_count), 8);
-        fout.write(reinterpret_cast<char *>(&slot_num), 8);
-        fout.write(reinterpret_cast<char *>(&tag_bit_size), 8);
-        fout.write(reinterpret_cast<char *>(&bucket_byte_size), 8);
-        fout.write(reinterpret_cast<char *>(&bucket_num), 8);
+        fout << inserted_element_num;
+        fout << max_kick_count;
+        fout << slot_num;
+        fout << tag_bit_size;
+        fout << bucket_byte_size;
+        fout << bucket_num;
 
-        fout.write(reinterpret_cast<char *>(&victim.bucket_index), 4);
-        fout.write(reinterpret_cast<char *>(&victim.tag), 4);
-        fout.write(reinterpret_cast<char *>(&victim.used), 4);
+        fout << victim.bucket_index;
+        fout << victim.tag;
+        fout << victim.used;
 
-        fout.write(reinterpret_cast<char *>(bucket_table.data()), bucket_table.size()); 
+        fout << bucket_table; 
 
         fout.close(); 
 
@@ -412,20 +409,19 @@ public:
             return false; 
         }
 
-        fin.read(reinterpret_cast<char *>(&inserted_element_num), 8);
-        
-        fin.read(reinterpret_cast<char *>(&max_kick_count), 8);
-        fin.read(reinterpret_cast<char *>(&slot_num), 8);
-        fin.read(reinterpret_cast<char *>(&tag_bit_size), 8);
-        fin.read(reinterpret_cast<char *>(&bucket_byte_size), 8);
-        fin.read(reinterpret_cast<char *>(&bucket_num), 8);
+        fin >> inserted_element_num;
+        fin >> max_kick_count;
+        fin >> slot_num;
+        fin >> tag_bit_size;
+        fin >> bucket_byte_size;
+        fin >> bucket_num;
 
-        fin.read(reinterpret_cast<char *>(&victim.bucket_index), 4);
-        fin.read(reinterpret_cast<char *>(&victim.tag), 4);
-        fin.read(reinterpret_cast<char *>(&victim.used), 4);
+        fin >> victim.bucket_index;
+        fin >> victim.tag;
+        fin >> victim.used;
 
         bucket_table.resize(bucket_byte_size * bucket_num, static_cast<uint8_t>(0x00));
-        fin.read(reinterpret_cast<char *>(bucket_table.data()), bucket_table.size()); 
+        fin >> bucket_table.data(); 
       
         return true;
    } 

@@ -1,12 +1,7 @@
 #ifndef KUNLUN_IKNP_OTE_HPP_
 #define KUNLUN_IKNP_OTE_HPP_
 
-#include "../../crypto/ec_point.hpp"
-#include "../../crypto/hash.hpp"
-#include "../../crypto/prg.hpp"
-#include "../../crypto/block.hpp"
 #include "naor_pinkas_ot.hpp"
-
 /*
  * IKNP OT Extension
  * [REF] Implementation of "Extending oblivious transfers efficiently"
@@ -21,6 +16,9 @@
 const static size_t BASE_LEN = 128; // the default length of base OT
 
 namespace IKNPOTE{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 // check if the parameters are legal
 void CheckParameters(size_t ROW_NUM, size_t COLUMN_NUM)
@@ -37,6 +35,30 @@ struct PP
     NPOT::PP baseOT;   
 };
 
+void PrintPP(const PP &pp)
+{
+    std::cout << "malicious = " << int(pp.malicious) << std::endl; 
+    NPOT::PrintPP(pp.baseOT);
+}
+
+
+// serialize pp to stream
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
+{
+	fout << pp.baseOT; 
+    fout << pp.malicious; 
+    return fout;
+}
+
+
+// deserialize pp from stream
+std::ifstream &operator>>(std::ifstream &fin, PP &pp)
+{
+	fin >> pp.baseOT; 
+    fin >> pp.malicious; 
+    return fin; 
+}
+
 PP Setup()
 {
     PP pp; 
@@ -45,12 +67,6 @@ PP Setup()
     return pp;
 }
 
-// serialize pp to stream
-void SerializePP(PP &pp, std::ofstream &fout)
-{
-	NPOT::SerializePP(pp.baseOT, fout); 
-    fout << pp.malicious; 
-}
 // save pp to file
 void SavePP(PP &pp, std::string pp_filename)
 {
@@ -61,16 +77,10 @@ void SavePP(PP &pp, std::string pp_filename)
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }
-    SerializePP(pp, fout); 
+    fout << pp; 
     fout.close(); 
 }
 
-// deserialize pp from stream
-void DeserializePP(PP &pp, std::ifstream &fin)
-{
-	NPOT::DeserializePP(pp.baseOT, fin); 
-    fin >> pp.malicious; 
-}
 
 // fetch pp from file
 void FetchPP(PP &pp, std::string pp_filename)
@@ -82,7 +92,7 @@ void FetchPP(PP &pp, std::string pp_filename)
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }
-    DeserializePP(pp, fin); 
+    fin >> pp; 
     fin.close(); 
 }
 

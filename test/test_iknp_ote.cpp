@@ -111,7 +111,7 @@ int main()
         IKNPOTE::SavePP(pp, pp_filename); 
     }
     else{
-        IKNPOTE::FetchPP(pp, pp_filename); 
+        IKNPOTE::FetchPP(pp, pp_filename);
     }
 
     // set instance size
@@ -140,6 +140,10 @@ int main()
 
     if(party == "receiver"){
         NetIO client_io("client", "127.0.0.1", 8080); 
+        std::cout << testcase.vec_selection_bit.size() << std::endl;
+        // for(auto i = 0; i < testcase.vec_selection_bit.size(); i++) 
+        //     std::cout << int(testcase.vec_selection_bit[i]) << std::endl;
+
 	    std::vector<block> vec_result_prime = IKNPOTE::Receive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
         
         if(Block::Compare(testcase.vec_result, vec_result_prime) == true){

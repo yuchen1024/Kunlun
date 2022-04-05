@@ -4,10 +4,7 @@ this hpp implements NIZKPoK for discrete logarithm equality
 #ifndef KUNLUN_NIZK_DLOG_KNOWLEDGE_HPP_
 #define KUNLUN_NIZK_DLOG_KNOWLEDGE_HPP_
 
-#include "../../crypto/ec_point.hpp"
-#include "../../crypto/hash.hpp"
-#include "../../utility/print.hpp"
-#include "../../utility/routines.hpp"
+#include "../../include/kunlun.hpp"
 
 namespace DLOGKnowledge{
 
@@ -33,6 +30,18 @@ struct Proof
     ECPoint A;     // P's first round message
     BigInt z;          // V's response
 };
+
+std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
+{
+    fout << proof.A << proof.z;
+    return fout; 
+} 
+
+std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
+{
+    fin >> proof.A >> proof.z;
+    return fin; 
+} 
 
 void PrintInstance(Instance &instance)
 {
@@ -60,18 +69,6 @@ std::string ProofToByteString(Proof &proof)
     std::string str = proof.A.ToByteString() + proof.z.ToByteString(); 
     return str;
 }
-
-std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
-{
-    fout << proof.A << proof.z;
-    return fout; 
-} 
-
-std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
-{
-    fin >> proof.A >> proof.z;
-    return fin; 
-} 
 
 
 /* Setup algorithm: do nothing */ 
@@ -142,6 +139,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     return Validity;
 }
+
 
 }
 #endif

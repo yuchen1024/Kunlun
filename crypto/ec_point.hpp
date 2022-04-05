@@ -7,11 +7,10 @@
 #ifndef KUNLUN_EC_POINT_HPP_
 #define KUNLUN_EC_POINT_HPP_
 
-#include "ec_group.hpp"
 #include "bigint.hpp"
-#include "../utility/routines.hpp"
+#include "ec_group.hpp"
 #include "../utility/murmurhash2.hpp"
-#include "global.hpp"
+#include "../utility/routines.hpp"
 
 
 // enable compressed representation of EC Point
@@ -311,6 +310,7 @@ size_t ECPoint::ToUint64() const
 {
     // standard method
     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+    memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
     return MurmurHash64A(buffer, POINT_COMPRESSED_BYTE_LEN, fixed_salt); 
 }

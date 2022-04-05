@@ -10,7 +10,6 @@ this hpp file define and initialize misc global variables
 #include "../include/std.inc"
 #include "constants.h"
 #include "aes.hpp"
-#include "block.hpp"
 
 static AES::Key fix_aes_enc_key; // global aes enc key
 static AES::Key fix_aes_dec_key; // global aes dec key

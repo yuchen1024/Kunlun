@@ -6,13 +6,7 @@
 #ifndef KUNLUN_CRYPTO_BLOCK_HPP_
 #define KUNLUN_CRYPTO_BLOCK_HPP_
 
-#include <immintrin.h>
-#include <assert.h>
-#include <cstring>
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <vector>
+#include "../include/std.inc"
 
 typedef __m128i block;
 
@@ -105,18 +99,21 @@ inline bool Compare(const block &a, const block &b)
     else return true;
 }
 
-inline bool IsLessThan(const block &a, const block &b) 
+
+
+bool IsLessThan(const block &a, const block &b) 
 {
     /* Compare 8-bit lanes for ( a < b ), store the bits in the low 16 bits of thescalar value: */
-    const int less = _mm_movemask_epi8( _mm_cmplt_epi8(a, b));
+    int less = _mm_movemask_epi8(_mm_cmplt_epi8(a, b));
 
     /* Compare 8-bit lanes for ( a > b ), store the bits in the low 16 bits of thescalar value: */
-    const int greater = _mm_movemask_epi8( _mm_cmpgt_epi8( a, b ) );
+    int greater = _mm_movemask_epi8(_mm_cmpgt_epi8(a, b));
 
     /* It's counter-intuitive, but this scalar comparison does the right thing.
        Essentially, integer comparison searches for the most significant bit that differs... */
     return less > greater;
 }
+
 
 
 inline std::string ToString(const block &var)
@@ -161,14 +158,87 @@ inline void ToDenseBits(const block *block_data, size_t BLOCK_LEN, uint8_t *bool
     memcpy(bool_data, block_data, BIT_LEN/8); 
 }
 
+inline void PrintBlock(const block &a) 
+{
+    std::cout << std::hex;
+    uint64_t* data = (uint64_t*)&a;
+
+    std::cout << std::setw(16) << std::setfill('0') << data[1]
+        << std::setw(16) << std::setfill('0') << data[0];
+
+    std::cout << std::dec << std::setw(0);
 }
 
 
+void PrintBlocks(block* var, size_t LEN) 
+{
+    for(auto i = 0; i< LEN; i++){
+        PrintBlock(var[i]); 
+        std::cout << std::endl; 
+    }
+}
+
+void PrintBlocks(std::vector<block> vec_B) 
+{
+    for(auto i = 0; i< vec_B.size(); i++){
+        PrintBlock(vec_B[i]); 
+        std::cout << std::endl; 
+    }
+}
+
+std::ofstream &operator<<(std::ofstream &fout, const block &a)
+{ 
+    char buffer[16];
+    _mm_storeu_si128((block *)buffer, a);
+    fout.write(buffer, 16);
+    return fout;            
+}
+ 
+std::ifstream &operator>>(std::ifstream &fin, block &a)
+{ 
+    char buffer[16];
+    fin.read(buffer, 16); 
+    a = _mm_load_si128((block *)buffer); 
+    return fin;            
+}
+
+std::ofstream &operator<<(std::ofstream &fout, const std::vector<block> &vec_a)
+{ 
+    size_t LEN = vec_a.size() * 16; 
+    char *buffer = new char[LEN]();
+    memcpy(reinterpret_cast<block *>(buffer), vec_a.data(), LEN);
+    fout.write(buffer, LEN);
+    delete[] buffer;
+    return fout;            
+}
+
+std::ifstream &operator>>(std::ifstream &fin, std::vector<block> &vec_a)
+{ 
+    size_t LEN = vec_a.size() * 16; 
+    char *buffer = new char[LEN]();
+    fin.read(buffer, LEN);
+    memcpy(reinterpret_cast<block *>(vec_a.data()), buffer, LEN);
+    delete[] buffer; 
+    return fin;            
+}
+
+}
+
+// custom hash
 class BlockHash{
 public:
     size_t operator()(const block& a) const
     {
         return std::hash<std::string>{}(Block::ToString(a));
+    }
+};
+
+// custom compare
+class BlockCompare{
+public:
+    bool operator()(const block& a, const block& b) const
+    {
+        return Block::IsLessThan(a, b);
     }
 };
 
@@ -219,58 +289,6 @@ void BitMatrixTranspose(uint8_t const *inp, int nrows, int ncols, uint8_t *out)
     for (i = 8; i--; tmp.x = _mm_slli_epi64(tmp.x, 1))
         OUT(rr, cc + II) = _mm_movemask_epi8(tmp.x);
 }
-
-
-std::ofstream &operator<<(std::ofstream &fout, const block &a)
-{ 
-    char buffer[16];
-    _mm_storeu_si128((block *)buffer, a);
-    fout.write(buffer, 16);
-    return fout;            
-}
- 
-std::ifstream &operator>>(std::ifstream &fin, block &a)
-{ 
-    char buffer[16];
-    fin.read(buffer, 16); 
-    a = _mm_load_si128((block *)buffer); 
-    return fin;            
-}
-
-std::ofstream &operator<<(std::ofstream &fout, const std::vector<block> &vec_a)
-{ 
-    size_t LEN = vec_a.size() * 16; 
-    char *buffer = new char[LEN]();
-    memcpy(reinterpret_cast<block *>(buffer), vec_a.data(), LEN);
-    fout.write(buffer, LEN);
-    delete[] buffer;
-    return fout;            
-}
-
-std::ifstream &operator>>(std::ifstream &fin, std::vector<block> &vec_a)
-{ 
-    size_t LEN = vec_a.size() * 16; 
-    char *buffer = new char[LEN]();
-    fin.read(buffer, LEN);
-    memcpy(reinterpret_cast<block *>(vec_a.data()), buffer, LEN);
-    delete[] buffer; 
-    return fin;            
-}
-
-
-
-
-// void SerializeBlockVector(const std::vector<block> &vec_a, std::ofstream &fout)
-// {
-//     for(auto i = 0; i < vec_a.size(); i++) fout << vec_a[i];  
-// }
-
-// void DeserializeBlockVector(std::vector<block> &vec_a, std::ifstream &fin)
-// {
-//     for(auto i = 0; i < vec_a.size(); i++) fin >> vec_a[i];  
-// }
-
-
 
 
 // Modified from
@@ -342,36 +360,6 @@ inline void empBitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64
     for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
         OUTPUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
 }
-
-
-inline void PrintBlock(const block &a) 
-{
-    std::cout << std::hex;
-    uint64_t* data = (uint64_t*)&a;
-
-    std::cout << std::setw(16) << std::setfill('0') << data[1]
-        << std::setw(16) << std::setfill('0') << data[0];
-
-    std::cout << std::dec << std::setw(0);
-}
-
-
-void PrintBlocks(block* var, size_t LEN) 
-{
-    for(auto i = 0; i< LEN; i++){
-        PrintBlock(var[i]); 
-        std::cout << std::endl; 
-    }
-}
-
-void PrintBlocks(std::vector<block> vec_B) 
-{
-    for(auto i = 0; i< vec_B.size(); i++){
-        PrintBlock(vec_B[i]); 
-        std::cout << std::endl; 
-    }
-}
-
 
 #endif
 
