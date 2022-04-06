@@ -64,6 +64,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - /include
   * std.inc: standard header files
   * openssl.inc: openssl header files
+  * kunlun.hpp: include all necessary files to write a cryptographic program
 
 - /utility: dependent files
   * bit_operation.hpp
@@ -71,6 +72,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * print.hpp: print info for debug
   * murmurhash3.hpp: add fast non-cryptographic hash
   * polymul.hpp: naive poly mul
+  * serialization.hpp: overload serialization for uint and string type data
 
 - /crypto: C++ wrapper for OpenSSL
   * constant.h: define global constants
@@ -92,7 +94,6 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - /signature
   * schnorr.hpp
   * accountable_ring_signature.hpp: implement accountable ring signature
-
 
 - /commitment
   * pedersen.hpp: multi-element Pedersen commitment
@@ -132,6 +133,9 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - /filter
   * bloom_filter.hpp
   * cuckoo_filter.hpp
+
+- /docs: the manual of all codes
+
 
 ## Compile and Run
 ```

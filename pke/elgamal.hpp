@@ -14,7 +14,7 @@ struct PP
 {
     size_t MSG_LEN; // the length of message space, also the length of the DLOG interval  
     BigInt MSG_SIZE; // the size of message space
-    size_t TRADEOFF_NUM; // default value = RANGE_LEN/2; tunning it in [0, RANGE_LEN/2], ++ leads bigger table and less time 
+    size_t TRADEOFF_NUM; // default value = 0; tunning it in [0, RANGE_LEN/2], ++ leads bigger table and less time 
     ECPoint g; // random generator 
 };
 
@@ -199,7 +199,7 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)
     // vectormul using wNAF method, which is fast than naive ct.Y = pp.g * r + pp.h * m;  
     std::vector<ECPoint> vec_A{pk, pp.g}; 
     std::vector<BigInt> vec_a{r, m};
-    ct.Y = ECPointVectorMul(vec_A, vec_a);     // Y = g^r h^m
+    ct.Y = ECPointVectorMul(vec_A, vec_a);     // Y = pk^r g^m
 
     #ifdef DEBUG
         std::cout << "ElGamal encryption finishes >>>"<< std::endl;

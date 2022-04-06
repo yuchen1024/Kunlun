@@ -83,7 +83,7 @@ public:
 */
 BloomFilter() {}; 
 
-BloomFilter(size_t projected_element_num, size_t statistical_security_parameter)
+BloomFilter(size_t max_element_num, size_t statistical_security_parameter)
 {
    //desired_false_positive_probability = 1/2^{statistical_security_parameter/2};
    //hash_num = static_cast<size_t>(-log2(desired_false_positive_probability));
@@ -96,7 +96,7 @@ BloomFilter(size_t projected_element_num, size_t statistical_security_parameter)
    table_size = ((table_size+0x07) >> 3) << 3; // (table_size+7)/8*8
 
    bit_table.resize(table_size/8, static_cast<uint8_t>(0x00)); // naive implementation
-      
+   projected_element_num = max_element_num;
    inserted_element_num = 0; 
 }
 
@@ -122,6 +122,7 @@ inline void PlainInsert(const void* input, size_t LEN)
    inserted_element_num++;
 }
 
+[[deprecated("this method is not sound")]]
 inline void ParallelPlainInsert(const void* input, size_t LEN)
 {
    std::vector<size_t> bit_index(hash_num);
@@ -187,7 +188,7 @@ inline void Insert(const Container<T, Allocator>& container)
 template <> // specialize for vector<ECPoint>
 inline void Insert(const std::vector<ECPoint> &vec_A)
 {
-   #pragma omp parallel for
+   //#pragma omp parallel for
    for(auto i = 0; i < vec_A.size(); i++){
       Insert(vec_A[i]); 
    }

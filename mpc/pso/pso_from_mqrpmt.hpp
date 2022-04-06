@@ -47,6 +47,7 @@ void SavePP(PP &pp, std::string pp_filename)
     // cwPRFmqRPMT::SerializePP(pp.mqrpmt_part, fout); 
     fout << pp.ote_part; 
     fout << pp.mqrpmt_part; 
+    
     fout.close(); 
 }
 // load pp from file
