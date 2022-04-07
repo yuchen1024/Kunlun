@@ -122,15 +122,15 @@ inline void PlainInsert(const void* input, size_t LEN)
    inserted_element_num++;
 }
 
-[[deprecated("this method is not sound")]]
 inline void ParallelPlainInsert(const void* input, size_t LEN)
 {
-   std::vector<size_t> bit_index(hash_num);
+   size_t bit_index[hash_num];
+
    #pragma omp parallel for
    for (auto i = 0; i < hash_num; i++){
-      bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
-      //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
-      bit_table[bit_index[i] >> 3] |= bit_mask[bit_index[i] & 0x07]; // more efficient implementation
+      bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size;    
+      #pragma omp atomic // atomic operation
+      bit_table[bit_index[i] >> 3] |= bit_mask[bit_index[i] & 0x07]; 
    }
    inserted_element_num++;
 }
@@ -138,7 +138,7 @@ inline void ParallelPlainInsert(const void* input, size_t LEN)
 template <typename ElementType> // Note: T must be a C++ POD type.
 inline void Insert(const ElementType& element)
 {
-   PlainInsert(&element, sizeof(ElementType));
+   ParallelPlainInsert(&element, sizeof(ElementType));
 }
 
 template <> // specialize for string
@@ -157,12 +157,12 @@ inline void Insert(const ECPoint &A)
       unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
       memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN);  
       EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
-      PlainInsert(buffer, POINT_COMPRESSED_BYTE_LEN);
+      ParallelPlainInsert(buffer, POINT_COMPRESSED_BYTE_LEN);
    #else
       unsigned char buffer[POINT_BYTE_LEN]; 
       memset(buffer, 0, POINT_BYTE_LEN); 
       EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-      PlainInsert(buffer, POINT_BYTE_LEN);
+      ParallelPlainInsert(buffer, POINT_BYTE_LEN);
    #endif
 }
 
@@ -172,7 +172,7 @@ inline void Insert(const InputIterator begin, const InputIterator end)
    InputIterator itr = begin;
    while (end != itr)
    {
-         Insert(*(itr++));
+      Insert(*(itr++));
    }
 }
 
@@ -187,8 +187,9 @@ inline void Insert(const Container<T, Allocator>& container)
 
 template <> // specialize for vector<ECPoint>
 inline void Insert(const std::vector<ECPoint> &vec_A)
-{
-   //#pragma omp parallel for
+{   
+   //sequential implementation
+   #pragma omp parallel for
    for(auto i = 0; i < vec_A.size(); i++){
       Insert(vec_A[i]); 
    }
@@ -247,12 +248,12 @@ inline bool Contain(const ECPoint& A) const
       unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
       memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN);  
       EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
-      return PlainContain(buffer, POINT_COMPRESSED_BYTE_LEN);
+      return ParallelPlainContain(buffer, POINT_COMPRESSED_BYTE_LEN);
    #else
       unsigned char buffer[POINT_BYTE_LEN];
       memset(buffer, 0, POINT_BYTE_LEN);  
       EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-      return PlainContain(buffer, POINT_BYTE_LEN);
+      return ParallelPlainContain(buffer, POINT_BYTE_LEN);
    #endif
 }
 

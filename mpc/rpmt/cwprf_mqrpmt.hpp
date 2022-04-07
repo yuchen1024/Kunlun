@@ -140,11 +140,6 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t
         delete[] buffer; 
 
         vec_indication_bit = filter.Contain(vec_Fk1k2_Y); 
-        // #pragma omp parallel for
-        // for(auto i = 0; i < LEN; i++){
-        //     if(filter.Contain(vec_Fk1k2_Y[i]) == false) vec_indication_bit[i] = 0;  
-        //     else vec_indication_bit[i] = 1;
-        // }
     } 
 
     auto end_time = std::chrono::steady_clock::now(); 
