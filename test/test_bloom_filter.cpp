@@ -34,9 +34,9 @@ void test_bloom_filter()
     
     std::vector<std::string> word_list; 
     ReadFileToContainer("word-list-extra-large.txt", word_list); 
-    size_t projected_element_num = word_list.size();  
-    double desired_false_positive_probability = 1/pow(2, 10);
-    BloomFilter filter(projected_element_num, desired_false_positive_probability);
+    size_t max_element_num = word_list.size();  
+    double statistical_security_parameter = 40;
+    BloomFilter filter(max_element_num, statistical_security_parameter);
 
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     //filter.insert(word_list.begin(), word_list.end());    
@@ -46,7 +46,7 @@ void test_bloom_filter()
     std::cout << "insert #" << word_list.size() << " elements take "   
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;  
 
-    std::cout << "false positive probability = " << desired_false_positive_probability << std::endl;
+    std::cout << "statistical security parameter = " << statistical_security_parameter << std::endl;
     std::cout << double(filter.table_size)/filter.inserted_element_num << " bit per element" << std::endl;
     
 

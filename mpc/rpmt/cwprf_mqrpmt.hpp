@@ -50,8 +50,6 @@ PP Setup(std::string filter_type, size_t lambda)
     return pp; 
 }
 
-
-
 void SavePP(PP &pp, std::string pp_filename)
 {
     std::ofstream fout; 
@@ -64,8 +62,6 @@ void SavePP(PP &pp, std::string pp_filename)
     fout << pp; 
     fout.close(); 
 }
-
-
 
 void FetchPP(PP &pp, std::string pp_filename)
 {
@@ -80,8 +76,10 @@ void FetchPP(PP &pp, std::string pp_filename)
     fin.close(); 
 }
 
-std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
+// run by receiver
+std::vector<uint8_t> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
 {
+    PrintSplitLine('-'); 
     auto start_time = std::chrono::steady_clock::now(); 
     
     BigInt k1 = GenRandomBigIntLessThan(order); // pick a key k1
@@ -144,14 +142,19 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t
 
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
-    std::cout << "cwPRF-mqRPMT: server side takes time = " 
+    std::cout << "cwPRF-mqRPMT: Sender side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+    
+    PrintSplitLine('-'); 
 
     return vec_indication_bit; 
 }
 
-void Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN) 
-{
+// run by sender
+void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN) 
+{    
+    PrintSplitLine('-'); 
+
     auto start_time = std::chrono::steady_clock::now(); 
 
     BigInt k2 = GenRandomBigIntLessThan(order); // pick a key
@@ -215,8 +218,11 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
     
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
-    std::cout << "cwPRF-mqRPMT: client side takes time = " 
+    std::cout << "cwPRF-mqRPMT: Receiver side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+        
+    PrintSplitLine('-'); 
 }
 
 }

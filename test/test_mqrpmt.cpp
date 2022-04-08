@@ -107,13 +107,13 @@ int main()
     PrintSplitLine('-'); 
 
     std::string party;
-    std::cout << "please select your role between server and client (hint: start server first) ==> ";  
+    std::cout << "please select your role between sender and receiver (hint: start receiver first) ==> ";  
     std::getline(std::cin, party); // first the server, then the client
 
   
-    if(party == "server"){
+    if(party == "receiver"){
         NetIO server("server", "", 8080);
-        std::vector<uint8_t> vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_X, LEN);
+        std::vector<uint8_t> vec_indication_bit_prime = cwPRFmqRPMT::Receive(server, pp, testcase.vec_X, LEN);
 
         if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_prime))
         {
@@ -131,10 +131,10 @@ int main()
         std::cout << CARDINALITY << std::endl;
     }
 
-    if(party == "client")
+    if(party == "sender")
     {
         NetIO client("client", "127.0.0.1", 8080);        
-        cwPRFmqRPMT::Client(client, pp, testcase.vec_Y, LEN);
+        cwPRFmqRPMT::Send(client, pp, testcase.vec_Y, LEN);
     } 
 
     PrintSplitLine('-'); 

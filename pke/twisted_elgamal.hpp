@@ -269,9 +269,10 @@ BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
     return m; 
 }
 
-
-
-/* re-encrypt ciphertext CT with given randomness r */ 
+/* 
+** re-encrypt ciphertext CT with given randomness r 
+** run by the secret key owner
+*/ 
 CT ReEnc(const PP &pp, const ECPoint &pk, const BigInt &sk, const CT &ct, const BigInt &r)
 { 
     CT ct_new; 
@@ -284,6 +285,27 @@ CT ReEnc(const PP &pp, const ECPoint &pk, const BigInt &sk, const CT &ct, const 
 
     #ifdef DEBUG
         std::cout << "refresh ciphertext succeeds >>>"<< std::endl;
+        PrintCT(ct_new); 
+    #endif
+
+    return ct_new;
+}
+
+/* 
+** re-rand ciphertext CT  
+** run by anyone
+*/ 
+CT ReRand(const PP &pp, const ECPoint &pk, const CT &ct)
+{ 
+    CT ct_new; 
+    BigInt r = GenRandomBigIntLessThan(order); 
+
+    // begin re-encryption with the given randomness 
+    ct_new.X = ct.X + pk * r; // ct_new.X = ct.X + pk^r 
+    ct_new.Y = ct.Y + pp.g * r; // ct_new.Y = ct.Y + g^r 
+
+    #ifdef DEBUG
+        std::cout << "rerand ciphertext succeeds >>>" << std::endl;
         PrintCT(ct_new); 
     #endif
 

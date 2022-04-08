@@ -161,15 +161,14 @@ int main()
     }
     PrintSplitLine('-'); 
 
-    
     std::string party;
-    std::cout << "please select your role between server and client (hint: start server first) ==> ";  
+    std::cout << "please select your role between sender and receiver (hint: start receiver first) ==> ";  
     std::getline(std::cin, party); // first the server, then the client
 
     if(current == PSI){
-        if(party == "server"){
-            NetIO server_io("server", "", 8080);
-            std::vector<block> vec_intersection_prime = PSO::PSIServer(server_io, pp, testcase.vec_X, testcase.LEN);
+        if(party == "receiver"){
+            NetIO server("server", "", 8080);
+            std::vector<block> vec_intersection_prime = PSO::PSI::Receive(server, pp, testcase.vec_X, testcase.LEN);
 
             std::set<block, BlockCompare> set_diff_result = 
             ComputeSetDifference(vec_intersection_prime, testcase.vec_intersection);  
@@ -180,17 +179,17 @@ int main()
             }
         }
     
-        if(party == "client"){
-            NetIO client_io("client", "127.0.0.1", 8080);        
-            PSO::PSIClient(client_io, pp, testcase.vec_Y, testcase.LEN);
+        if(party == "sender"){
+            NetIO client("client", "127.0.0.1", 8080);        
+            PSO::PSI::Send(client, pp, testcase.vec_Y, testcase.LEN);
         } 
     }
 
 
     if(current == PSU){
-        if(party == "server"){
-            NetIO server_io("server", "", 8080);
-            std::vector<block> vec_union_prime = PSO::PSUServer(server_io, pp, testcase.vec_X, testcase.LEN);
+        if(party == "receiver"){
+            NetIO server("server", "", 8080);
+            std::vector<block> vec_union_prime = PSO::PSU::Receive(server, pp, testcase.vec_X, testcase.LEN);
             
             std::set<block, BlockCompare> set_diff_result = ComputeSetDifference(vec_union_prime, testcase.vec_union);  
             if(set_diff_result.size() == 0) std::cout << "PSU test succeeds" << std::endl; 
@@ -200,31 +199,31 @@ int main()
             }
         }
     
-        if(party == "client"){
-            NetIO client_io("client", "127.0.0.1", 8080);        
-            PSO::PSUClient(client_io, pp, testcase.vec_Y, testcase.LEN);
+        if(party == "sender"){
+            NetIO client("client", "127.0.0.1", 8080);        
+            PSO::PSU::Send(client, pp, testcase.vec_Y, testcase.LEN);
         } 
     }
 
     if(current == PSI_card){
-        if(party == "server"){
-            NetIO server_io("server", "", 8080);
-            size_t CARDINALITY = PSO::PSIcardServer(server_io, pp, testcase.vec_X, testcase.LEN);
+        if(party == "receiver"){
+            NetIO server("server", "", 8080);
+            size_t CARDINALITY = PSO::PSIcard::Receive(server, pp, testcase.vec_X, testcase.LEN);
  
             if(CARDINALITY == testcase.CARDINALITY) std::cout << "PSI-card test succeeds" << std::endl; 
             else std::cout << "PSI-card test fails" << std::endl; 
         }
     
-        if(party == "client"){
-            NetIO client_io("client", "127.0.0.1", 8080);        
-            PSO::PSIcardClient(client_io, pp, testcase.vec_Y, testcase.LEN);
+        if(party == "sender"){
+            NetIO client("client", "127.0.0.1", 8080);        
+            PSO::PSIcard::Send(client, pp, testcase.vec_Y, testcase.LEN);
         } 
     }
 
     if(current == PSI_sum){
-        if(party == "server"){
-            NetIO server_io("server", "", 8080);
-            int64_t SUM = PSO::PSIsumServer(server_io, pp, testcase.vec_X, testcase.LEN);
+        if(party == "receiver"){
+            NetIO server("server", "", 8080);
+            int64_t SUM = PSO::PSIsum::Receive(server, pp, testcase.vec_X, testcase.LEN);
  
             if(SUM == testcase.SUM) std::cout << "PSI-sum test succeeds" << std::endl; 
             else std::cout << "PSI-sum test fails" << std::endl; 
@@ -233,9 +232,9 @@ int main()
             std::cout << SUM << std::endl;
         }
     
-        if(party == "client"){
-            NetIO client_io("client", "127.0.0.1", 8080);        
-            PSO::PSIsumClient(client_io, pp, testcase.vec_Y, testcase.vec_label, testcase.LEN);
+        if(party == "sender"){
+            NetIO client("client", "127.0.0.1", 8080);        
+            PSO::PSIsum::Send(client, pp, testcase.vec_Y, testcase.vec_label, testcase.LEN);
         } 
     }
 

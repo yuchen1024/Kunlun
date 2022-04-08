@@ -90,8 +90,8 @@ BloomFilter(size_t max_element_num, size_t statistical_security_parameter)
    hash_num = statistical_security_parameter/2; 
    random_seed = static_cast<uint32_t>(0xA5A5A5A55A5A5A5A * 0xA5A5A5A5 + 1); 
    vec_salt = GenUniqueSaltVector(hash_num, random_seed);   
-   //table_size = static_cast<uint32_t>(projected_element_num * (-1.44 * log2(desired_false_positive_probability)));
-   table_size = static_cast<uint32_t>(projected_element_num * (1.44 * statistical_security_parameter/2));
+   //table_size = static_cast<uint32_t>(max_element_num * (-1.44 * log2(desired_false_positive_probability)));
+   table_size = static_cast<uint32_t>(max_element_num * (1.44 * statistical_security_parameter/2));
    // the following operation is very important => make table size = 8*n 
    table_size = ((table_size+0x07) >> 3) << 3; // (table_size+7)/8*8
 
