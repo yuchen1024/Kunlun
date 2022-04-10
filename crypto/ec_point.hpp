@@ -9,6 +9,8 @@
 
 #include "bigint.hpp"
 #include "ec_group.hpp"
+#include "global.hpp"
+#include "aes.hpp"
 #include "../utility/murmurhash2.hpp"
 #include "../utility/routines.hpp"
 
@@ -109,6 +111,7 @@ public:
     std::string ToHexString() const;
 
     size_t ToUint64() const; 
+    size_t FastToUint64() const; 
 
     friend std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A); 
  
@@ -313,6 +316,30 @@ size_t ECPoint::ToUint64() const
     memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
     return MurmurHash64A(buffer, POINT_COMPRESSED_BYTE_LEN, fixed_salt); 
+}
+
+// adhoc lossy encoding for ECPoint based on AES
+size_t ECPoint::FastToUint64() const 
+{
+
+    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+    memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
+    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+
+    block data[2];
+    data[0] = _mm_load_si128((block *)(buffer));
+    data[1] = _mm_load_si128((block *)(buffer+16));
+
+    //std::cout << "haha" << std::endl;
+
+    AES::FastECBEnc(fix_aes_enc_key, &data[0], 1);
+
+    data[1] = _mm_xor_si128(data[1], data[0]);
+
+    size_t hashvalue; 
+    memcpy(&hashvalue, &data[1], 8); 
+
+    return hashvalue; 
 }
 
 

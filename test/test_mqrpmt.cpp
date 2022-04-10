@@ -24,6 +24,7 @@ RPMTTestcase GenTestInstance(size_t LEN)
             testcase.HAMMING_WEIGHT++; 
         }
     }
+
     return testcase;
 }
 
@@ -107,13 +108,13 @@ int main()
     PrintSplitLine('-'); 
 
     std::string party;
-    std::cout << "please select your role between sender and receiver (hint: start receiver first) ==> ";  
+    std::cout << "please select your role between server and client (hint: first start server, then start client) ==> ";  
     std::getline(std::cin, party); // first the server, then the client
-
+    PrintSplitLine('-'); 
   
-    if(party == "receiver"){
+    if(party == "server"){
         NetIO server("server", "", 8080);
-        std::vector<uint8_t> vec_indication_bit_prime = cwPRFmqRPMT::Receive(server, pp, testcase.vec_X, LEN);
+        std::vector<uint8_t> vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_X, LEN);
 
         if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_prime))
         {
@@ -131,10 +132,10 @@ int main()
         std::cout << CARDINALITY << std::endl;
     }
 
-    if(party == "sender")
+    if(party == "client")
     {
         NetIO client("client", "127.0.0.1", 8080);        
-        cwPRFmqRPMT::Send(client, pp, testcase.vec_Y, LEN);
+        cwPRFmqRPMT::Client(client, pp, testcase.vec_Y, LEN);
     } 
 
     PrintSplitLine('-'); 

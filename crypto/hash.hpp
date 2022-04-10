@@ -58,7 +58,6 @@ void CBCAES(const unsigned char *input, size_t HASH_INPUT_LEN, unsigned char *ou
     _mm_storeu_si128((block *)output, data[BLOCK_NUM-1]);
 }
 
-
 __attribute__((target("sse2")))
 block StringToBlock(const std::string &str_input) 
 {

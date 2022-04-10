@@ -222,10 +222,10 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r)
     CT ct; 
     // begin encryption
     ct.X = pk * r; // X = pk^r
-    //CT.Y = pp.g * r + pp.h * m; // Y = g^r h^m
+    
     std::vector<ECPoint> vec_A{pp.g, pp.h}; 
     std::vector<BigInt> vec_a{r, m};
-    ct.Y = ECPointVectorMul(vec_A, vec_a); 
+    ct.Y = ECPointVectorMul(vec_A, vec_a); // CT.Y = pp.g * r + pp.h * m; 
 
     #ifdef DEBUG
         std::cout << "twisted ElGamal encryption finishes >>>"<< std::endl;

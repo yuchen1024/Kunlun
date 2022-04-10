@@ -195,7 +195,7 @@ int main()
 
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
-    size_t TEST_NUM = pow(2,16);
+    size_t TEST_NUM = 10000;
 
     function_test(MSG_LEN, TRADEOFF_NUM);
     benchmark_test(MSG_LEN, TRADEOFF_NUM, TEST_NUM);

@@ -105,6 +105,22 @@ inline void ECBEnc(const Key &key, block* data, size_t BLOCK_LEN)
         Enc(key, data[i]);
 }
 
+/*
+** this implementation is less modular
+** but more efficient since it unroll the loop
+*/
+__attribute__((target("aes,sse2")))
+inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN) 
+{
+   for (auto i = 0; i < BLOCK_LEN; i++)
+      data[i] = _mm_xor_si128(data[i], key.roundkey[0]);
+   for (auto j = 1; j < key.ROUND_NUM; j++)
+      for (auto i = 0; i < BLOCK_LEN; i++)
+         data[i] = _mm_aesenc_si128(data[i], key.roundkey[j]);
+   for (auto i = 0; i < BLOCK_LEN; i++)
+      data[i] = _mm_aesenclast_si128(data[i], key.roundkey[key.ROUND_NUM]);
+}
+
 __attribute__((target("aes,sse2")))
 inline void ECBDec(const Key &key, block* data, size_t BLOCK_LEN) 
 {
@@ -124,6 +140,7 @@ inline void CBCEnc(const Key &key, block* data, size_t BLOCK_LEN)
         Enc(key, data[i]);
     }
 }
+
 
 __attribute__((target("aes,sse2")))
 inline void CBCDec(const Key &key, block* data, size_t BLOCK_LEN) 

@@ -104,7 +104,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     ** the sender first oblivous get 1-out-of-2 keys per column from receiver via base OT 
     ** receiver then send encryptions of the original column and shared column under k0 and k1 respectively
     */
-
+    PrintSplitLine('-'); 
 	auto start_time = std::chrono::steady_clock::now(); 
 
     // prepare to receive a secret shared matrix Q from receiver
@@ -198,10 +198,12 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     auto running_time = end_time - start_time;
     std::cout << "IKNP OTE: Sender side takes time " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+    PrintSplitLine('-'); 
 }
 
 std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_selection_bit, size_t EXTEND_LEN)
 {
+    PrintSplitLine('-'); 
     std::vector<block> vec_result(EXTEND_LEN);
     // first act as sender in base OT
     auto start_time = std::chrono::steady_clock::now(); 
@@ -307,6 +309,8 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
     std::cout << "IKNP OTE: Receiver side takes time " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
+    PrintSplitLine('-'); 
+
     return vec_result; 
 }
 
@@ -318,7 +322,9 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     ** the sender first oblivous get 1-out-of-2 keys per column from receiver via base OT 
     ** receiver then send encryptions of the original column and shared column under k0 and k1 respectively
     */	
-	auto start_time = std::chrono::steady_clock::now(); 
+    PrintSplitLine('-'); 
+	
+    auto start_time = std::chrono::steady_clock::now(); 
 
     // prepare to receive a secret shared matrix Q from receiver
     size_t ROW_NUM = EXTEND_LEN;   // set row num as the length of long ot
@@ -408,11 +414,15 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     auto running_time = end_time - start_time;
     std::cout << "IKNP OTE: Sender side takes time " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
 }
 
 // the size of vec_result = the hamming weight of vec_selection_bit
 std::vector<block> OnesidedReceive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_selection_bit, size_t EXTEND_LEN)
 {
+    PrintSplitLine('-'); 
+
     std::vector<block> vec_result;
     // first act as sender in base OT
     
@@ -504,6 +514,8 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, const std::vector<uint8_t>
     auto running_time = end_time - start_time;
     std::cout << "IKNP OTE: Receiver side takes time " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
 
     return vec_result; 
 }

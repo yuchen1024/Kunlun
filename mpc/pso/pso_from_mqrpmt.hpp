@@ -72,8 +72,10 @@ namespace PSI{
     {
         auto start_time = std::chrono::steady_clock::now(); 
 
-        std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Receive(io, pp.mqrpmt_part, vec_X, LEN);
+        std::cout << "Phase 1: execute mqRPMT >>>" << std::endl;
+        std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_X, LEN);
 
+        std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
         // get the intersection X \cup Y via one-sided OT from receiver
         std::vector<block> vec_intersection = IKNPOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, LEN); 
     
@@ -89,7 +91,10 @@ namespace PSI{
     {
         auto start_time = std::chrono::steady_clock::now(); 
 
-        cwPRFmqRPMT::Send(io, pp.mqrpmt_part, vec_Y, LEN);
+        std::cout << "Phase 1: execute mqRPMT >>>" << std::endl;
+        cwPRFmqRPMT::Client(io, pp.mqrpmt_part, vec_Y, LEN);
+
+        std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
         // get the intersection X \cup Y via one-sided OT from receiver
         IKNPOTE::OnesidedSend(io, pp.ote_part, vec_Y, LEN); 
     
@@ -104,12 +109,19 @@ namespace PSU{
     std::vector<block> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
     {
         auto start_time = std::chrono::steady_clock::now(); 
-
-        std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Receive(io, pp.mqrpmt_part, vec_X, LEN);
+        
+        PrintSplitLine('-');
+        std::cout << "Phase 1: execute mqRPMT >>>" << std::endl;
+        std::vector<uint8_t> vec_indication_bit(LEN); 
+        vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_X, LEN);
+       
         // flip the indication bit to get elements in Y\X
+        #pragma omp parallel for
         for(auto i = 0; i < LEN; i++){
-            vec_indication_bit[i] = 1 - vec_indication_bit[i]; 
+            vec_indication_bit[i] ^= 0x01; 
         } 
+
+        std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
         // get the intersection X \cup Y via one-sided OT from receiver
         std::vector<block> vec_Y_diff = IKNPOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, LEN); 
         std::vector<block> vec_union = vec_X; 
@@ -120,15 +132,20 @@ namespace PSU{
         auto running_time = end_time - start_time;
         std::cout << "mqRPMT-based PSU: Receiver side takes time = " 
             << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-    
+        
+        PrintSplitLine('-');
+
         return vec_union;
     }
 
     void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN) 
     {
         auto start_time = std::chrono::steady_clock::now(); 
-
-        cwPRFmqRPMT::Send(io, pp.mqrpmt_part, vec_Y, LEN);
+        PrintSplitLine('-');
+        std::cout << "Phase 1: execute mqRPMT >>>" << std::endl;
+        cwPRFmqRPMT::Client(io, pp.mqrpmt_part, vec_Y, LEN);
+        
+        std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
         // get the intersection X \cup Y via one-sided OT from receiver
         IKNPOTE::OnesidedSend(io, pp.ote_part, vec_Y, LEN); 
     
@@ -136,6 +153,8 @@ namespace PSU{
         auto running_time = end_time - start_time;
         std::cout << "mqRPMT-based PSU: Sender side takes time = " 
             << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+        
+        PrintSplitLine('-');
     }
 }
 
@@ -143,33 +162,44 @@ namespace PSU{
 namespace PSIcard{
     size_t Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
     {
-        auto start_time = std::chrono::steady_clock::now(); 
+        auto start_time_0 = std::chrono::steady_clock::now(); 
+        
+        PrintSplitLine('-');
 
+        std::cout << "Phase 1: execute mqRPMT >>>" << std::endl;
+        std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_X, LEN);
+        
+        //auto start_time_1 = std::chrono::steady_clock::now(); 
         size_t CARDINALITY = 0; 
-        std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Receive(io, pp.mqrpmt_part, vec_X, LEN);
         // flip the indication bit to get elements in Y\X
         for(auto i = 0; i < LEN; i++){
             CARDINALITY += vec_indication_bit[i]; 
         } 
 
         auto end_time = std::chrono::steady_clock::now(); 
-        auto running_time = end_time - start_time;
+        auto running_time = end_time - start_time_0;
         std::cout << "mqRPMT-based PSI-cardinality: Receiver side takes time = " 
             << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
     
+        PrintSplitLine('-');
+        
         return CARDINALITY;
     }
 
     void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN) 
     {
         auto start_time = std::chrono::steady_clock::now(); 
-
-        cwPRFmqRPMT::Send(io, pp.mqrpmt_part, vec_Y, LEN);
+        
+        PrintSplitLine('-');
+        std::cout << "Phase 1: execute mqRPMT >>>" << std::endl;
+        cwPRFmqRPMT::Client(io, pp.mqrpmt_part, vec_Y, LEN);
     
         auto end_time = std::chrono::steady_clock::now(); 
         auto running_time = end_time - start_time;
         std::cout << "mqRPMT-based PSI-cardinality: Sender side takes time = " 
             << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+        
+        PrintSplitLine('-');
     }
 }
 
@@ -177,9 +207,12 @@ namespace PSIsum{
     int64_t Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
     {
         auto start_time = std::chrono::steady_clock::now(); 
+        
+        PrintSplitLine('-');
+        std::cout << "Phase 1: execute mqRPMT >>>" << std::endl;
+        std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_X, LEN);
 
-        std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Receive(io, pp.mqrpmt_part, vec_X, LEN);
-
+        std::cout << "Phase 2: execute OTe >>>" << std::endl;
         std::vector<block> vec_result = IKNPOTE::Receive(io, pp.ote_part, vec_indication_bit, LEN); 
         std::vector<int64_t> vec_v(LEN); 
         int64_t SUM = 0; 
@@ -192,15 +225,19 @@ namespace PSIsum{
         auto running_time = end_time - start_time;
         std::cout << "mqRPMT-based PSI-sum: Receiver side takes time = " 
             << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-    
+        
+        PrintSplitLine('-');
+
         return SUM;
     }
 
     void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, std::vector<int64_t> &vec_label, size_t LEN) 
     {
         auto start_time = std::chrono::steady_clock::now(); 
-
-        cwPRFmqRPMT::Send(io, pp.mqrpmt_part, vec_Y, LEN);
+        
+        PrintSplitLine('-');
+        std::cout << "Phase 1: execute mqRPMT >>>" << std::endl;
+        cwPRFmqRPMT::Client(io, pp.mqrpmt_part, vec_Y, LEN);
         // get the intersection X \cup Y via one-sided OT from receiver
 
         std::vector<int64_t> vec_r = GenRandomIntegerVectorLessThan(LEN, 100);
@@ -224,12 +261,15 @@ namespace PSIsum{
             vec_m1[i] = Block::MakeBlock(0, vec_v[i]);
         }
 
+        std::cout << "Phase 2: execute OTe >>>" << std::endl;
         IKNPOTE::Send(io, pp.ote_part, vec_m0, vec_m1, LEN); 
     
         auto end_time = std::chrono::steady_clock::now(); 
         auto running_time = end_time - start_time;
         std::cout << "mqRPMT-based PSI-sum: Sender side takes time = " 
             << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+        PrintSplitLine('-');
     }
 }
 

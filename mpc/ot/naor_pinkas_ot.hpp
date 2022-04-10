@@ -82,6 +82,7 @@ void FetchPP(PP &pp, std::string pp_filename)
 
 void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector<block> &vec_m1, size_t LEN)
 {	
+	PrintSplitLine('-');
 	auto start_time = std::chrono::steady_clock::now(); 
 
 	if(vec_m0.size()!=LEN || vec_m1.size()!=LEN){
@@ -136,10 +137,13 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
     auto running_time = end_time - start_time;
     std::cout << "Naor-Pinkas OT: Sender side takes time " 
 	          << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+	PrintSplitLine('-');
 }
 
 std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_selection_bit, size_t LEN)
 {	
+	PrintSplitLine('-');
 	auto start_time = std::chrono::steady_clock::now(); 
 	std::vector<block> vec_result(LEN);  
 	if(vec_result.size()!=LEN || vec_selection_bit.size()!=LEN){
@@ -197,6 +201,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
     std::cout << "Naor-Pinkas OT: Receiver side takes time " 
 	          << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
+    PrintSplitLine('-');
 	return vec_result; 
 }
 }

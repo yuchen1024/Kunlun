@@ -132,6 +132,7 @@ inline void ParallelPlainInsert(const void* input, size_t LEN)
       #pragma omp atomic // atomic operation
       bit_table[bit_index[i] >> 3] |= bit_mask[bit_index[i] & 0x07]; 
    }
+   #pragma omp atomic
    inserted_element_num++;
 }
 

@@ -138,7 +138,7 @@ int main()
     std::string pp_filename = "PSO.pp"; 
     PSO::PP pp; 
     if(!FileExist(pp_filename)){
-        pp = PSO::Setup("shuffle", 40); // 40 is the statistical parameter
+        pp = PSO::Setup("bloom", 40); // 40 is the statistical parameter
         PSO::SavePP(pp, pp_filename); 
     }
     else{
@@ -162,8 +162,9 @@ int main()
     PrintSplitLine('-'); 
 
     std::string party;
-    std::cout << "please select your role between sender and receiver (hint: start receiver first) ==> ";  
+    std::cout << "please select your role between sender and receiver (hint: first start receiver, then start sender) ==> ";  
     std::getline(std::cin, party); // first the server, then the client
+    PrintSplitLine('-'); 
 
     if(current == PSI){
         if(party == "receiver"){

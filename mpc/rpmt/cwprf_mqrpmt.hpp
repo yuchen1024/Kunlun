@@ -76,50 +76,49 @@ void FetchPP(PP &pp, std::string pp_filename)
     fin.close(); 
 }
 
-// run by receiver
-std::vector<uint8_t> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
+std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
 {
     PrintSplitLine('-'); 
     auto start_time = std::chrono::steady_clock::now(); 
     
     BigInt k1 = GenRandomBigIntLessThan(order); // pick a key k1
 
-    std::vector <ECPoint> vec_Fk1_X(LEN);
+    std::vector <ECPoint> vec_Fk1_Y(LEN);
     #pragma omp parallel for
     for(auto i = 0; i < LEN; i++){
-        vec_Fk1_X[i] = Hash::ThreadSafeBlockToECPoint(vec_X[i]).ThreadSafeMul(k1); // H(x_i)^k1
+        vec_Fk1_Y[i] = Hash::ThreadSafeBlockToECPoint(vec_Y[i]).ThreadSafeMul(k1); // H(x_i)^k1
     }
 
-    io.SendECPoints(vec_Fk1_X.data(), LEN); 
+    io.SendECPoints(vec_Fk1_Y.data(), LEN); 
     
-    std::cout <<"cwPRF-based mqRPMT [step 1]: Server ===> F_k1(x_i) ===> Client";
+    std::cout <<"cwPRF-based mqRPMT [step 1]: Server ===> F_k1(y_i) ===> Client";
     #ifdef POINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #endif
 
-    std::vector<ECPoint> vec_Fk2_Y(LEN); 
-    io.ReceiveECPoints(vec_Fk2_Y.data(), LEN);
+    std::vector<ECPoint> vec_Fk2_X(LEN); 
+    io.ReceiveECPoints(vec_Fk2_X.data(), LEN);
 
-    std::vector<ECPoint> vec_Fk1k2_Y(LEN); 
+    std::vector<ECPoint> vec_Fk1k2_X(LEN); 
     #pragma omp parallel for
     for(auto i = 0; i < LEN; i++){ 
-        vec_Fk1k2_Y[i] = vec_Fk2_Y[i].ThreadSafeMul(k1); 
+        vec_Fk1k2_X[i] = vec_Fk2_X[i].ThreadSafeMul(k1); 
     }
 
     // compute the indication bit vector
     std::vector<uint8_t> vec_indication_bit(LEN);
 
     if(pp.filter_type == "shuffle"){
-        std::vector<ECPoint> vec_Fk2k1_X(LEN);
-        io.ReceiveECPoints(vec_Fk2k1_X.data(), LEN);
+        std::vector<ECPoint> vec_Fk2k1_Y(LEN);
+        io.ReceiveECPoints(vec_Fk2k1_Y.data(), LEN);
         std::unordered_set<ECPoint, ECPointHash> S;
         for(auto i = 0; i < LEN; i++){
-            S.insert(vec_Fk2k1_X[i]); 
+            S.insert(vec_Fk2k1_Y[i]); 
         }
         for(auto i = 0; i < LEN; i++){
-            if(S.find(vec_Fk1k2_Y[i]) == S.end()) vec_indication_bit[i] = 0;  
+            if(S.find(vec_Fk1k2_X[i]) == S.end()) vec_indication_bit[i] = 0;  
             else vec_indication_bit[i] = 1;
         }
     }
@@ -137,12 +136,12 @@ std::vector<uint8_t> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_
         filter.ReadObject(buffer);  
         delete[] buffer; 
 
-        vec_indication_bit = filter.Contain(vec_Fk1k2_Y); 
+        vec_indication_bit = filter.Contain(vec_Fk1k2_X); 
     } 
 
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
-    std::cout << "cwPRF-mqRPMT: Sender side takes time = " 
+    std::cout << "cwPRF-mqRPMT: Server side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
     
     PrintSplitLine('-'); 
@@ -150,8 +149,7 @@ std::vector<uint8_t> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_
     return vec_indication_bit; 
 }
 
-// run by sender
-void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN) 
+void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
 {    
     PrintSplitLine('-'); 
 
@@ -159,36 +157,36 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
 
     BigInt k2 = GenRandomBigIntLessThan(order); // pick a key
 
-    std::vector<ECPoint> vec_Fk2_Y(LEN); 
+    std::vector<ECPoint> vec_Fk2_X(LEN); 
     #pragma omp parallel for
     for(auto i = 0; i < LEN; i++){
-        vec_Fk2_Y[i] = Hash::ThreadSafeBlockToECPoint(vec_Y[i]).ThreadSafeMul(k2); // H(y_i)^k2
+        vec_Fk2_X[i] = Hash::ThreadSafeBlockToECPoint(vec_X[i]).ThreadSafeMul(k2); // H(x_i)^k2
     } 
 
     // first receive incoming data
-    std::vector<ECPoint> vec_Fk1_X(LEN);
-    io.ReceiveECPoints(vec_Fk1_X.data(), LEN); // receiver Fk1_X from Server
+    std::vector<ECPoint> vec_Fk1_Y(LEN);
+    io.ReceiveECPoints(vec_Fk1_Y.data(), LEN); // receive Fk1_Y from Server
 
     // then send
-    io.SendECPoints(vec_Fk2_Y.data(), LEN);
+    io.SendECPoints(vec_Fk2_X.data(), LEN);
 
-    std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> F_k2(y_i) ===> Server"; 
+    std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> F_k2(x_i) ===> Server"; 
     #ifdef POINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #endif
 
-    std::vector<ECPoint> vec_Fk2k1_X(LEN);
+    std::vector<ECPoint> vec_Fk2k1_Y(LEN);
     #pragma omp parallel for
     for(auto i = 0; i < LEN; i++){
-        vec_Fk2k1_X[i] = vec_Fk1_X[i].ThreadSafeMul(k2); 
+        vec_Fk2k1_Y[i] = vec_Fk1_Y[i].ThreadSafeMul(k2); 
     }
 
     // permutation
     if(pp.filter_type == "shuffle"){
-        std::random_shuffle(vec_Fk2k1_X.begin(), vec_Fk2k1_X.end());
-        io.SendECPoints(vec_Fk2k1_X.data(), LEN); 
+        std::random_shuffle(vec_Fk2k1_Y.begin(), vec_Fk2k1_Y.end());
+        io.SendECPoints(vec_Fk2k1_Y.data(), LEN); 
         std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> Permutation(F_k2k1(y_i)) ===> Server"; 
         #ifdef POINT_COMPRESSED
             std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
@@ -200,9 +198,9 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
     // generate and send bloom filter
     if(pp.filter_type == "bloom"){
 
-        BloomFilter filter(vec_Fk2k1_X.size(), pp.statistical_security_parameter);
+        BloomFilter filter(vec_Fk2k1_Y.size(), pp.statistical_security_parameter);
 
-        filter.Insert(vec_Fk2k1_X);
+        filter.Insert(vec_Fk2k1_Y);
 
         size_t filter_size = filter.ObjectSize(); 
         io.SendInteger(filter_size);
@@ -210,7 +208,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
         char *buffer = new char[filter_size]; 
         filter.WriteObject(buffer);
         io.SendBytes(buffer, filter_size); 
-        std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> BloomFilter(F_k2k1(x_i)) ===> Server";
+        std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> BloomFilter(F_k2k1(y_i)) ===> Server";
         std::cout << " [" << (double)filter_size/(1024*1024) << " MB]" << std::endl;
 
         delete[] buffer; 
@@ -218,7 +216,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
     
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
-    std::cout << "cwPRF-mqRPMT: Receiver side takes time = " 
+    std::cout << "cwPRF-mqRPMT: Client side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
         
