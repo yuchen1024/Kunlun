@@ -173,7 +173,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
 	io.SendECPoints(vec_pk0.data(), LEN);
 
 	std::cout <<"Naor-Pinkas OT [step 2]: Receiver ===> vec_pk0 ===> Sender";
-    std::cout << " [" << POINT_BYTE_LEN*LEN << " bytes]" << std::endl;
+    std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
 
 	// compute Kb[i]
 	std::vector<ECPoint> vec_K(LEN); 

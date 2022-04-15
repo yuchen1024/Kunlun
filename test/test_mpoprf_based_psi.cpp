@@ -1,6 +1,3 @@
-#include <iostream>
-#include <vector>
-
 #include "../mpc/psi/psi_from_oprf.hpp"
 
 std::set<block, BlockCompare> ComputeSetDifference(std::vector<block> &vec_A, std::vector<block> &vec_B)
@@ -103,7 +100,7 @@ int main()
 	Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1); 
 
-    std::cout << " test begins >>>" << std::endl; 
+    std::cout << "mpoprf-based PSI test begins >>>" << std::endl; 
 
     PrintSplitLine('-');  
     std::cout << "generate or load public parameters and test case" << std::endl;

@@ -145,7 +145,7 @@ inline void Insert(const ElementType& element)
 template <> // specialize for string
 inline void Insert(const std::string& str)
 {
-   PlainInsert(str.data(), str.size());
+   ParallelPlainInsert(str.data(), str.size());
 }
 
 /*
@@ -239,7 +239,7 @@ inline bool Contain(const ElementType& element) const
 
 inline bool Contain(const std::string& str) const
 {
-   return PlainContain(str.data(), str.size());
+   return ParallelPlainContain(str.data(), str.size());
 }
 
 template <> // specialize for ECPoint

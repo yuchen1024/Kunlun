@@ -184,8 +184,6 @@ inline ECPoint ThreadSafeBlockToECPoint(const block &var)
     return ecp_result;
 }
 
-
-
 }
 
 #endif //_HASH_HPP_

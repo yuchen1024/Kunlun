@@ -22,6 +22,9 @@
  * @copyright  MIT license (see LICENSE file)
  *****************************************************************************/
 
+#ifndef KUNLUN_MPOPRF_HPP_
+#define KUNLUN_MPOPRF_HPP_
+
 #include "../ot/naor_pinkas_ot.hpp"
 
 namespace MPOPRF{
@@ -31,9 +34,9 @@ namespace MPOPRF{
     struct PP
     {
         size_t set_size; // n
-        size_t matric_height; // m (matric_height = set_size)
-        size_t log_matric_height; // logm
-        size_t matric_width; // w
+        size_t matrix_height; // m (matrix_height = set_size)
+        size_t log_matrix_height; // logm
+        size_t matrix_width; // w
         size_t H2_OUTPUT_LEN; // the output length \ell2 in bytes of hash function H2, H2_OUTPUT_LEN < H1_OUTPUT_LEN
         size_t BATCH_SIZE; // the batch size dealing with the set_size loops, set_size % BATCH_SIZE = 0
 
@@ -46,8 +49,8 @@ namespace MPOPRF{
     {
 	    PP pp; 
 	    pp.set_size = 1 << log_set_size;
-        pp.matric_height = pp.set_size;
-        pp.log_matric_height = log_set_size;
+        pp.matrix_height = pp.set_size;
+        pp.log_matrix_height = log_set_size;
         pp.H2_OUTPUT_LEN = ((sigma + 2*log_set_size) + 7) >> 3; // the statistical security parameter is 40
         pp.BATCH_SIZE = 512;
 
@@ -55,14 +58,14 @@ namespace MPOPRF{
         // use the agreed PRF key to initiate a common PRG seed
         pp.commonseed = PRG::SetSeed(fix_key, 0); 
 
-        // parameters of matric width for input set size in page 16 table 1
-        if (log_set_size <= 10) pp.matric_width = 591;
-        else if (log_set_size <= 12) pp.matric_width = 597;
-        else if (log_set_size <= 14) pp.matric_width = 603;
-        else if (log_set_size <= 16) pp.matric_width = 609;
-        else if (log_set_size <= 18) pp.matric_width = 615;
-        else if (log_set_size <= 20) pp.matric_width = 621;
-        else pp.matric_width = 633;
+        // parameters of matrix width for input set size in page 16 table 1
+        if (log_set_size <= 10) pp.matrix_width = 591;
+        else if (log_set_size <= 12) pp.matrix_width = 597;
+        else if (log_set_size <= 14) pp.matrix_width = 603;
+        else if (log_set_size <= 16) pp.matrix_width = 609;
+        else if (log_set_size <= 18) pp.matrix_width = 615;
+        else if (log_set_size <= 20) pp.matrix_width = 621;
+        else pp.matrix_width = 633;
         
 	    return pp; 
     }
@@ -79,9 +82,9 @@ namespace MPOPRF{
         }
 
         fout << pp.set_size; 
-        fout << pp.matric_height; 
-        fout << pp.log_matric_height; 
-        fout << pp.matric_width; 
+        fout << pp.matrix_height; 
+        fout << pp.log_matrix_height; 
+        fout << pp.matrix_width; 
         fout << pp.H2_OUTPUT_LEN; 
         fout << pp.BATCH_SIZE; 
 
@@ -103,9 +106,9 @@ namespace MPOPRF{
         }
 
         fin >> pp.set_size; 
-        fin >> pp.matric_height; 
-        fin >> pp.log_matric_height; 
-        fin >> pp.matric_width; 
+        fin >> pp.matrix_height; 
+        fin >> pp.log_matrix_height; 
+        fin >> pp.matrix_width; 
         fin >> pp.H2_OUTPUT_LEN; 
         fin >> pp.BATCH_SIZE; 
 
@@ -144,15 +147,15 @@ namespace MPOPRF{
     // hash each item in matrix_mapping_values to a H2_OUTPUT_LEN string (H2:{0,1}^w -> {0,1}^{\ell2})
     std::vector<std::string> HashInputSet(PP &pp, std::vector<std::vector<uint8_t>> &matrix_mapping_values)
     {
-        size_t matrix_width_byte = (pp.matric_width + 7) >> 3;
+        size_t matrix_width_byte = (pp.matrix_width + 7) >> 3;
 
 		std::vector<std::vector<uint8_t>> matrix_input(pp.set_size, std::vector<uint8_t>(matrix_width_byte, 0));
 
-        // convert the matrix_mapping_values[matric_width][set_size_byte] to matrix_input[set_size][matrix_width_byte]
+        // convert the matrix_mapping_values[matrix_width][set_size_byte] to matrix_input[set_size][matrix_width_byte]
         #pragma omp parallel for
 		for (auto low_index = 0; low_index < pp.set_size; low_index += pp.BATCH_SIZE)
 		{
-			for (auto i = 0; i < pp.matric_width; i++)
+			for (auto i = 0; i < pp.matrix_width; i++)
 			{
 				for (auto j = low_index; j < low_index + pp.BATCH_SIZE; j++)
 				{
@@ -182,22 +185,22 @@ namespace MPOPRF{
     {
         /* step1: base OT (page 10 figure 4 item1)*/
         PRG::Seed seed = PRG::SetSeed(fix_key, 0);
-		std::vector<uint8_t> vec_selection_bit = GenRandomBits(seed, pp.matric_width); 
+		std::vector<uint8_t> vec_selection_bit = GenRandomBits(seed, pp.matrix_width); 
 
-        std::vector<block> vec_K = NPOT::Receive(io, pp.npot_part, vec_selection_bit, pp.matric_width);
+        std::vector<block> vec_K = NPOT::Receive(io, pp.npot_part, vec_selection_bit, pp.matrix_width);
 
-        /* step2: compute matrix_C[matric_width][matric_height] (page 10 figure 4 item3)*/
-        size_t log_height_byte = (pp.log_matric_height + 7) >> 3; 
-        size_t matrix_height_byte = pp.matric_height >> 3;
+        /* step2: compute matrix_C[matrix_width][matrix_height] (page 10 figure 4 item3)*/
+        size_t log_height_byte = (pp.log_matrix_height + 7) >> 3; 
+        size_t matrix_height_byte = pp.matrix_height >> 3;
         size_t split_bucket_size = sizeof(block) / log_height_byte; // the size of each splited part
 
-        std::vector<std::vector<uint8_t>> matrix_C(pp.matric_width, std::vector<uint8_t>(pp.matric_height)); 
+        std::vector<std::vector<uint8_t>> matrix_C(pp.matrix_width, std::vector<uint8_t>(pp.matrix_height)); 
 
         PRG::Seed temp_seed[split_bucket_size];
 
-        for (auto left_index = 0; left_index < pp.matric_width; left_index += split_bucket_size)
+        for (auto left_index = 0; left_index < pp.matrix_width; left_index += split_bucket_size)
         {
-            auto right_index = left_index + split_bucket_size < pp.matric_width ? left_index + split_bucket_size : pp.matric_width;
+            auto right_index = left_index + split_bucket_size < pp.matrix_width ? left_index + split_bucket_size : pp.matrix_width;
             // bucket_size = split_bucket_size at most time, except for the last splited part
             auto bucket_size = right_index - left_index; 
 			
@@ -230,30 +233,30 @@ namespace MPOPRF{
         size_t set_size = vec_X.size();
 
         /* step1: hash each item x in vec_X to a 256-bits string and custom to a 128-bits string [G(x_0) xor x_1] */
-        size_t log_height_byte = (pp.log_matric_height + 7) >> 3;
+        size_t log_height_byte = (pp.log_matrix_height + 7) >> 3;
         size_t split_bucket_size = sizeof(block) / log_height_byte;
 
         // AES_ENC_NUM = t + 1 (t in page 17)
-        size_t AES_ENC_NUM = (pp.matric_width / split_bucket_size) + 2;
+        size_t AES_ENC_NUM = (pp.matrix_width / split_bucket_size) + 2;
         std::vector<block> aeskeys = PRG::GenRandomBlocks(pp.commonseed, AES_ENC_NUM); // AES keys used
 
         std::vector<block> hash_vec_X(set_size);
         HashInputSet(vec_X, set_size, hash_vec_X, aeskeys[0]);
 
         /* step2: compute matrix_location (computes v = F_k(H1(x)) in page 9 figure 3 item3-(b)) */
-        size_t matrix_height_byte = pp.matric_height >> 3;
-        size_t MAX_LOCATION = (1 << pp.log_matric_height) - 1;
+        size_t matrix_height_byte = pp.matrix_height >> 3;
+        size_t MAX_LOCATION = (1 << pp.log_matrix_height) - 1;
 
         // the actual size is matrix_location[w][n*logn]
 		std::vector<std::vector<uint8_t>> matrix_location(split_bucket_size, std::vector<uint8_t>(set_size * log_height_byte + sizeof(uint32_t)));
-        std::vector<std::vector<uint8_t>> matrix_mapping_values(pp.matric_width, std::vector<uint8_t>(matrix_height_byte, 0));
+        std::vector<std::vector<uint8_t>> matrix_mapping_values(pp.matrix_width, std::vector<uint8_t>(matrix_height_byte, 0));
 
         PRG::Seed seed;
 
-        // divides matrix_location into t parts from the matric_width side
-        for (auto left_index = 0; left_index < pp.matric_width; left_index += split_bucket_size)
+        // divides matrix_location into t parts from the matrix_width side
+        for (auto left_index = 0; left_index < pp.matrix_width; left_index += split_bucket_size)
         {
-            auto right_index = left_index + split_bucket_size < pp.matric_width ? left_index + split_bucket_size : pp.matric_width;
+            auto right_index = left_index + split_bucket_size < pp.matrix_width ? left_index + split_bucket_size : pp.matrix_width;
             auto bucket_size = right_index - left_index;
 
             PRG::ReSeed(seed, &aeskeys[left_index / split_bucket_size + 1], 0); 
@@ -265,7 +268,7 @@ namespace MPOPRF{
                 AES::ECBEnc(seed.aes_key, hash_vec_X.data() + low_index, pp.BATCH_SIZE);
                 
 				for (auto i = 0; i < bucket_size; i++)
-				{ // i is the index of bucket_size (matric_width)
+				{ // i is the index of bucket_size (matrix_width)
 					for (auto j = low_index; j < low_index + pp.BATCH_SIZE; j++)
 					{ // j is the index of set_size, but in the BATCH_SIZE way 
                         //when j = 0, the left log_height_byte columns of matrix_location is the result of F_k(H(x1)) 
@@ -299,17 +302,17 @@ namespace MPOPRF{
 
         /* step1: base OT (page 10 figure 4 item1) */
         PRG::Seed seed = PRG::SetSeed(fix_key, 0); 
-        std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, pp.matric_width);
-        std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, pp.matric_width);
+        std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, pp.matrix_width);
+        std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, pp.matrix_width);
 
-		NPOT::Send(io, pp.npot_part, vec_K0, vec_K1, pp.matric_width);
+		NPOT::Send(io, pp.npot_part, vec_K0, vec_K1, pp.matrix_width);
 
         /* step2: hash each item y in vec_Y to a 256-bits string and custom to a 128-bits string [G(y_0) xor y_1] */
-        size_t log_height_byte = (pp.log_matric_height + 7) >> 3; 
+        size_t log_height_byte = (pp.log_matrix_height + 7) >> 3; 
         size_t split_bucket_size = sizeof(block) / log_height_byte;
 
         // AES_ENC_NUM = t + 1 (t in page 17)
-        size_t AES_ENC_NUM = (pp.matric_width / split_bucket_size) + 2;
+        size_t AES_ENC_NUM = (pp.matrix_width / split_bucket_size) + 2;
         std::vector<block> aeskeys = PRG::GenRandomBlocks(pp.commonseed, AES_ENC_NUM); // AES keys used
 
         std::vector<block> hash_vec_Y(set_size);
@@ -320,22 +323,22 @@ namespace MPOPRF{
         ** step3: compute matrix_location[w][n*logn] = {F_k(H(y_i))} and matrix A, B, D in parallel; 
         ** F: {0,1}^{128} * {0,1}^{128} -> {0,1}^{w*logn} is implemented by applying AES ENC t times, t = ceil(w*logn/128);
         ** F_k(y) = G_k1(G_k0(y0) xor y1) || ... || G_kt(G_k0(y0) xor y1), PRG(k) -> k0 || k1 || ... || kt
-        ** matrix A, B, D, location are divided into t parts from the matric_width side;
+        ** matrix A, B, D, location are divided into t parts from the matrix_width side;
         */
-        size_t matrix_height_byte = pp.matric_height >> 3;
-        size_t MAX_LOCATION = (1 << pp.log_matric_height) - 1; 
+        size_t matrix_height_byte = pp.matrix_height >> 3;
+        size_t MAX_LOCATION = (1 << pp.log_matrix_height) - 1; 
 
         // the actual size is matrix_A[w][n]
         std::vector<std::vector<uint8_t>> matrix_A(split_bucket_size, std::vector<uint8_t>(matrix_height_byte));
 		std::vector<std::vector<uint8_t>> matrix_D(split_bucket_size, std::vector<uint8_t>(matrix_height_byte));
         // the actual size is matrix_location[w][n*logn]
 		std::vector<std::vector<uint8_t>> matrix_location(split_bucket_size, std::vector<uint8_t>(set_size * log_height_byte + sizeof(uint32_t)));
-        std::vector<std::vector<uint8_t>> matrix_mapping_values(pp.matric_width, std::vector<uint8_t>(matrix_height_byte, 0));
+        std::vector<std::vector<uint8_t>> matrix_mapping_values(pp.matrix_width, std::vector<uint8_t>(matrix_height_byte, 0));
  
         // divides into t parts
-        for (auto left_index = 0; left_index < pp.matric_width; left_index += split_bucket_size)
+        for (auto left_index = 0; left_index < pp.matrix_width; left_index += split_bucket_size)
         {
-            auto right_index = left_index + split_bucket_size < pp.matric_width ? left_index + split_bucket_size : pp.matric_width;
+            auto right_index = left_index + split_bucket_size < pp.matrix_width ? left_index + split_bucket_size : pp.matrix_width;
             auto bucket_size = right_index - left_index;
 
             PRG::ReSeed(seed, &aeskeys[left_index / split_bucket_size + 1], 0); 
@@ -348,7 +351,7 @@ namespace MPOPRF{
                 AES::ECBEnc(seed.aes_key, hash_vec_Y.data() + low_index, pp.BATCH_SIZE);
 
 				for (auto i = 0; i < bucket_size; i++)
-				{ // i is the index of bucket_size (matric_width)
+				{ // i is the index of bucket_size (matrix_width)
 					for (auto j = low_index; j < low_index + pp.BATCH_SIZE; j++)
 					{ // j is the index of set_size, , but in the BATCH_SIZE way 
                         //when j = 0, the left log_height_byte columns of matrix_location is the result of F_k(H(y1)) 
@@ -413,7 +416,7 @@ namespace MPOPRF{
         }
 
         PrintSplitLine('-');
-        std::cout << "multi-point OPRF: Receiver ===> matrix_B ===> Sender [" << (double)(pp.matric_width * matrix_height_byte)/(1 << 20) << " MB]" << std::endl;
+        std::cout << "multi-point OPRF: Receiver ===> matrix_B ===> Sender [" << (double)(pp.matrix_width * matrix_height_byte)/(1 << 20) << " MB]" << std::endl;
 
         // compute \Psi = H2(A1[v[1]] || ... || Aw[v[w]])
         std::vector<std::string> vec_oprf_values = HashInputSet(pp, matrix_mapping_values);
@@ -422,3 +425,5 @@ namespace MPOPRF{
     }
 
 }
+
+#endif

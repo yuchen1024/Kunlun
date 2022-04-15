@@ -1,3 +1,6 @@
+#ifndef KUNLUN_PSI_HPP_
+#define KUNLUN_PSI_HPP_
+
 #include "../../filter/bloom_filter.hpp"
 #include "../oprf/mp_oprf.hpp"
 
@@ -107,3 +110,5 @@ namespace OPRFPSI{
         return vec_indication_bit;
     }
 }
+
+#endif

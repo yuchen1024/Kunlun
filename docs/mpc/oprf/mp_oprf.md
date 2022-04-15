@@ -1,5 +1,5 @@
 # Multi-Point OPRF
-This is an implementation of muilti-point OPRF in [Private Set Intersection in the Internet Setting From Lightweight](https://eprint.iacr.org/2020/729).
+This is an implementation of multi-point OPRF in [Private Set Intersection in the Internet Setting From Lightweight](https://eprint.iacr.org/2020/729).
 
 ## Construction
 All identifiers are defined in namespace `MPOPRF`.
@@ -9,9 +9,9 @@ All identifiers are defined in namespace `MPOPRF`.
 struct PP
 {
     size_t set_size; // n
-    size_t matric_height; // m
-    size_t log_matric_height; // logm
-    size_t matric_width; // w
+    size_t matrix_height; // m
+    size_t log_matrix_height; // logm
+    size_t matrix_width; // w
     size_t H2_OUTPUT_LEN; // \ell2 in bytes
     size_t BATCH_SIZE;
 
@@ -21,9 +21,9 @@ struct PP
 ```
 
 * `size_t set_size`: the set size of receiver's input set.
-* `size_t matric_height`: the height of the OPRF key matrix, `matric_height = set_size`.
-* `size_t log_matric_height`: the log height of the OPRF key matrix.
-* `size_t matric_width`: the width of the OPRF key matrix.
+* `size_t matrix_height`: the height of the OPRF key matrix, `matrix_height = set_size`.
+* `size_t log_matrix_height`: the log height of the OPRF key matrix.
+* `size_t matrix_width`: the width of the OPRF key matrix.
 * `size_t H2_OUTPUT_LEN`: the output length $l_2$ in bytes of hash function H2, `H2_OUTPUT_LEN = ((sigma + 2*log_set_size) + 7) >> 3` (page 14  section 3.3).
 * `size_t BATCH_SIZE`: the batch size dealing with the `set_size` loops, it should satisfy the limit of `set_size % BATCH_SIZE = 0`.
 * `NPOT::PP npot_part`: the public parameter struct of [`NPOT`](../ot/naor_pinkas_ot.md).
