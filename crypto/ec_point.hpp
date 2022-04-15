@@ -330,8 +330,6 @@ size_t ECPoint::FastToUint64() const
     data[0] = _mm_load_si128((block *)(buffer));
     data[1] = _mm_load_si128((block *)(buffer+16));
 
-    //std::cout << "haha" << std::endl;
-
     AES::FastECBEnc(fix_aes_enc_key, &data[0], 1);
 
     data[1] = _mm_xor_si128(data[1], data[0]);
@@ -341,6 +339,7 @@ size_t ECPoint::FastToUint64() const
 
     return hashvalue; 
 }
+
 
 
 std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A)

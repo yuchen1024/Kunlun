@@ -151,7 +151,7 @@ PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
 }
 
 
-/* initialize the hashmap to accelerate decryption */
+/* initialize the hashmap to accelerate decryption over Zp */
 void Initialize(PP &pp)
 {
     std::cout << "initialize ElGamal PKE >>>" << std::endl; 
@@ -196,7 +196,7 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)
     // begin encryption
     ct.X = pp.g * r; // X = g^r
     
-    // vectormul using wNAF method, which is fast than naive ct.Y = pp.g * r + pp.h * m;  
+    // vectormul using wNAF method, which is fast than naive ct.Y = pk * r + pp.g * m;  
     std::vector<ECPoint> vec_A{pk, pp.g}; 
     std::vector<BigInt> vec_a{r, m};
     ct.Y = ECPointVectorMul(vec_A, vec_a);     // Y = pk^r g^m
@@ -227,7 +227,7 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r)
     return ct; 
 }
 
-// add an method to encrypt message in G
+// add a method to encrypt message in G
 CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
 { 
     CT ct; 

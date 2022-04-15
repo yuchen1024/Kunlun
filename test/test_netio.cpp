@@ -6,10 +6,11 @@ void test_client()
 
 	std::string message;
 
-	std::getline(std::cin, message);
+	//std::getline(std::cin, message);
+	message = "hello";  
 	client.SendString(message);
 
-	std::getline(std::cin, message);
+	message = "world";
 	client.SendString(message);
 }
 
@@ -17,8 +18,7 @@ void test_server()
 {
 	NetIO server("server", "", 8080); 
 	
-	std::string message;
-
+	std::string message(5, '0'); 
 
 	server.ReceiveString(message);
 	std::cout << "message from client: " << message << std::endl; 

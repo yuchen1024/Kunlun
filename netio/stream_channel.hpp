@@ -59,8 +59,8 @@ public:
 	void SendString(char *data, size_t LEN);
 	void ReceiveString(char *data, size_t LEN); 
 
-	void SendString(std::string str);
-	void ReceiveString(std::string str); 
+	void SendString(std::string &str);
+	void ReceiveString(std::string &str); 
 
 	template <typename T>
 	void SendInteger(const T &n);
@@ -258,14 +258,14 @@ void NetIO::ReceiveString(char *data, size_t LEN)
 	ReceiveBytes(data, LEN);  
 }
 
-void NetIO::SendString(std::string str) 
+void NetIO::SendString(std::string &str) 
 {
 	SendBytes(&str[0], str.size());
 }
 
-void NetIO::ReceiveString(std::string str) 
+void NetIO::ReceiveString(std::string &str) 
 {
-	ReceiveBytes(&str[0], str.size());  
+	ReceiveBytes(&str[0], str.size()); 
 }
 
 void NetIO::SendECPoints(const ECPoint* A, size_t LEN) 

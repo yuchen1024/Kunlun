@@ -31,6 +31,9 @@ public:
 const static size_t BUILD_TASK_NUM  = pow(2, 6);  // number of parallel task for building pre-computable table 
 const static size_t SEARCH_TASK_NUM = pow(2, 6);  // number of parallel task for search  
 
+const static size_t KEY_LEN = 8;
+
+
 ECPoint giantstep; 
 std::vector<ECPoint> vec_searchanchor;
 
@@ -80,7 +83,7 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
     for(auto i = 0; i < SLICED_BABYSTEP_NUM; i++)
     {
         hashkey = startpoint.FastToUint64(); 
-        std::memcpy(buffer+(startindex+i)*INT_BYTE_LEN, &hashkey, INT_BYTE_LEN);
+        std::memcpy(buffer+(startindex+i)*KEY_LEN, &hashkey, KEY_LEN);
         startpoint = startpoint.ThreadSafeAdd(g); 
     } 
 }
@@ -128,7 +131,7 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     }
     
     // allocate memory
-    unsigned char *buffer = new unsigned char[BABYSTEP_NUM*INT_BYTE_LEN]();
+    unsigned char *buffer = new unsigned char[BABYSTEP_NUM*KEY_LEN]();
     if(buffer == nullptr)
     {
         std::cerr << "fail to create buffer for babystep key table" << std::endl; 
@@ -172,7 +175,7 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     }
 
     // save babystep key to table
-    fout.write(reinterpret_cast<char *>(buffer), BABYSTEP_NUM*INT_BYTE_LEN); 
+    fout.write(reinterpret_cast<char *>(buffer), BABYSTEP_NUM*KEY_LEN); 
     delete[] buffer;
 
     // save giantstep aux info to table
@@ -216,7 +219,7 @@ void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM
 
     size_t FILE_BYTE_LEN = fin.tellg(); // get the size of hash table file 
 
-    size_t BABYSTEP_KEY_SIZE = BABYSTEP_NUM * INT_BYTE_LEN;  
+    size_t BABYSTEP_KEY_SIZE = BABYSTEP_NUM * KEY_LEN;  
     size_t GIANTSTEP_AUX_SIZE = (SEARCH_TASK_NUM+1) * POINT_COMPRESSED_BYTE_LEN; 
 
     if (FILE_BYTE_LEN != (BABYSTEP_KEY_SIZE+GIANTSTEP_AUX_SIZE))
@@ -230,7 +233,7 @@ void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM
     fin.seekg(0);                  // reset the file pointer to the beginning of file
 
     // construct hashmap from babystep key 
-    unsigned char* buffer = new unsigned char[BABYSTEP_NUM*INT_BYTE_LEN]();  
+    unsigned char* buffer = new unsigned char[BABYSTEP_NUM*KEY_LEN]();  
     if(buffer == nullptr)
     {
         std::cerr << "fail to create buffer for babystep table" << std::endl; 
@@ -243,11 +246,11 @@ void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM
     {
         #pragma omp section
         {
-            std::size_t hashkey; 
+            size_t hashkey; 
             /* point_to_index_map[ECn_to_String(babystep)] = i */
             for(auto i = 0; i < BABYSTEP_NUM; i++)
             {
-                std::memcpy(&hashkey, buffer+i*INT_BYTE_LEN, INT_BYTE_LEN);
+                std::memcpy(&hashkey, buffer+i*KEY_LEN, KEY_LEN);
                 encoding2index_map[hashkey] = i; 
             }
             delete[] buffer; 
@@ -278,7 +281,7 @@ bool SearchSlicedRange(size_t SEARCH_TASK_INDEX, ECPoint target, size_t &SLICED_
 {    
     // obtain relative target in sliced range
     target = target.ThreadSafeAdd(vec_searchanchor[SEARCH_TASK_INDEX]); 
-    std::size_t hashkey; 
+    size_t hashkey; 
     // giantgiant-step 
     for(giantstep_index = 0; giantstep_index < SLICED_GIANTSTEP_NUM; giantstep_index++)
     {
@@ -286,6 +289,7 @@ bool SearchSlicedRange(size_t SEARCH_TASK_INDEX, ECPoint target, size_t &SLICED_
         if(FIND == true) break; 
         // map the point to keyvalue
         hashkey = target.FastToUint64(); 
+
         // baby-step search in the hash map
         if (encoding2index_map.find(hashkey) == encoding2index_map.end())
         { 

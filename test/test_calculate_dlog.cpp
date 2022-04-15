@@ -73,7 +73,7 @@ int main()
 
     size_t RANGE_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
-    size_t TEST_NUM = 100;  
+    size_t TEST_NUM = 10000;  
 
     benchmark_dlog(RANGE_LEN, TRADEOFF_NUM, TEST_NUM);
 
