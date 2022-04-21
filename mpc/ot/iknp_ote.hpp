@@ -392,15 +392,15 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     Block::FromSparseBits(vec_selection_bit.data(), BASE_LEN, vec_selection_block.data(), BASE_LEN/128); 
 
     // begin to transmit the real message
-    block outer_C; 
+    std::vector<block> vec_outer_C(ROW_NUM);
 
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> Q_row_block(BASE_LEN/128);
         Block::FromDenseBits(Q_tanspose.data() + i*COLUMN_NUM/8, BASE_LEN, Q_row_block.data(), BASE_LEN/128);
-        outer_C = vec_m[i]^Hash::BlocksToBlock(Block::XOR(Q_row_block, vec_selection_block));
-        io.SendBlock(outer_C); 
+        vec_outer_C[i] = vec_m[i]^Hash::BlocksToBlock(Block::XOR(Q_row_block, vec_selection_block));
     }
+    io.SendBlocks(vec_outer_C.data(), ROW_NUM); 
 
     std::cout << "IKNP OTE [step 3]: Sender ===> vec_C ===> Receiver" << " [" 
               << (double)ROW_NUM*16/(1024*1024) << " MB]" << std::endl;
@@ -489,17 +489,17 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, const std::vector<uint8_t>
         std::cout << "IKNP OTE: Receiver transposes matrix T" << std::endl; 
     #endif
 
-    block outer_C; 
-    
+    std::vector<block> vec_outer_C(ROW_NUM); 
+    io.ReceiveBlocks(vec_outer_C.data(), ROW_NUM);
+
     for(auto i = 0; i < ROW_NUM; i++)
     {
-        io.ReceiveBlock(outer_C);
         std::vector<block> T_row_block(BASE_LEN/128);  
         Block::FromDenseBits(T_transpose.data()+i*COLUMN_NUM/8, BASE_LEN, T_row_block.data(), BASE_LEN/128); 
         
         // only decrypt when selection bit is 1
         if(vec_selection_bit[i] == 1){
-            vec_result.emplace_back(outer_C^Hash::BlocksToBlock(T_row_block));
+            vec_result.emplace_back(vec_outer_C[i]^Hash::BlocksToBlock(T_row_block));
         }
     }   
 

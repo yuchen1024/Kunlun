@@ -106,19 +106,37 @@ inline void ECBEnc(const Key &key, block* data, size_t BLOCK_LEN)
 }
 
 /*
-** this implementation is less modular
+** this implementation is less modular and cumbersome 
 ** but more efficient since it unroll the loop
 */
 __attribute__((target("aes,sse2")))
 inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN) 
 {
-   for (auto i = 0; i < BLOCK_LEN; i++)
-      data[i] = _mm_xor_si128(data[i], key.roundkey[0]);
-   for (auto j = 1; j < key.ROUND_NUM; j++)
-      for (auto i = 0; i < BLOCK_LEN; i++)
-         data[i] = _mm_aesenc_si128(data[i], key.roundkey[j]);
-   for (auto i = 0; i < BLOCK_LEN; i++)
-      data[i] = _mm_aesenclast_si128(data[i], key.roundkey[key.ROUND_NUM]);
+    const size_t BATCH_SIZE = 8;
+    size_t LEN = BLOCK_LEN - BLOCK_LEN % BATCH_SIZE; // ensure LEN = 8*n
+
+	block temp[BATCH_SIZE];
+
+    for (auto i = 0; i < LEN; i += BATCH_SIZE)
+    {
+        for (auto j = 0; j < BATCH_SIZE; j++)
+            temp[j] = _mm_xor_si128(data[i + j], key.roundkey[0]);
+
+        for (auto k = 1; k < key.ROUND_NUM; k++)
+            for (auto j = 0; j < BATCH_SIZE; j++)
+                temp[j] = _mm_aesenc_si128(temp[j], key.roundkey[k]);
+        
+        for (auto j = 0; j < BATCH_SIZE; j++)
+            data[i + j] = _mm_aesenclast_si128(temp[j], key.roundkey[key.ROUND_NUM]);
+    }
+
+    for (auto i = 0; i < BLOCK_LEN % BATCH_SIZE; i++)
+    {
+        data[i] = _mm_xor_si128(data[i], key.roundkey[0]);
+        for (auto k = 1; k < key.ROUND_NUM; k++)
+            data[i] = _mm_aesenc_si128(data[i], key.roundkey[k]);
+        data[i] = _mm_aesenclast_si128(data[i], key.roundkey[key.ROUND_NUM]);
+    }
 }
 
 __attribute__((target("aes,sse2")))

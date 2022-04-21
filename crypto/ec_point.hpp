@@ -277,6 +277,7 @@ void ECPoint::Print(std::string note) const
 std::string ECPoint::ToByteString() const
 {
     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];  
+    memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
 
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
     std::string result; 
@@ -564,18 +565,6 @@ ECPoint GenRandomECPoint()
 {
     return GenRandomGenerator(); 
 }
-
-
-// void SerializeECPointVector(const std::vector<ECPoint> &vec_A, std::ofstream &fout)
-// {
-//     for(auto i = 0; i < vec_A.size(); i++) fout << vec_A[i];  
-// }
-
-// void DeserializeECPointVector(std::vector<ECPoint> &vec_A, std::ifstream &fin)
-// {
-//     for(auto i = 0; i < vec_A.size(); i++) fin >> vec_A[i];  
-// }
-
 
 // print an EC Point vector
 void PrintECPointVector(const std::vector<ECPoint> &vec_A, std::string note)

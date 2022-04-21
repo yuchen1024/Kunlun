@@ -159,7 +159,38 @@ int main()
     // test_hash_to_point(TEST_NUM);
 
 
+    // std::string test_filename = "testio.txt";
+    // std::ofstream fout; 
+    // fout.open(test_filename, std::ios::binary); 
+    // if(!fout)
+    // {
+    //     std::cerr << test_filename << " open error" << std::endl;
+    //     exit(1); 
+    // }
+    // std::string okvs_type = "GarbledCuckooTable";
+    // fout << okvs_type << std::endl;
+    // fout << "COMPRESSED" << std::endl;
+    // fout.close();
     
+    // std::ifstream fin; 
+    // fin.open(test_filename, std::ios::binary); 
+    // if(!fin)
+    // {
+    //     std::cerr << test_filename << " open error" << std::endl;
+    //     exit(1); 
+    // }
+    // std::string res_type;
+    // fin >> res_type;
+    // std::string point_conversion_form;
+    // fin >> point_conversion_form;
+    // fin.close(); 
+
+    // std::cout << res_type << std::endl; 
+    // std::cout << point_conversion_form << std::endl; 
+
+    size_t LEN = pow(2, 24); 
+    unsigned char *A  = new unsigned char[LEN]();
+
 
     ECGroup_Finalize(); 
     Context_Finalize(); 

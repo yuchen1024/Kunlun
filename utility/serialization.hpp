@@ -46,7 +46,7 @@ std::ofstream &operator<<<std::string>(std::ofstream &fout, const std::string& s
 {
     size_t LEN = str.size();
     fout << LEN; 
-    fout.write(reinterpret_cast<const char *>(str.data()), str.size()); 
+    fout.write(reinterpret_cast<const char *>(&str[0]), str.size()); 
     return fout; 
 }
 

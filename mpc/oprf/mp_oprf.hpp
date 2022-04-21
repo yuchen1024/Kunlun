@@ -1,7 +1,7 @@
 
 /** @file
  *****************************************************************************
- This is an implementation of muilti-point OPRF.
+ This is an implementation of multi-point OPRF.
 
  References:
  \[CM20]: 

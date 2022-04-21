@@ -174,8 +174,6 @@ void FetchPP(PP &pp, std::string ADCP_PP_File)
     fin >> pp.MAXIMUM_COINS;  
     fin >> pp.pka; 
  
-    // std::cout << pp.MAX_RECEIVER_NUM << std::endl;
-    // std::cout << pp.SN_LEN << std::endl;
 
 
     fin >> pp.bullet_part;
@@ -269,7 +267,6 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
     PP pp; 
     SP sp; 
 
-
     pp.MAX_RECEIVER_NUM = MAX_RECEIVER_NUM; 
     if(IsPowerOfTwo(MAX_RECEIVER_NUM+1) == false){
         std::cerr << "parameters wrong: (MAX_RECEIVER_NUM+1) must be a power of 2" << std::endl; 
@@ -283,7 +280,6 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
     pp.bullet_part = Bullet::Setup(LOG_MAXIMUM_COINS, MAX_AGG_NUM); 
     
     size_t TRADEOFF_NUM = 7;
-    size_t DEC_THREAD_NUM = 8;
     pp.enc_part = TwistedElGamal::Setup(LOG_MAXIMUM_COINS, TRADEOFF_NUM);  
 
     std::tie(pp.pka, sp.ska) = TwistedElGamal::KeyGen(pp.enc_part);
@@ -294,9 +290,7 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
 /* initialize the encryption part for faster decryption */
 void Initialize(PP &pp)
 {
-    std::cout << "initialize ADCP >>>" << std::endl; 
-    // TwistedElGamal::PP enc_pp; 
-    // GetEncPPfromadcpPP(pp, enc_pp);  
+    std::cout << "initialize ADCP >>>" << std::endl;  
     TwistedElGamal::Initialize(pp.enc_part); 
     PrintSplitLine('-'); 
 }
@@ -320,7 +314,8 @@ Account CreateAccount(PP &pp, std::string identity, BigInt &init_balance, BigInt
         std::cout << identity << "'s ADCP account creation succeeds" << std::endl;
         newAcct.pk.Print("pk"); 
         std::cout << identity << "'s initial balance = "; 
-        newAcct.m.PrintInDec("m"); 
+        newAcct.m.PrintInDec(); 
+        std::cout << std::endl;
         PrintSplitLine('-'); 
     #endif 
 
@@ -339,6 +334,13 @@ bool UpdateAccount(PP &pp, ToOneCTx &newCTx, Account &Acct_sender, Account &Acct
 
     // update sender's balance
     Acct_sender.balance_ct = TwistedElGamal::HomoSub(Acct_sender.balance_ct, c_out); 
+    // ECPoint temp = Acct_sender.balance_ct.Y - Acct_sender.balance_ct.X * Acct_sender.sk.ModInverse(order); 
+    // BigInt m; 
+    // temp.Print(); 
+    // pp.enc_part.h.Print(); 
+
+    // bool SUCCESS = ShanksDLOG(pp.enc_part.h, temp, pp.enc_part.MSG_LEN, pp.enc_part.TRADEOFF_NUM, m); 
+    // m.PrintInDec("m");
     Acct_sender.m = TwistedElGamal::Dec(pp.enc_part, Acct_sender.sk, Acct_sender.balance_ct); 
     SaveAccount(Acct_sender, Acct_sender.identity+".account"); 
 

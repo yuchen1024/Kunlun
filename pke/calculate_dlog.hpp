@@ -82,7 +82,7 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
     size_t hashkey;
     for(auto i = 0; i < SLICED_BABYSTEP_NUM; i++)
     {
-        hashkey = startpoint.FastToUint64(); 
+        hashkey = startpoint.ToUint64(); 
         std::memcpy(buffer+(startindex+i)*KEY_LEN, &hashkey, KEY_LEN);
         startpoint = startpoint.ThreadSafeAdd(g); 
     } 
@@ -288,7 +288,7 @@ bool SearchSlicedRange(size_t SEARCH_TASK_INDEX, ECPoint target, size_t &SLICED_
         // giantstep search in each loop
         if(FIND == true) break; 
         // map the point to keyvalue
-        hashkey = target.FastToUint64(); 
+        hashkey = target.ToUint64(); 
 
         // baby-step search in the hash map
         if (encoding2index_map.find(hashkey) == encoding2index_map.end())
