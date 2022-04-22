@@ -178,6 +178,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     std::vector<block> vec_outer_C0(ROW_NUM); 
     std::vector<block> vec_outer_C1(ROW_NUM); 
 
+    #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> Q_row_block(BASE_LEN/128);
@@ -284,6 +285,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
         std::cout << "IKNP OTE: Receiver get "<< ROW_NUM << " pair of ciphertexts from Sender" << std::endl; 
     #endif
 
+    #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> T_row_block(BASE_LEN/128);  
@@ -394,6 +396,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     // begin to transmit the real message
     std::vector<block> vec_outer_C(ROW_NUM);
 
+    #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> Q_row_block(BASE_LEN/128);
