@@ -130,7 +130,7 @@ inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN)
             data[i + j] = _mm_aesenclast_si128(temp[j], key.roundkey[key.ROUND_NUM]);
     }
 
-    for (auto i = 0; i < BLOCK_LEN % BATCH_SIZE; i++)
+    for (auto i = LEN; i < BLOCK_LEN % BATCH_SIZE; i++)
     {
         data[i] = _mm_xor_si128(data[i], key.roundkey[0]);
         for (auto k = 1; k < key.ROUND_NUM; k++)
