@@ -151,8 +151,11 @@ public:
     // serialization and deserialization 
 
     void FromByteString(const std::string& str); 
+    void FromByteString(const unsigned char* buffer, size_t LEN); 
   
-    std::string ToByteString() const;
+    uint64_t ToUint64() const; 
+    void ToByteString(unsigned char* buffer, size_t LEN) const;
+    std::string ToByteString() const; 
     std::string ToHexString() const;
 
     friend std::ofstream &operator<<(std::ofstream &fout, const BigInt &A); 
@@ -234,18 +237,30 @@ BigInt::~BigInt(){
 
 
 // Converts this BigInt to a uint64_t value. Returns an INVALID_ARGUMENT
-uint64_t ToInt64(const BigInt& a)
+uint64_t BigInt::ToUint64() const
 {
-    uint64_t result = BN_get_word(a.bn_ptr);
+    uint64_t result = BN_get_word(this -> bn_ptr);
     return result;
 }
 
 // Creates a new BigInt object from a bytes string.
-void BigInt::FromByteString(const std::string& str)
+void BigInt::FromByteString(const std::string& str) 
 { 
     BN_bin2bn(reinterpret_cast<const unsigned char*>(str.data()), str.size(), this->bn_ptr);
 }
-  
+
+// Creates a new BigInt object from an unsigned char buffer.
+void BigInt::FromByteString(const unsigned char* buffer, size_t LEN)
+{ 
+    BN_bin2bn(buffer, LEN, this->bn_ptr);
+}
+
+// an ad-hoc implementation for fixed length conversion: default LEN = BN_BYTE_LEN
+void BigInt::ToByteString(unsigned char* buffer, size_t LEN) const
+{
+    BN_bn2bin(this->bn_ptr, buffer);
+}  
+
 std::string BigInt::ToByteString() const
 {
     size_t LEN = this->GetByteLength();

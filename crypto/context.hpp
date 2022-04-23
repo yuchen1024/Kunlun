@@ -14,7 +14,7 @@
 //#define THREAD_SAFE
 
 static size_t BN_BYTE_LEN;  // the byte length of bigint
-static size_t FIELD_BYTE_LEN;  // each scalar field element is 256 bit 
+//static size_t FIELD_BYTE_LEN;  // each scalar field element is 256 bit 
 static size_t INT_BYTE_LEN;   // the byte length of built-in size_t
 
 static BN_CTX *bn_ctx; 
