@@ -67,6 +67,9 @@ TARGET_LINK_LIBRARIES(test_naor_pinkas_ot ${OPENSSL_LIBRARIES} -lomp)
 ADD_EXECUTABLE(test_iknp_ote test/test_iknp_ote.cpp)
 TARGET_LINK_LIBRARIES(test_iknp_ote ${OPENSSL_LIBRARIES} -lomp)
 
+ADD_EXECUTABLE(test_alsz_ote test/test_alsz_ote.cpp)
+TARGET_LINK_LIBRARIES(test_alsz_ote ${OPENSSL_LIBRARIES} -lomp)
+
 # ske  
 ADD_EXECUTABLE(test_aes test/test_aes.cpp)
 TARGET_LINK_LIBRARIES(test_aes ${OPENSSL_LIBRARIES} -lomp)

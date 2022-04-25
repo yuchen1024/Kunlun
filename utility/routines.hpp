@@ -53,7 +53,6 @@ std::vector<int64_t> GenRandomIntegerVectorLessThan(size_t LEN, int64_t MAX)
     }
     return vec_result; 
 }
-
-  
+ 
 #endif
 

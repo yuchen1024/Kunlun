@@ -6,19 +6,14 @@
  * IKNP OT Extension
  * [REF] Implementation of "Extending oblivious transfers efficiently"
  * https://www.iacr.org/archive/crypto2003/27290145/27290145.pdf
- *
- * [REF] With optimization of "More Efficient Oblivious Transfer and Extensions for Faster Secure Computation"
- * https://eprint.iacr.org/2013/552.pdf
- * [REF] With optimization of "Better Concrete Security for Half-Gates Garbling (in the Multi-Instance Setting)"
- * https://eprint.iacr.org/2019/1168.pdf
  */
 
 const static size_t BASE_LEN = 128; // the default length of base OT
 
 namespace IKNPOTE{
 
-using Serialization::operator<<; 
-using Serialization::operator>>; 
+// using Serialization::operator<<; 
+// using Serialization::operator>>; 
 
 // check if the parameters are legal
 void CheckParameters(size_t ROW_NUM, size_t COLUMN_NUM)
@@ -122,7 +117,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     // first receive 1-out-2 two keys from the receiver 
     std::vector<block> vec_K = NPOT::Receive(io, pp.baseOT, vec_selection_bit, BASE_LEN);
 
-    std::cout << "IKNP OTE [step 1]: Sender obliviuosly get " << BASE_LEN 
+    std::cout << "IKNP OTE [step 1]: Sender obliviously get " << BASE_LEN 
               << " number of keys from Receiver via base OT" << std::endl; 
     /* 
     ** invoke base OT BASE_LEN times to obtain a matrix Q
@@ -138,7 +133,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     std::vector<uint8_t> Q(ROW_NUM/8 * COLUMN_NUM); // the matrix sender is going to receive from receiver (dense form)
     // for every column: prepare two column vectors
     
-    for(auto j = 0; j < BASE_LEN; j++){
+    for(auto j = 0; j < COLUMN_NUM; j++){
         // receiver the two ciphertexts
         io.ReceiveBlocks(vec_inner_C0.data(), ROW_NUM/128); 
         io.ReceiveBlocks(vec_inner_C1.data(), ROW_NUM/128);
@@ -153,25 +148,27 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
         else{
             vec_plaintext = Block::XOR(vec_inner_C1, vec_pad);   
         } 
-        Block::ToDenseBits(vec_plaintext.data(), ROW_NUM/128, Q.data()+j*ROW_NUM/8, ROW_NUM); 
+        Block::ToDenseBytes(vec_plaintext.data(), ROW_NUM/128, Q.data()+j*ROW_NUM/8, ROW_NUM/8); 
     }   
 
     #ifdef DEBUG
-        std::cout << "IKNP OTE: Sender obliviuosly get "<< BASE_LEN << " pair of ciphertexts from Receiver" << std::endl; 
+        std::cout << "IKNP OTE: Sender obliviously get "<< BASE_LEN << " pair of ciphertexts from Receiver" << std::endl; 
     #endif
     
 
     // transpose Q
-    std::vector<uint8_t> Q_tanspose(ROW_NUM/8 * COLUMN_NUM); 
-    empBitMatrixTranspose(Q.data(), ROW_NUM, COLUMN_NUM, Q_tanspose.data());  
+    std::vector<uint8_t> Q_transpose(ROW_NUM/8 * COLUMN_NUM); 
+    BitMatrixTranspose(Q.data(), ROW_NUM, COLUMN_NUM, Q_transpose.data());  
 
     #ifdef DEBUG
         std::cout << "IKNP OTE: Sender transposes matrix Q" << std::endl; 
     #endif
 
     // generate dense representation of selection block
-    std::vector<block> vec_selection_block(BASE_LEN/128); 
-    Block::FromSparseBits(vec_selection_bit.data(), BASE_LEN, vec_selection_block.data(), BASE_LEN/128); 
+    std::vector<block> vec_selection_block(COLUMN_NUM/128); 
+    Block::FromSparseBytes(vec_selection_bit.data(), COLUMN_NUM, vec_selection_block.data(), COLUMN_NUM/128); 
+    
+    Block::PrintBlocks(vec_selection_block); 
 
 
     // begin to transmit the real message
@@ -181,9 +178,9 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
-        std::vector<block> Q_row_block(BASE_LEN/128);
+        std::vector<block> Q_row_block(COLUMN_NUM/128);
 
-        Block::FromDenseBits(Q_tanspose.data() + i*COLUMN_NUM/8, BASE_LEN, Q_row_block.data(), BASE_LEN/128); 
+        Block::FromDenseBytes(Q_transpose.data() + i*COLUMN_NUM/8, COLUMN_NUM/8, Q_row_block.data(), COLUMN_NUM/128); 
         
         vec_outer_C0[i] = vec_m0[i]^Hash::BlocksToBlock(Q_row_block); 
         vec_outer_C1[i] = vec_m1[i]^Hash::BlocksToBlock(Block::XOR(Q_row_block, vec_selection_block));
@@ -219,20 +216,21 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
     
     std::vector<uint8_t> T = PRG::GenRandomBitMatrix(seed, ROW_NUM, COLUMN_NUM); 
 
-    std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, BASE_LEN);
-    std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, BASE_LEN);
+    std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, COLUMN_NUM);
+    std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, COLUMN_NUM);
 
     // Phase 1: first transmit 1-out-2 key to sender
-    // NPOT::PP pp_npot; 
-    // GetNPOTPP(pp, pp_npot); 
-    NPOT::Send(io, pp.baseOT, vec_K0, vec_K1, BASE_LEN); 
+    
+    NPOT::Send(io, pp.baseOT, vec_K0, vec_K1, COLUMN_NUM); 
 
     std::cout << "IKNP OTE [step 1]: Receiver transmits "<< BASE_LEN << " number of keys to Sender via base OT" 
               << std::endl; 
 
     // generate the dense representation of selection block
     std::vector<block> vec_selection_block(ROW_NUM/128); 
-    Block::FromSparseBits(vec_selection_bit.data(), ROW_NUM, vec_selection_block.data(), ROW_NUM/128); 
+    Block::FromSparseBytes(vec_selection_bit.data(), ROW_NUM, vec_selection_block.data(), ROW_NUM/128); 
+
+    Block::PrintBlocks(vec_selection_block); 
 
 
     // Phase 1: transmit ciphertext a.k.a. random shared matrix
@@ -247,7 +245,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
     for(auto j = 0; j < COLUMN_NUM; j++)
     {
         // set vec_m0 be the jth column of T
-        Block::FromDenseBits(T.data() + j*ROW_NUM/8, ROW_NUM, vec_m0.data(), ROW_NUM/128); 
+        Block::FromDenseBytes(T.data() + j*ROW_NUM/8, ROW_NUM/8, vec_m0.data(), ROW_NUM/128); 
 
         // set vec_m1 = vec_m0 xor selection_block
         vec_m1 = Block::XOR(vec_m0, vec_selection_block);
@@ -268,7 +266,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
               << " [" << (double)COLUMN_NUM*ROW_NUM/128*16*2/(1024*1024) << " MB]" << std::endl; 
     
     std::vector<uint8_t> T_transpose(ROW_NUM/8 * COLUMN_NUM); 
-    empBitMatrixTranspose(T.data(), ROW_NUM, COLUMN_NUM, T_transpose.data());
+    BitMatrixTranspose(T.data(), ROW_NUM, COLUMN_NUM, T_transpose.data());
 
     #ifdef DEBUG
         std::cout << "IKNP OTE: Receiver transposes matrix T" << std::endl; 
@@ -288,8 +286,8 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
     #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
-        std::vector<block> T_row_block(BASE_LEN/128);  
-        Block::FromDenseBits(T_transpose.data()+i*COLUMN_NUM/8, BASE_LEN, T_row_block.data(), BASE_LEN/128); 
+        std::vector<block> T_row_block(COLUMN_NUM/128);  
+        Block::FromDenseBytes(T_transpose.data()+i*COLUMN_NUM/8, COLUMN_NUM/8, T_row_block.data(), COLUMN_NUM/128); 
         
         if(vec_selection_bit[i] == 0){
             vec_result[i] = vec_outer_C0[i]^Hash::BlocksToBlock(T_row_block); 
@@ -373,7 +371,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
         else{
             vec_plaintext = Block::XOR(vec_inner_C1, vec_pad);   
         } 
-        Block::ToDenseBits(vec_plaintext.data(), ROW_NUM/128, Q.data()+j*ROW_NUM/8, ROW_NUM); 
+        Block::ToDenseBytes(vec_plaintext.data(), ROW_NUM/128, Q.data()+j*ROW_NUM/8, ROW_NUM/8); 
     }   
 
     #ifdef DEBUG
@@ -391,7 +389,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
 
     // generate dense representation of selection block
     std::vector<block> vec_selection_block(BASE_LEN/128); 
-    Block::FromSparseBits(vec_selection_bit.data(), BASE_LEN, vec_selection_block.data(), BASE_LEN/128); 
+    Block::FromSparseBytes(vec_selection_bit.data(), COLUMN_NUM, vec_selection_block.data(), COLUMN_NUM/128); 
 
     // begin to transmit the real message
     std::vector<block> vec_outer_C(ROW_NUM);
@@ -399,8 +397,8 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
-        std::vector<block> Q_row_block(BASE_LEN/128);
-        Block::FromDenseBits(Q_tanspose.data() + i*COLUMN_NUM/8, BASE_LEN, Q_row_block.data(), BASE_LEN/128);
+        std::vector<block> Q_row_block(COLUMN_NUM/128);
+        Block::FromDenseBytes(Q_tanspose.data() + i*COLUMN_NUM/8, COLUMN_NUM/8, Q_row_block.data(), COLUMN_NUM/128);
         vec_outer_C[i] = vec_m[i]^Hash::BlocksToBlock(Block::XOR(Q_row_block, vec_selection_block));
     }
     io.SendBlocks(vec_outer_C.data(), ROW_NUM); 
@@ -440,17 +438,17 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, const std::vector<uint8_t>
     
     std::vector<uint8_t> T = PRG::GenRandomBitMatrix(seed, ROW_NUM, COLUMN_NUM); 
 
-    std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, BASE_LEN);
-    std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, BASE_LEN);
+    std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, COLUMN_NUM);
+    std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, COLUMN_NUM);
 
     // Phase 1: first transmit 1-out-2 key to sender
-    NPOT::Send(io, pp.baseOT, vec_K0, vec_K1, BASE_LEN); 
+    NPOT::Send(io, pp.baseOT, vec_K0, vec_K1, COLUMN_NUM); 
 
-    std::cout << "IKNP OTE [step 1]: Receiver sends "<< BASE_LEN << " number of keys to Sender via base OT" << std::endl; 
+    std::cout << "IKNP OTE [step 1]: Receiver sends "<< COLUMN_NUM << " number of keys to Sender via base OT" << std::endl; 
 
     // generate the dense representation of selection block
     std::vector<block> vec_selection_block(ROW_NUM/128); 
-    Block::FromSparseBits(vec_selection_bit.data(), ROW_NUM, vec_selection_block.data(), ROW_NUM/128); 
+    Block::FromSparseBytes(vec_selection_bit.data(), ROW_NUM, vec_selection_block.data(), ROW_NUM/128); 
 
 
     // Phase 1: transmit ciphertext a.k.a. random shared matrix
@@ -465,7 +463,7 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, const std::vector<uint8_t>
     for(auto j = 0; j < COLUMN_NUM; j++)
     {
         // set vec_m0 be the jth column of T
-        Block::FromDenseBits(T.data() + j*ROW_NUM/8, ROW_NUM, vec_m0.data(), ROW_NUM/128); 
+        Block::FromDenseBytes(T.data() + j*ROW_NUM/8, ROW_NUM/8, vec_m0.data(), ROW_NUM/128); 
 
         // set vec_m1 = vec_m0 xor selection_block
         vec_m1 = Block::XOR(vec_m0, vec_selection_block);
@@ -497,8 +495,8 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, const std::vector<uint8_t>
 
     for(auto i = 0; i < ROW_NUM; i++)
     {
-        std::vector<block> T_row_block(BASE_LEN/128);  
-        Block::FromDenseBits(T_transpose.data()+i*COLUMN_NUM/8, BASE_LEN, T_row_block.data(), BASE_LEN/128); 
+        std::vector<block> T_row_block(COLUMN_NUM/128);  
+        Block::FromDenseBytes(T_transpose.data()+i*COLUMN_NUM/8, COLUMN_NUM/8, T_row_block.data(), COLUMN_NUM/128); 
         
         // only decrypt when selection bit is 1
         if(vec_selection_bit[i] == 1){

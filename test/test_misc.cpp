@@ -188,9 +188,12 @@ int main()
     // std::cout << res_type << std::endl; 
     // std::cout << point_conversion_form << std::endl; 
 
-    size_t LEN = pow(2, 24); 
-    unsigned char *A  = new unsigned char[LEN]();
+    // block a = Block::zero_block; 
+    // Block::PrintBlock(a); 
+    // Block::SetBitN(a, 63); 
+    // Block::PrintBlock(a); 
 
+    // Block::Calc2ToTheN(23);
 
     ECGroup_Finalize(); 
     Context_Finalize(); 

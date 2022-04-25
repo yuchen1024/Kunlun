@@ -102,10 +102,6 @@ public:
 
     void Print(std::string note) const;  
 
-    // void Serialize(std::ofstream &fout); 
-
-    // void Deserialize(std::ifstream &fin);
-
     std::string ToByteString() const;
     std::string ThreadSafeToByteString() const; 
     std::string ToHexString() const;
@@ -259,20 +255,6 @@ void ECPoint::Print(std::string note) const
     this->Print(); 
 }
 
-// void ECPoint::Serialize(std::ofstream &fout)
-// {
-//     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
-//     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
-//     // write to outfile
-//     fout.write(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
-// }
-
-// void ECPoint::Deserialize(std::ifstream &fin)
-// {
-//     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
-//     fin.read(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
-//     EC_POINT_oct2point(group, this->point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
-// }
 
 std::string ECPoint::ToByteString() const
 {

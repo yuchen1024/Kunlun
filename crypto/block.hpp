@@ -31,21 +31,39 @@ const block select_mask[2] = {zero_block, all_one_block};
 // copy from https://devblogs.microsoft.com/oldnewthing/20141222-00/?p=43333
 // Setting, clearing, and testing a single bit in an SSE register
 
-block Calc2ToTheN(int N)
+
+// generate a mask block with n-th bit = 1
+block GenMaskBlock(size_t n)
 {
-    block onesLowHigh = _mm_slli_epi64(all_one_block, 63);
-    block single_one_block = N < 64 ? _mm_srli_si128(onesLowHigh, 64 / 8) : _mm_slli_si128(onesLowHigh, 64 / 8);
-    return _mm_slli_epi64(single_one_block, N & 63);
+    block onesLowHigh = _mm_slli_epi64(all_one_block, 63);    
+    block singleOne = n < 64 ? _mm_slli_si128(onesLowHigh, 64/8) : _mm_srli_si128(onesLowHigh, 64 / 8);
+    return _mm_srli_epi64(singleOne, n & 63);
 }
 
-block SetBitN(block value, int N)
+// set the n-th bit = 1
+block SetBit(block a, size_t n)
 {
-    return _mm_or_si128(value, Calc2ToTheN(N));
+    return _mm_or_si128(a, GenMaskBlock(n));
 }
 
-block ClearBitN(block value, int N)
+// set the n-th bit = 0
+block ClearBit(block a, size_t n)
 {
-    return _mm_andnot_si128(value, Calc2ToTheN(N));
+    return _mm_andnot_si128(a, GenMaskBlock(n));
+}
+
+inline std::vector<block> AND(std::vector<block> &vec_a, std::vector<block> &vec_b) 
+{
+    if(vec_a.size()!=vec_b.size()){
+        std::cerr << "XORBlocks: size does not match" << std::endl;
+    }
+    size_t LEN = vec_a.size();
+
+	std::vector<block> vec_result(LEN); 
+    for (auto i = 0; i < LEN; i++){
+        vec_result[i] = _mm_and_si128(vec_a[i], vec_b[i]);
+    }
+    return vec_result;
 }
 
 
@@ -114,8 +132,6 @@ bool IsLessThan(const block &a, const block &b)
     return less > greater;
 }
 
-
-
 inline std::string ToString(const block &var)
 {
     std::string str(16, '0'); 
@@ -124,38 +140,51 @@ inline std::string ToString(const block &var)
 }
 
 // shrink 128*n bits into n block
-inline void FromSparseBits(const uint8_t *bool_data, size_t BIT_LEN, block *block_data,  size_t BLOCK_LEN) 
+inline void FromSparseBytes(const uint8_t *byte_data, size_t BYTE_LEN, block *block_data,  size_t BLOCK_LEN) 
 {
-    if(BIT_LEN != BLOCK_LEN*128){
-        std::cerr << "BitsToBlocks: size does not match" << std::endl; 
+    if(BYTE_LEN != BLOCK_LEN*128){
+        std::cerr << "FromSparseBytes: size does not match" << std::endl; 
     }
 
     for(auto i = 0; i < BLOCK_LEN; i++){ 
         block_data[i] = zero_block; 
         for(auto j = 0; j < 128; j++)
-            if(bool_data[128*i+j] == 1){ 
-                SetBitN(block_data[i], j); 
+            if(byte_data[128*i+j]){ 
+                block_data[i] = SetBit(block_data[i], j); 
             }    
     } 
 }
 
-// shrink 128*n bits into n block
-inline void FromDenseBits(const uint8_t *bool_data, size_t BIT_LEN, block *block_data,  size_t BLOCK_LEN) 
+// each byte stores 8 bits: shrink 128*n bits = 16*n bytes into n block
+inline void FromDenseBytes(const uint8_t *bool_data, size_t BYTE_LEN, block *block_data,  size_t BLOCK_LEN) 
 {
-    if(BIT_LEN != BLOCK_LEN*128){
-        std::cerr << "BitsToBlocks: size does not match" << std::endl; 
+    if(BYTE_LEN != BLOCK_LEN*16){
+        std::cerr << "FromDenseBytes: size does not match" << std::endl; 
     }
-    memcpy(block_data, bool_data, BIT_LEN/8); 
+    memcpy(block_data, bool_data, BYTE_LEN); 
 }
 
 // expand n block to 128*n bits stored in dense form 
-inline void ToDenseBits(const block *block_data, size_t BLOCK_LEN, uint8_t *bool_data, size_t BIT_LEN) 
+inline void ToDenseBytes(const block *block_data, size_t BLOCK_LEN, uint8_t *byte_data, size_t BYTE_LEN) 
 {
-    if(BIT_LEN != BLOCK_LEN*128){
-        std::cerr << "BlocksToBits: size does not match" << std::endl; 
+    if(BYTE_LEN != BLOCK_LEN*16){
+        std::cerr << "ToDenseBytes: size does not match" << std::endl; 
+    }
+    memcpy(byte_data, block_data, BYTE_LEN); 
+}
+
+// expand a block matrix to byte array in dense form
+inline void ToDenseBytes(std::vector<std::vector<block>> &A, uint8_t *byte_data, size_t BYTE_LEN)
+{ 
+    size_t n = A.size(); 
+    size_t m = A[0].size(); 
+    if(m*n*16 != BYTE_LEN){
+        std::cerr << "ToDenseBytes: matrix and vector size do not match" << std::endl; 
     }
 
-    memcpy(bool_data, block_data, BIT_LEN/8); 
+    for(auto i = 0; i < n; i++){
+        Block::ToDenseBytes(A[i].data(), m, byte_data+i*16*m, 16*m);
+    }
 }
 
 inline void PrintBlock(const block &a) 
@@ -163,8 +192,8 @@ inline void PrintBlock(const block &a)
     std::cout << std::hex;
     uint64_t* data = (uint64_t*)&a;
 
-    std::cout << std::setw(16) << std::setfill('0') << data[1]
-        << std::setw(16) << std::setfill('0') << data[0];
+    std::cout << std::setw(16) << std::setfill('0') << data[1] << " ";
+    std::cout << std::setw(16) << std::setfill('0') << data[0] << std::endl;
 
     std::cout << std::dec << std::setw(0);
 }

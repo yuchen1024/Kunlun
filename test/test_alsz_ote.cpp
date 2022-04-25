@@ -1,6 +1,6 @@
 //#define DEBUG
 
-#include "../mpc/ot/iknp_ote.hpp"
+#include "../mpc/ot/alsz_ote.hpp"
 
 struct OTETestcase{
     size_t EXTEND_LEN; 
@@ -99,19 +99,19 @@ int main()
     ECGroup_Initialize(NID_X9_62_prime256v1); 
 
 	PrintSplitLine('-'); 
-    std::cout << "IKNP OTE test begins >>>" << std::endl; 
+    std::cout << "ALSZ OTE test begins >>>" << std::endl; 
     PrintSplitLine('-'); 
     std::cout << "generate or load public parameters and test case" << std::endl;
 
     // generate pp (must be same for both server and client)
-    std::string pp_filename = "iknpote.pp"; 
-    IKNPOTE::PP pp; 
+    std::string pp_filename = "alszote.pp"; 
+    ALSZOTE::PP pp; 
     if(!FileExist(pp_filename)){
-        pp = IKNPOTE::Setup(); 
-        IKNPOTE::SavePP(pp, pp_filename); 
+        pp = ALSZOTE::Setup(); 
+        ALSZOTE::SavePP(pp, pp_filename); 
     }
     else{
-        IKNPOTE::FetchPP(pp, pp_filename);
+        ALSZOTE::FetchPP(pp, pp_filename);
     }
 
     // set instance size
@@ -119,7 +119,7 @@ int main()
     std::cout << "LENGTH of OTE = " << EXTEND_LEN << std::endl; 
 
     // generate or fetch test case
-    std::string testcase_filename = "iknpote.testcase"; 
+    std::string testcase_filename = "alszote.testcase"; 
     OTETestcase testcase; 
     if(!FileExist(testcase_filename)){
         testcase = GenTestCase(EXTEND_LEN); 
@@ -135,47 +135,43 @@ int main()
 	
     if(party == "sender"){
         NetIO server_io("server", "", 8080); 
-	    IKNPOTE::Send(server_io, pp, testcase.vec_m0, testcase.vec_m1, EXTEND_LEN);
+	    ALSZOTE::Send(server_io, pp, testcase.vec_m0, testcase.vec_m1, EXTEND_LEN);
     }
 
     if(party == "receiver"){
         NetIO client_io("client", "127.0.0.1", 8080); 
 
-	    std::vector<block> vec_result_prime = IKNPOTE::Receive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
+	    std::vector<block> vec_result_prime = ALSZOTE::Receive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
         
         if(Block::Compare(testcase.vec_result, vec_result_prime) == true){
-			std::cout << "two-sided IKNP OTE test succeeds" << std::endl; 
+			std::cout << "two-sided ALSZ OTE test succeeds" << std::endl; 
 		} 
         else{
-            std::cout << "two-sided IKNP OTE test fails" << std::endl;  
+            std::cout << "two-sided ALSZ OTE test fails" << std::endl;  
         }
     }
 
-    if(party == "one-sided sender"){
-        NetIO server_io("server", "", 8080); 
-	    IKNPOTE::OnesidedSend(server_io, pp, testcase.vec_m, EXTEND_LEN);
-    }
+    // if(party == "one-sided sender"){
+    //     NetIO server_io("server", "", 8080); 
+	//     ALSZOTE::OnesidedSend(server_io, pp, testcase.vec_m, EXTEND_LEN);
+    // }
 
-    if(party == "one-sided receiver"){
-        NetIO client_io("client", "127.0.0.1", 8080); 
-	    std::vector<block> vec_one_sided_result_prime = 
-        IKNPOTE::OnesidedReceive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
+    // if(party == "one-sided receiver"){
+    //     NetIO client_io("client", "127.0.0.1", 8080); 
+	//     std::vector<block> vec_one_sided_result_prime = 
+    //     ALSZOTE::OnesidedReceive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
         
-        if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_prime) == true){
-			std::cout << "one-sided IKNP OTE test succeeds" << std::endl; 
-		} 
-        else{
-            std::cout << "one-sided IKNP OTE test fails" << std::endl;  
-        }
-    }
+    //     if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_prime) == true){
+	// 		std::cout << "one-sided ALSZ OTE test succeeds" << std::endl; 
+	// 	} 
+    //     else{
+    //         std::cout << "one-sided ALSZ OTE test fails" << std::endl;  
+    //     }
+    // }
 	
     PrintSplitLine('-'); 
-    std::cout << "IKNP OTE test ends >>>" << std::endl; 
+    std::cout << "ALSZ OTE test ends >>>" << std::endl; 
     PrintSplitLine('-'); 
-
-
-
-    
 
 	ECGroup_Finalize(); 
     Context_Finalize();   

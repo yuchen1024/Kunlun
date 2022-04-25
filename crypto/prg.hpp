@@ -86,7 +86,7 @@ std::vector<block> GenRandomBlocks(Seed &seed, size_t LEN)
 
 
 // generate a random byte vector
-std::vector<uint8_t> GenRandomBytes(Seed &seed, size_t LEN) {
+std::vector<uint8_t> GenRandomBytes(Seed &seed, size_t LEN){
     std::vector<uint8_t> vec_b(LEN);
     size_t BLOCK_LEN = size_t(ceil(double(LEN)/16)); 
     std::vector<block> vec_a(BLOCK_LEN); 
