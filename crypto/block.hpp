@@ -41,15 +41,15 @@ block GenMaskBlock(size_t n)
 }
 
 // set the n-th bit = 1
-block SetBit(block a, size_t n)
+void SetBit(block a, size_t n)
 {
-    return _mm_or_si128(a, GenMaskBlock(n));
+    a = _mm_or_si128(a, GenMaskBlock(n));
 }
 
 // set the n-th bit = 0
-block ClearBit(block a, size_t n)
+void ClearBit(block a, size_t n)
 {
-    return _mm_andnot_si128(a, GenMaskBlock(n));
+    a = _mm_andnot_si128(a, GenMaskBlock(n));
 }
 
 inline std::vector<block> AND(std::vector<block> &vec_a, std::vector<block> &vec_b) 
@@ -148,14 +148,15 @@ inline void FromSparseBytes(const uint8_t *byte_data, size_t BYTE_LEN, block *bl
 
     for(auto i = 0; i < BLOCK_LEN; i++){ 
         block_data[i] = zero_block; 
-        for(auto j = 0; j < 128; j++)
-            if(byte_data[128*i+j]){ 
-                block_data[i] = SetBit(block_data[i], j); 
+        for(auto j = 0, k = 127; j < 128 && k >= 0; j++, k--)
+            if(byte_data[128*i + j]){ 
+                SetBit(block_data[i], k); 
             }    
     } 
 }
 
 // each byte stores 8 bits: shrink 128*n bits = 16*n bytes into n block
+[[deprecated("perhaps won't be used")]]
 inline void FromDenseBytes(const uint8_t *bool_data, size_t BYTE_LEN, block *block_data,  size_t BLOCK_LEN) 
 {
     if(BYTE_LEN != BLOCK_LEN*16){
@@ -165,6 +166,7 @@ inline void FromDenseBytes(const uint8_t *bool_data, size_t BYTE_LEN, block *blo
 }
 
 // expand n block to 128*n bits stored in dense form 
+[[deprecated("perhaps won't be used")]]
 inline void ToDenseBytes(const block *block_data, size_t BLOCK_LEN, uint8_t *byte_data, size_t BYTE_LEN) 
 {
     if(BYTE_LEN != BLOCK_LEN*16){
@@ -174,6 +176,7 @@ inline void ToDenseBytes(const block *block_data, size_t BLOCK_LEN, uint8_t *byt
 }
 
 // expand a block matrix to byte array in dense form
+[[deprecated("perhaps won't be used")]]
 inline void ToDenseBytes(std::vector<std::vector<block>> &A, uint8_t *byte_data, size_t BYTE_LEN)
 { 
     size_t n = A.size(); 
@@ -272,62 +275,19 @@ public:
 };
 
 
-
-
-// copy from https://github.com/mischasan/sse2/blob/master/ssebmx.c
-#define INP(x,y) inp[(x)*ncols/8 + (y)/8]
-#define OUT(x,y) out[(y)*nrows/8 + (x)/8]
-
-//#define II (i)
-#define II (i ^ 7)
-
-void BitMatrixTranspose(uint8_t const *inp, int nrows, int ncols, uint8_t *out)
-{
-// II is defined as either (i) or (i ^ 7)
-    int rr, cc, i, h;
-    union { __m128i x; uint8_t b[16]; } tmp;
-
-    // Do the main body in [16 x 8] blocks:
-    for (rr = 0; rr <= nrows - 16; rr += 16)
-        for (cc = 0; cc < ncols; cc += 8) {
-            for (i = 0; i < 16; ++i)
-                tmp.b[i] = INP(rr + II, cc);
-            for (i = 8; i--; tmp.x = _mm_slli_epi64(tmp.x, 1))
-                *(uint16_t*)&OUT(rr, cc + II) = _mm_movemask_epi8(tmp.x);
-        }
-
-    if (rr == nrows) return;
-
-    // The remainder is a row of [8 x 16]* [8 x 8]?
-
-    //  Do the [8 x 16] blocks:
-    for (cc = 0; cc <= ncols - 16; cc += 16) {
-        for (i = 8; i--;)
-            tmp.b[i] = h = *(uint16_t const*)&INP(rr + II, cc),
-            tmp.b[i + 8] = h >> 8;
-        for (i = 8; i--; tmp.x = _mm_slli_epi64(tmp.x, 1))
-            OUT(rr, cc + II) = h = _mm_movemask_epi8(tmp.x),
-            OUT(rr, cc + II + 8) = h >> 8;
-    }
-
-    if (cc == ncols) return;
-
-    //  Do the remaining [8 x 8] block:
-    for (i = 8; i--;)
-        tmp.b[i] = INP(rr + II, cc);
-    for (i = 8; i--; tmp.x = _mm_slli_epi64(tmp.x, 1))
-        OUT(rr, cc + II) = _mm_movemask_epi8(tmp.x);
-}
-
-
 // Modified from
 // https://mischasan.wordpress.com/2011/10/03/the-full-sse2-bit-matrix-transpose-routine/
 // with inner most loops changed to _mm_set_epi8 and _mm_set_epi16
+
+/*
+** ROW_NUM and COLUMN_NUM are meant for matrix after transpose 
+** When call this function, be aware of the order of ROW_NUM and COLUMN_NUM 
+*/
 #define INPUT(x, y) input[(x)*COLUMN_NUM/8 + (y)/8]
 #define OUTPUT(x, y) output[(y)*ROW_NUM/8 + (x)/8]
 
 __attribute__((target("sse2")))
-inline void empBitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64_t COLUMN_NUM, uint8_t *output) 
+inline void BitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64_t COLUMN_NUM, uint8_t *output) 
 {
     int rr, cc, i, h;
     union { __m128i x; uint8_t b[16];} tmp;
@@ -389,6 +349,8 @@ inline void empBitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64
     for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
         OUTPUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
 }
+
+
 
 #endif
 

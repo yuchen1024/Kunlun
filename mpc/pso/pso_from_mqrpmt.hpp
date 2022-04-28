@@ -27,7 +27,7 @@ struct PP
 PP Setup(std::string filter_type, size_t lambda)
 {
     PP pp; 
-    pp.ote_part = IKNPOTE::Setup(); 
+    pp.ote_part = IKNPOTE::Setup(128); 
     pp.mqrpmt_part = cwPRFmqRPMT::Setup(filter_type, lambda); 
     return pp; 
 }

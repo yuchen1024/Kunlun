@@ -106,8 +106,9 @@ int main()
     // generate pp (must be same for both server and client)
     std::string pp_filename = "alszote.pp"; 
     ALSZOTE::PP pp; 
+    size_t BASE_LEN = 128; 
     if(!FileExist(pp_filename)){
-        pp = ALSZOTE::Setup(); 
+        pp = ALSZOTE::Setup(BASE_LEN); 
         ALSZOTE::SavePP(pp, pp_filename); 
     }
     else{
@@ -115,7 +116,7 @@ int main()
     }
 
     // set instance size
-    size_t EXTEND_LEN = size_t(pow(2, 7)); 
+    size_t EXTEND_LEN = size_t(pow(2, 20)); 
     std::cout << "LENGTH of OTE = " << EXTEND_LEN << std::endl; 
 
     // generate or fetch test case

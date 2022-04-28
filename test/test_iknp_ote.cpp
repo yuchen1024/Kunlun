@@ -106,8 +106,9 @@ int main()
     // generate pp (must be same for both server and client)
     std::string pp_filename = "iknpote.pp"; 
     IKNPOTE::PP pp; 
+    size_t BASE_LEN = 128;
     if(!FileExist(pp_filename)){
-        pp = IKNPOTE::Setup(); 
+        pp = IKNPOTE::Setup(BASE_LEN); 
         IKNPOTE::SavePP(pp, pp_filename); 
     }
     else{
@@ -115,7 +116,7 @@ int main()
     }
 
     // set instance size
-    size_t EXTEND_LEN = size_t(pow(2, 7)); 
+    size_t EXTEND_LEN = size_t(pow(2, 20)); 
     std::cout << "LENGTH of OTE = " << EXTEND_LEN << std::endl; 
 
     // generate or fetch test case
@@ -174,8 +175,6 @@ int main()
     PrintSplitLine('-'); 
 
 
-
-    
 
 	ECGroup_Finalize(); 
     Context_Finalize();   

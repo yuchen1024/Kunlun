@@ -108,22 +108,32 @@ std::vector<uint8_t> GenRandomBits(Seed &seed, size_t LEN)
     return vec_b; 
 }
 
-// generate a random bit matrix (store in column vector)
-std::vector<uint8_t> GenRandomBitMatrix(Seed &seed, size_t ROW_NUM, size_t COLUMN_NUM)
-{
-    assert(ROW_NUM % 8 == 0 && COLUMN_NUM % 8 == 0);
-    // pack 8-bits into 1-byte
-    std::vector<uint8_t> T(ROW_NUM/8 * COLUMN_NUM); 
+// generate a random bit matrix (store in column vector order) in byte form
+// std::vector<uint8_t> GenRandomBitMatrix(Seed &seed, size_t ROW_NUM, size_t COLUMN_NUM)
+// {
+//     assert(ROW_NUM % 8 == 0 && COLUMN_NUM % 8 == 0);
+//     // pack 8-bits into 1-byte
+//     std::vector<uint8_t> T(ROW_NUM/8 * COLUMN_NUM); 
 
-    std::vector<uint8_t> random_column(ROW_NUM/8); 
+//     std::vector<uint8_t> random_column(ROW_NUM/8); 
     
-    // generate the i-th row
-    for(auto i = 0; i < COLUMN_NUM; i++){
-        random_column = GenRandomBytes(seed, ROW_NUM/8);
-        memcpy(T.data()+i*ROW_NUM/8, random_column.data(), ROW_NUM/8);  
-    }
+//     // generate the i-th row
+//     for(auto i = 0; i < COLUMN_NUM; i++){
+//         random_column = GenRandomBytes(seed, ROW_NUM/8);
+//         memcpy(T.data()+i*ROW_NUM/8, random_column.data(), ROW_NUM/8);  
+//     }
+//     return T;
+// }
+
+// generate a random bit matrix (store in column vector order) in block form
+std::vector<block> GenRandomBitMatrix(Seed &seed, size_t ROW_NUM, size_t COLUMN_NUM)
+{
+    assert(ROW_NUM % 128 == 0 && COLUMN_NUM % 8 == 0);
+    std::vector<block> T = GenRandomBlocks(seed, ROW_NUM/128 * COLUMN_NUM);
     return T;
-}
+} 
+
+
 }
 
 bool CompareBits(std::vector<uint8_t>& vec_A,  std::vector<uint8_t>& vec_B)
