@@ -152,23 +152,23 @@ int main()
         }
     }
 
-    // if(party == "one-sided sender"){
-    //     NetIO server_io("server", "", 8080); 
-	//     ALSZOTE::OnesidedSend(server_io, pp, testcase.vec_m, EXTEND_LEN);
-    // }
+    if(party == "one-sided sender"){
+        NetIO server_io("server", "", 8080); 
+	    ALSZOTE::OnesidedSend(server_io, pp, testcase.vec_m, EXTEND_LEN);
+    }
 
-    // if(party == "one-sided receiver"){
-    //     NetIO client_io("client", "127.0.0.1", 8080); 
-	//     std::vector<block> vec_one_sided_result_prime = 
-    //     ALSZOTE::OnesidedReceive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
+    if(party == "one-sided receiver"){
+        NetIO client_io("client", "127.0.0.1", 8080); 
+	    std::vector<block> vec_one_sided_result_prime = 
+        ALSZOTE::OnesidedReceive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
         
-    //     if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_prime) == true){
-	// 		std::cout << "one-sided ALSZ OTE test succeeds" << std::endl; 
-	// 	} 
-    //     else{
-    //         std::cout << "one-sided ALSZ OTE test fails" << std::endl;  
-    //     }
-    // }
+        if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_prime) == true){
+			std::cout << "one-sided ALSZ OTE test succeeds" << std::endl; 
+		} 
+        else{
+            std::cout << "one-sided ALSZ OTE test fails" << std::endl;  
+        }
+    }
 	
     PrintSplitLine('-'); 
     std::cout << "ALSZ OTE test ends >>>" << std::endl; 

@@ -113,7 +113,7 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
     std::vector<uint8_t> vec_sender_selection_bit = PRG::GenRandomBits(seed, COLUMN_NUM); 
 
     // first receive 1-out-2 two keys from the receiver 
-    std::vector<block> vec_inner_K = NPOT::Receive(io, pp.baseOT, vec_sender_selection_bit, COLUMN_NUM);
+    std::vector<block> vec_Q_seed = NPOT::Receive(io, pp.baseOT, vec_sender_selection_bit, COLUMN_NUM);
 
     std::cout << "ALSZ OTE [step 1]: Sender obliviously get " << BASE_LEN 
               << " number of keys from Receiver via base OT" << std::endl; 
@@ -121,23 +121,6 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
     ** invoke base OT COLUMN_NUM times to obtain a matrix Q
     ** after receiving the key, begin to receive ciphertexts
     */
-
-    std::vector<block> vec_inner_C0(COLUMN_NUM); // 1 block = 128 bits 
-    std::vector<block> vec_inner_C1(COLUMN_NUM); 
-
-    io.ReceiveBlocks(vec_inner_C0.data(), COLUMN_NUM); 
-    io.ReceiveBlocks(vec_inner_C1.data(), COLUMN_NUM);
-
-    std::vector<block> vec_Q_seed(COLUMN_NUM); 
-
-    for(auto j = 0; j < COLUMN_NUM; j++){
-        if(vec_sender_selection_bit[j] == 0){
-            vec_Q_seed[j] = vec_inner_C0[j]^vec_inner_K[j];
-        }
-        else{
-            vec_Q_seed[j] = vec_inner_C1[j]^vec_inner_K[j];
-        } 
-    } 
 
     #ifdef DEBUG
         std::cout << "ALSZ OTE: Sender obliviuosly get "<< COLUMM_NUM << " number of seeds from Receiver" << std::endl; 
@@ -205,6 +188,13 @@ void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
     // generate two seed vector to generate two pseudorandom matrixs 
     std::vector<block> vec_T_seed = PRG::GenRandomBlocks(seed, COLUMN_NUM);
     std::vector<block> vec_U_seed = PRG::GenRandomBlocks(seed, COLUMN_NUM);
+
+
+    // Phase 1: first transmit 1-out-2 key to sender    
+    NPOT::Send(io, pp.baseOT, vec_T_seed, vec_U_seed, COLUMN_NUM); 
+
+    std::cout << "ALSZ OTE [step 1]: Receiver transmits "<< COLUMN_NUM << " number of seeds to Sender via base OT" 
+              << std::endl; 
     
     // block representations for matrix T, U, and P: size = ROW_NUM/128*COLUMN_NUM
     std::vector<block> T, T_column; 
@@ -220,46 +210,21 @@ void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
         PRG::ReSeed(seed, &vec_T_seed[j], 0); 
         T_column = PRG::GenRandomBlocks(seed, ROW_NUM/128);
         T.insert(T.end(), T_column.begin(), T_column.end()); 
+
         PRG::ReSeed(seed, &vec_U_seed[j], 0);  
         U_column = PRG::GenRandomBlocks(seed, ROW_NUM/128); 
         U.insert(U.end(), T_column.begin(), T_column.end()); 
         
         // generate adjust matrix  
-        std::vector<block> P_column = Block::XOR(T_column, U_column);
-        P_column = Block::XOR(P_column, vec_receiver_selection_block); 
+        std::vector<block> P_column = Block::XOR(T_column, U_column); // T xor U
+        P_column = Block::XOR(P_column, vec_receiver_selection_block); // T xor U xor selection_block
         P.insert(P.end(), P_column.begin(), P_column.end()); 
     } 
-
-    // generate COLUMN pair of keys
-    std::vector<block> vec_inner_K0 = PRG::GenRandomBlocks(seed, COLUMN_NUM);
-    std::vector<block> vec_inner_K1 = PRG::GenRandomBlocks(seed, COLUMN_NUM);
-
-    // Phase 1: first transmit 1-out-2 key to sender    
-    NPOT::Send(io, pp.baseOT, vec_inner_K0, vec_inner_K1, COLUMN_NUM); 
-
-    std::cout << "ALSZ OTE [step 1]: Receiver transmits "<< COLUMN_NUM << " number of keys to Sender via base OT" 
-              << std::endl; 
-
-    // Phase 1: transmit ciphertext a.k.a. encypted seeds
-    std::vector<block> vec_inner_C0(COLUMN_NUM); 
-    std::vector<block> vec_inner_C1(COLUMN_NUM); 
-    
-    #pragma omp parallel for
-    for(auto j = 0; j < COLUMN_NUM; j++)
-    {
-        vec_inner_C0[j] = vec_inner_K0[j]^vec_T_seed[j]; 
-        vec_inner_C1[j] = vec_inner_K1[j]^vec_U_seed[j];
-    }   
-    io.SendBlocks(vec_inner_C0.data(), COLUMN_NUM); 
-    io.SendBlocks(vec_inner_C1.data(), COLUMN_NUM);
-
-    std::cout << "ALSZ OTE [step 2]: Receiver ===> 2*" << COLUMN_NUM << " encrypted seeds ===> Sender" 
-              << " [" << (double)COLUMN_NUM*16*2/(1024*1024) << " MB]" << std::endl;
 
     // Phase 1: transmit adjust bit matrix
     io.SendBlocks(P.data(), ROW_NUM/128*COLUMN_NUM); 
     std::cout << "ALSZ OTE [step 2]: Receiver ===> " << ROW_NUM << "*" << COLUMN_NUM << " adjust bit matrix ===> Sender" 
-              << " [" << (double)ROW_NUM/128*COLUMN_NUM*16*2/(1024*1024) << " MB]" << std::endl;
+              << " [" << (double)ROW_NUM/128*COLUMN_NUM*16/(1024*1024) << " MB]" << std::endl;
 
     // transpose T
     std::vector<block> T_transpose(ROW_NUM/128 * COLUMN_NUM); 
@@ -367,6 +332,103 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver
 
     #ifdef DEBUG
         std::cout << "ALSZ OTE: Receiver obtains "<< ROW_NUM << " number of messages from Sender" << std::endl; 
+        PrintSplitLine('*'); 
+    #endif
+
+    std::cout << "ALSZ OTE [step 4]: Receiver obtains vec_m" << std::endl; 
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "ALSZ OTE: Receiver side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
+
+    return vec_result; 
+}
+
+
+void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LEN) 
+{
+    /* 
+    ** Phase 1: sender obtains a random secret sharing matrix Q of matrix T from receiver
+    ** T is a tall matrix, to use base OT oblivious transfer T, 
+    ** the sender first oblivous get 1-out-of-2 keys per column from receiver via base OT 
+    ** receiver then send encryptions of the original column and shared column under k0 and k1 respectively
+    */	
+    PrintSplitLine('-'); 
+	
+    auto start_time = std::chrono::steady_clock::now(); 
+
+    // prepare to receive a secret shared matrix Q from receiver
+    size_t ROW_NUM = EXTEND_LEN;   // set row num as the length of long ot
+    size_t COLUMN_NUM = pp.BASE_LEN;  // set column num as the length of base ot
+
+    CheckParameters(ROW_NUM, COLUMN_NUM); 
+
+    std::vector<block> vec_K0(ROW_NUM);
+    std::vector<block> vec_K1(ROW_NUM); 
+
+    PrepareSend(io, pp, vec_K0, vec_K1, EXTEND_LEN); 
+
+    // begin to transmit the real message
+    std::vector<block> vec_outer_C(ROW_NUM);
+
+    #pragma omp parallel for
+    for(auto i = 0; i < ROW_NUM; i++)
+    {
+        vec_outer_C[i] = vec_m[i]^vec_K1[i];
+    }
+    io.SendBlocks(vec_outer_C.data(), ROW_NUM); 
+
+    std::cout << "ALSZ OTE [step 3]: Sender ===> vec_C ===> Receiver" << " [" 
+              << (double)ROW_NUM*16/(1024*1024) << " MB]" << std::endl;
+
+    #ifdef DEBUG
+        std::cout << "ALSZ OTE: Sender sends "<< ROW_NUM << " number of ciphertexts to receiver" << std::endl; 
+        PrintSplitLine('*'); 
+    #endif
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "ALSZ OTE: Sender side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
+}
+
+// the size of vec_result = the hamming weight of vec_selection_bit
+std::vector<block> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver_selection_bit, size_t EXTEND_LEN)
+{
+    PrintSplitLine('-'); 
+
+    std::vector<block> vec_result;
+    // first act as sender in base OT
+    
+    auto start_time = std::chrono::steady_clock::now(); 
+    // prepare a random matrix
+    size_t ROW_NUM = EXTEND_LEN; 
+    size_t COLUMN_NUM = pp.BASE_LEN; 
+
+    CheckParameters(ROW_NUM, COLUMN_NUM); 
+
+    std::vector<block> vec_K(ROW_NUM); 
+
+    PrepareReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
+
+    std::vector<block> vec_outer_C(ROW_NUM); 
+    io.ReceiveBlocks(vec_outer_C.data(), ROW_NUM);
+
+    for(auto i = 0; i < ROW_NUM; i++)
+    {        
+        // only decrypt when selection bit is 1
+        if(vec_receiver_selection_bit[i] == 1){
+            vec_result.emplace_back(vec_outer_C[i]^vec_K[i]);
+        }
+    }   
+
+    #ifdef DEBUG
+        std::cout << "ALSZ OTE: Receiver get "<< ROW_NUM << " number of ciphertexts from Sender" << std::endl; 
         PrintSplitLine('*'); 
     #endif
 

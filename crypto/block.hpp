@@ -41,13 +41,13 @@ block GenMaskBlock(size_t n)
 }
 
 // set the n-th bit = 1
-void SetBit(block a, size_t n)
+void SetBit(block &a, size_t n)
 {
     a = _mm_or_si128(a, GenMaskBlock(n));
 }
 
 // set the n-th bit = 0
-void ClearBit(block a, size_t n)
+void ClearBit(block &a, size_t n)
 {
     a = _mm_andnot_si128(a, GenMaskBlock(n));
 }
@@ -155,40 +155,6 @@ inline void FromSparseBytes(const uint8_t *byte_data, size_t BYTE_LEN, block *bl
     } 
 }
 
-// each byte stores 8 bits: shrink 128*n bits = 16*n bytes into n block
-[[deprecated("perhaps won't be used")]]
-inline void FromDenseBytes(const uint8_t *bool_data, size_t BYTE_LEN, block *block_data,  size_t BLOCK_LEN) 
-{
-    if(BYTE_LEN != BLOCK_LEN*16){
-        std::cerr << "FromDenseBytes: size does not match" << std::endl; 
-    }
-    memcpy(block_data, bool_data, BYTE_LEN); 
-}
-
-// expand n block to 128*n bits stored in dense form 
-[[deprecated("perhaps won't be used")]]
-inline void ToDenseBytes(const block *block_data, size_t BLOCK_LEN, uint8_t *byte_data, size_t BYTE_LEN) 
-{
-    if(BYTE_LEN != BLOCK_LEN*16){
-        std::cerr << "ToDenseBytes: size does not match" << std::endl; 
-    }
-    memcpy(byte_data, block_data, BYTE_LEN); 
-}
-
-// expand a block matrix to byte array in dense form
-[[deprecated("perhaps won't be used")]]
-inline void ToDenseBytes(std::vector<std::vector<block>> &A, uint8_t *byte_data, size_t BYTE_LEN)
-{ 
-    size_t n = A.size(); 
-    size_t m = A[0].size(); 
-    if(m*n*16 != BYTE_LEN){
-        std::cerr << "ToDenseBytes: matrix and vector size do not match" << std::endl; 
-    }
-
-    for(auto i = 0; i < n; i++){
-        Block::ToDenseBytes(A[i].data(), m, byte_data+i*16*m, 16*m);
-    }
-}
 
 inline void PrintBlock(const block &a) 
 {
