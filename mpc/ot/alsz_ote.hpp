@@ -128,29 +128,36 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
 
     std::vector<block> Q; // size = ROW_NUM/128 * COLUMN_NUM 
     std::vector<block> Q_column; // size = ROW_NUM/128
+    // compute Q
     for(auto j = 0; j < COLUMN_NUM; j++){
         PRG::ReSeed(seed, &vec_Q_seed[j], 0); 
         Q_column = PRG::GenRandomBlocks(seed, ROW_NUM/128);
         Q.insert(Q.end(), Q_column.begin(), Q_column.end());  
     } 
-    // transpose Q 
-    std::vector<block> Q_transpose(ROW_NUM/128 * COLUMN_NUM);  
-    BitMatrixTranspose((uint8_t*)Q.data(), COLUMN_NUM, ROW_NUM, (uint8_t*)Q_transpose.data());  
 
     std::vector<block> P(ROW_NUM/128 * COLUMN_NUM); 
     io.ReceiveBlocks(P.data(), ROW_NUM/128 * COLUMN_NUM); 
-    // transpose P
-    std::vector<block> P_transpose(ROW_NUM/128 * COLUMN_NUM); 
-    BitMatrixTranspose((uint8_t*)P.data(), COLUMN_NUM, ROW_NUM, (uint8_t*)P_transpose.data());  
+
+    // compute Q XOR sP
+    for(auto i = 0; i < COLUMN_NUM; i++){
+        for(auto j = 0; j < ROW_NUM/128; j++){
+            if(vec_sender_selection_bit[i] == 1){
+                Q[i*ROW_NUM/128 + j] ^= P[i*ROW_NUM/128 + j]; 
+            }
+        }
+    }
+
+    // transpose Q XOR sP 
+    std::vector<block> Q_transpose(ROW_NUM/128 * COLUMN_NUM);  
+    BitMatrixTranspose((uint8_t*)Q.data(), COLUMN_NUM, ROW_NUM, (uint8_t*)Q_transpose.data());  
 
     #ifdef DEBUG
-        std::cout << "ALSZ OTE: Sender transposes matrix Q and P" << std::endl; 
+        std::cout << "ALSZ OTE: Sender transposes matrix Q XOR sP" << std::endl; 
     #endif
 
     // generate dense representation of selection block
     std::vector<block> vec_sender_selection_block(COLUMN_NUM/128); 
     Block::FromSparseBytes(vec_sender_selection_bit.data(), COLUMN_NUM, vec_sender_selection_block.data(), COLUMN_NUM/128); 
-
 
     // begin to transmit the real message
     std::vector<block> vec_outer_C0(ROW_NUM); 
@@ -161,14 +168,6 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
     {
         std::vector<block> Q_row(COLUMN_NUM/128);
         memcpy(Q_row.data(), Q_transpose.data()+i*COLUMN_NUM/128, COLUMN_NUM/8); 
-
-        std::vector<block> P_row(COLUMN_NUM/128);
-        memcpy(P_row.data(), P_transpose.data()+i*COLUMN_NUM/128, COLUMN_NUM/8); 
-        
-        std::vector<block> vec_adjust = Block::AND(vec_sender_selection_block, P_row); 
-
-        Q_row = Block::XOR(Q_row, vec_adjust);
-
         vec_K0[i] = Hash::BlocksToBlock(Q_row); 
         vec_K1[i] = Hash::BlocksToBlock(Block::XOR(Q_row, vec_sender_selection_block));
     }

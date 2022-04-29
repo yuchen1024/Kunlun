@@ -166,53 +166,6 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
     }
 }
 
-void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec_m1, size_t EXTEND_LEN) 
-{
-    /* 
-    ** Phase 1: sender obtains a random secret sharing matrix Q of matrix T from receiver
-    ** T is a tall matrix, to use base OT oblivious transfer T, 
-    ** the sender first oblivous get 1-out-of-2 keys per column from receiver via base OT 
-    ** receiver then send encryptions of the original column and shared column under k0 and k1 respectively
-    */
-    PrintSplitLine('-'); 
-	auto start_time = std::chrono::steady_clock::now(); 
-
-    // prepare to receive a secret shared matrix Q from receiver
-    size_t ROW_NUM = EXTEND_LEN;   // set row num as the length of long ot
-    size_t COLUMN_NUM = pp.BASE_LEN;  // set column num as the length of base ot
-
-    CheckParameters(ROW_NUM, COLUMN_NUM); 
-    
-    std::vector<block> vec_K0(ROW_NUM); 
-    std::vector<block> vec_K1(ROW_NUM);
-
-    PrepareSend(io, pp, vec_K0, vec_K1, EXTEND_LEN);  
-
-    // begin to transmit the real message
-    std::vector<block> vec_outer_C0(ROW_NUM); 
-    std::vector<block> vec_outer_C1(ROW_NUM); 
-
-    #pragma omp parallel for
-    for(auto i = 0; i < ROW_NUM; i++)
-    {       
-        vec_outer_C0[i] = vec_m0[i]^vec_K0[i]; 
-        vec_outer_C1[i] = vec_m1[i]^vec_K1[i];
-    }
-    io.SendBlocks(vec_outer_C0.data(), ROW_NUM); 
-    io.SendBlocks(vec_outer_C1.data(), ROW_NUM);
-
-    
-    std::cout << "IKNP OTE [step 3]: Sender ===> (vec_C0, vec_C1) ===> Receiver" 
-              << "[" << (double)ROW_NUM*16*2/(1024*1024) << " MB]" << std::endl; 
-
-    auto end_time = std::chrono::steady_clock::now(); 
-    auto running_time = end_time - start_time;
-    std::cout << "IKNP OTE: Sender side takes time " 
-              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-    PrintSplitLine('-'); 
-}
-
-
 void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K, 
                     std::vector<uint8_t> &vec_receiver_selection_bit, size_t EXTEND_LEN)
 {
@@ -285,6 +238,53 @@ void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
         vec_K[i] = Hash::BlocksToBlock(T_row); 
     }  
 }
+
+void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec_m1, size_t EXTEND_LEN) 
+{
+    /* 
+    ** Phase 1: sender obtains a random secret sharing matrix Q of matrix T from receiver
+    ** T is a tall matrix, to use base OT oblivious transfer T, 
+    ** the sender first oblivous get 1-out-of-2 keys per column from receiver via base OT 
+    ** receiver then send encryptions of the original column and shared column under k0 and k1 respectively
+    */
+    PrintSplitLine('-'); 
+	auto start_time = std::chrono::steady_clock::now(); 
+
+    // prepare to receive a secret shared matrix Q from receiver
+    size_t ROW_NUM = EXTEND_LEN;   // set row num as the length of long ot
+    size_t COLUMN_NUM = pp.BASE_LEN;  // set column num as the length of base ot
+
+    CheckParameters(ROW_NUM, COLUMN_NUM); 
+    
+    std::vector<block> vec_K0(ROW_NUM); 
+    std::vector<block> vec_K1(ROW_NUM);
+
+    PrepareSend(io, pp, vec_K0, vec_K1, EXTEND_LEN);  
+
+    // begin to transmit the real message
+    std::vector<block> vec_outer_C0(ROW_NUM); 
+    std::vector<block> vec_outer_C1(ROW_NUM); 
+
+    #pragma omp parallel for
+    for(auto i = 0; i < ROW_NUM; i++)
+    {       
+        vec_outer_C0[i] = vec_m0[i]^vec_K0[i]; 
+        vec_outer_C1[i] = vec_m1[i]^vec_K1[i];
+    }
+    io.SendBlocks(vec_outer_C0.data(), ROW_NUM); 
+    io.SendBlocks(vec_outer_C1.data(), ROW_NUM);
+
+    
+    std::cout << "IKNP OTE [step 3]: Sender ===> (vec_C0, vec_C1) ===> Receiver" 
+              << "[" << (double)ROW_NUM*16*2/(1024*1024) << " MB]" << std::endl; 
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "IKNP OTE: Sender side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+    PrintSplitLine('-'); 
+}
+
 
 std::vector<block> Receive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver_selection_bit, size_t EXTEND_LEN)
 {
