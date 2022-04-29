@@ -3,6 +3,7 @@
 
 #include "../rpmt/cwprf_mqrpmt.hpp"
 #include "../ot/iknp_ote.hpp"
+#include "../ot/alsz_ote.hpp"
 
 
 /*
@@ -20,14 +21,14 @@ namespace PSO{
 
 struct PP
 {
-    IKNPOTE::PP ote_part; 
+    ALSZOTE::PP ote_part; 
     cwPRFmqRPMT::PP mqrpmt_part; 
 };
 
 PP Setup(std::string filter_type, size_t lambda)
 {
     PP pp; 
-    pp.ote_part = IKNPOTE::Setup(128); 
+    pp.ote_part = ALSZOTE::Setup(128); 
     pp.mqrpmt_part = cwPRFmqRPMT::Setup(filter_type, lambda); 
     return pp; 
 }
@@ -77,7 +78,7 @@ namespace PSI{
 
         std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
         // get the intersection X \cup Y via one-sided OT from receiver
-        std::vector<block> vec_intersection = IKNPOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, LEN); 
+        std::vector<block> vec_intersection = ALSZOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, LEN); 
     
         auto end_time = std::chrono::steady_clock::now(); 
         auto running_time = end_time - start_time;
@@ -96,7 +97,7 @@ namespace PSI{
 
         std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
         // get the intersection X \cup Y via one-sided OT from receiver
-        IKNPOTE::OnesidedSend(io, pp.ote_part, vec_Y, LEN); 
+        ALSZOTE::OnesidedSend(io, pp.ote_part, vec_Y, LEN); 
     
         auto end_time = std::chrono::steady_clock::now(); 
         auto running_time = end_time - start_time;
@@ -123,7 +124,7 @@ namespace PSU{
 
         std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
         // get the intersection X \cup Y via one-sided OT from receiver
-        std::vector<block> vec_Y_diff = IKNPOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, LEN); 
+        std::vector<block> vec_Y_diff = ALSZOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, LEN); 
         std::vector<block> vec_union = vec_X; 
         for(auto i = 0; i < vec_Y_diff.size(); i++)
             vec_union.emplace_back(vec_Y_diff[i]);
@@ -147,7 +148,7 @@ namespace PSU{
         
         std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
         // get the intersection X \cup Y via one-sided OT from receiver
-        IKNPOTE::OnesidedSend(io, pp.ote_part, vec_Y, LEN); 
+        ALSZOTE::OnesidedSend(io, pp.ote_part, vec_Y, LEN); 
     
         auto end_time = std::chrono::steady_clock::now(); 
         auto running_time = end_time - start_time;
@@ -213,7 +214,7 @@ namespace PSIsum{
         std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_X, LEN);
 
         std::cout << "Phase 2: execute OTe >>>" << std::endl;
-        std::vector<block> vec_result = IKNPOTE::Receive(io, pp.ote_part, vec_indication_bit, LEN); 
+        std::vector<block> vec_result = ALSZOTE::Receive(io, pp.ote_part, vec_indication_bit, LEN); 
         std::vector<int64_t> vec_v(LEN); 
         int64_t SUM = 0; 
         for(auto i = 0; i < LEN; i++){
@@ -262,7 +263,7 @@ namespace PSIsum{
         }
 
         std::cout << "Phase 2: execute OTe >>>" << std::endl;
-        IKNPOTE::Send(io, pp.ote_part, vec_m0, vec_m1, LEN); 
+        ALSZOTE::Send(io, pp.ote_part, vec_m0, vec_m1, LEN); 
     
         auto end_time = std::chrono::steady_clock::now(); 
         auto running_time = end_time - start_time;

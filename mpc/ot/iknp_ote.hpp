@@ -10,11 +10,14 @@
 
 namespace IKNPOTE{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 // check if the parameters are legal
 void CheckParameters(size_t ROW_NUM, size_t COLUMN_NUM)
 {
     if (ROW_NUM%128 != 0 || COLUMN_NUM%128 != 0){
-        std::cerr << "row or colulumn parameters is wrong" << std::endl;
+        std::cerr << "row or column parameters is wrong" << std::endl;
         exit(EXIT_FAILURE); 
     }
 }
@@ -92,7 +95,7 @@ void FetchPP(PP &pp, std::string pp_filename)
 }
 
 
-void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<block> &vec_K1, size_t EXTEND_LEN)
+void RandomSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<block> &vec_K1, size_t EXTEND_LEN)
 {
     // prepare to receive a secret shared matrix Q from receiver
     PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG seed
@@ -166,7 +169,7 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
     }
 }
 
-void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K, 
+void RandomReceive(NetIO &io, PP &pp, std::vector<block> &vec_K, 
                     std::vector<uint8_t> &vec_receiver_selection_bit, size_t EXTEND_LEN)
 {
     PRG::Seed seed = PRG::SetSeed(nullptr, 0); 
@@ -259,7 +262,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     std::vector<block> vec_K0(ROW_NUM); 
     std::vector<block> vec_K1(ROW_NUM);
 
-    PrepareSend(io, pp, vec_K0, vec_K1, EXTEND_LEN);  
+    RandomSend(io, pp, vec_K0, vec_K1, EXTEND_LEN);  
 
     // begin to transmit the real message
     std::vector<block> vec_outer_C0(ROW_NUM); 
@@ -300,7 +303,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver
 
     // first act as sender in base OT
     std::vector<block> vec_K(ROW_NUM); 
-    PrepareReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN); 
+    RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN); 
 
     // receiver real payloads
     std::vector<block> vec_outer_C0(ROW_NUM); 
@@ -363,7 +366,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     std::vector<block> vec_K0(ROW_NUM);
     std::vector<block> vec_K1(ROW_NUM); 
 
-    PrepareSend(io, pp, vec_K0, vec_K1, EXTEND_LEN); 
+    RandomSend(io, pp, vec_K0, vec_K1, EXTEND_LEN); 
 
     // begin to transmit the real message
     std::vector<block> vec_outer_C(ROW_NUM);
@@ -408,7 +411,7 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_
 
     std::vector<block> vec_K(ROW_NUM); 
 
-    PrepareReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
+    RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
 
     std::vector<block> vec_outer_C(ROW_NUM); 
     io.ReceiveBlocks(vec_outer_C.data(), ROW_NUM);
