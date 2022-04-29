@@ -143,6 +143,15 @@ block BlocksToBlock(const std::vector<block> &input_block)
     return _mm_load_si128((__m128i*)&output[0]);
 }
 
+block FastBlocksToBlock(const std::vector<block> input_block)
+{
+    std::vector<block> vec_B = input_block;
+    // use CBC-AES hash: digest lies in the last block
+    size_t BLOCK_NUM = vec_B.size();
+    AES::CBCEnc(fix_aes_enc_key, vec_B.data(), BLOCK_NUM);  
+    return vec_B[BLOCK_NUM-1];
+}
+
 
 // fast block to ecpoint hash using low level openssl code
 inline ECPoint BlockToECPoint(const block &var)

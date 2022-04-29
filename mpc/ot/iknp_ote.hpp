@@ -161,8 +161,8 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
     for(auto i = 0; i < ROW_NUM; i++){
         std::vector<block> Q_row_block(COLUMN_NUM/128);
         memcpy(Q_row_block.data(), Q_transpose.data()+i*COLUMN_NUM/128, COLUMN_NUM/8); 
-        vec_K0[i] = Hash::BlocksToBlock(Q_row_block); 
-        vec_K1[i] = Hash::BlocksToBlock(Block::XOR(Q_row_block, vec_sender_selection_block));
+        vec_K0[i] = Hash::FastBlocksToBlock(Q_row_block); 
+        vec_K1[i] = Hash::FastBlocksToBlock(Block::XOR(Q_row_block, vec_sender_selection_block));
     }
 }
 
@@ -235,7 +235,7 @@ void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
         std::vector<block> T_row(COLUMN_NUM/128);  
         memcpy(T_row.data(), T_transpose.data()+i*COLUMN_NUM/128, COLUMN_NUM/8); 
         
-        vec_K[i] = Hash::BlocksToBlock(T_row); 
+        vec_K[i] = Hash::FastBlocksToBlock(T_row); 
     }  
 }
 

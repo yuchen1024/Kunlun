@@ -126,24 +126,24 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
         std::cout << "ALSZ OTE: Sender obliviuosly get "<< COLUMM_NUM << " number of seeds from Receiver" << std::endl; 
     #endif
 
-    std::vector<block> Q; // size = ROW_NUM/128 * COLUMN_NUM 
+    std::vector<block> Q(ROW_NUM/128*COLUMN_NUM); // size = ROW_NUM/128 * COLUMN_NUM 
     std::vector<block> Q_column; // size = ROW_NUM/128
     // compute Q
     for(auto j = 0; j < COLUMN_NUM; j++){
         PRG::ReSeed(seed, &vec_Q_seed[j], 0); 
         Q_column = PRG::GenRandomBlocks(seed, ROW_NUM/128);
-        Q.insert(Q.end(), Q_column.begin(), Q_column.end());  
+        //Q.insert(Q.end(), Q_column.begin(), Q_column.end());
+        memcpy(Q.data()+ROW_NUM/128*j, Q_column.data(), ROW_NUM/8);   
     } 
 
     std::vector<block> P(ROW_NUM/128 * COLUMN_NUM); 
     io.ReceiveBlocks(P.data(), ROW_NUM/128 * COLUMN_NUM); 
 
     // compute Q XOR sP
-    //#pragma omp parallel for
-    for(auto i = 0; i < COLUMN_NUM; i++){
-        for(auto j = 0; j < ROW_NUM/128; j++){
-            if(vec_sender_selection_bit[i] == 1){
-                Q[i*ROW_NUM/128 + j] ^= P[i*ROW_NUM/128 + j]; 
+    for(auto j = 0; j < COLUMN_NUM; j++){
+        for(auto i = 0; i < ROW_NUM/128; i++){
+            if(vec_sender_selection_bit[j] == 1){
+                Q[j*ROW_NUM/128 + i] ^= P[j*ROW_NUM/128 + i]; 
             }
         }
     }
@@ -164,13 +164,13 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
     std::vector<block> vec_outer_C0(ROW_NUM); 
     std::vector<block> vec_outer_C1(ROW_NUM); 
 
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> Q_row(COLUMN_NUM/128);
         memcpy(Q_row.data(), Q_transpose.data()+i*COLUMN_NUM/128, COLUMN_NUM/8); 
-        vec_K0[i] = Hash::BlocksToBlock(Q_row); 
-        vec_K1[i] = Hash::BlocksToBlock(Block::XOR(Q_row, vec_sender_selection_block));
+        vec_K0[i] = Hash::FastBlocksToBlock(Q_row); 
+        vec_K1[i] = Hash::FastBlocksToBlock(Block::XOR(Q_row, vec_sender_selection_block));
     }
 }
 
@@ -197,9 +197,10 @@ void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
               << std::endl; 
     
     // block representations for matrix T, U, and P: size = ROW_NUM/128*COLUMN_NUM
-    std::vector<block> T, T_column; 
-    std::vector<block> U, U_column; 
-    std::vector<block> P, P_column; 
+    std::vector<block> T(ROW_NUM/128*COLUMN_NUM);
+    std::vector<block> P(ROW_NUM/128*COLUMN_NUM);
+
+    std::vector<block> T_column, U_column, P_column; 
 
     // generate the dense representation of selection block
     std::vector<block> vec_receiver_selection_block(ROW_NUM/128); 
@@ -209,16 +210,17 @@ void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
         // generate two random matrixs
         PRG::ReSeed(seed, &vec_T_seed[j], 0); 
         T_column = PRG::GenRandomBlocks(seed, ROW_NUM/128);
-        T.insert(T.end(), T_column.begin(), T_column.end()); 
+        //T.insert(T.end(), T_column.begin(), T_column.end()); 
+        memcpy(T.data()+ROW_NUM/128*j, T_column.data(), ROW_NUM/8); 
 
         PRG::ReSeed(seed, &vec_U_seed[j], 0);  
         U_column = PRG::GenRandomBlocks(seed, ROW_NUM/128); 
-        U.insert(U.end(), T_column.begin(), T_column.end()); 
         
         // generate adjust matrix  
         std::vector<block> P_column = Block::XOR(T_column, U_column); // T xor U
         P_column = Block::XOR(P_column, vec_receiver_selection_block); // T xor U xor selection_block
-        P.insert(P.end(), P_column.begin(), P_column.end()); 
+        //P.insert(P.end(), P_column.begin(), P_column.end());
+        memcpy(P.data()+ROW_NUM/128*j, P_column.data(), ROW_NUM/8);  
     } 
 
     // Phase 1: transmit adjust bit matrix
@@ -234,13 +236,13 @@ void PrepareReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
         std::cout << "ALSZ OTE: Receiver transposes matrix T" << std::endl; 
     #endif
 
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> T_row(COLUMN_NUM/128);  
         memcpy(T_row.data(), T_transpose.data()+i*COLUMN_NUM/128, COLUMN_NUM/8); 
 
-        vec_K[i] = Hash::BlocksToBlock(T_row); 
+        vec_K[i] = Hash::FastBlocksToBlock(T_row); 
     }   
 }
 
@@ -270,7 +272,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     std::vector<block> vec_outer_C0(ROW_NUM); 
     std::vector<block> vec_outer_C1(ROW_NUM); 
 
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {       
         vec_outer_C0[i] = vec_m0[i]^vec_K0[i]; 
@@ -319,7 +321,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver
     #endif
 
     std::vector<block> vec_result(ROW_NUM);
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         if(vec_receiver_selection_bit[i] == 0){
@@ -374,7 +376,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     // begin to transmit the real message
     std::vector<block> vec_outer_C(ROW_NUM);
 
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         vec_outer_C[i] = vec_m[i]^vec_K1[i];
