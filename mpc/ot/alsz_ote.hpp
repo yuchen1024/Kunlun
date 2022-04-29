@@ -139,6 +139,7 @@ void PrepareSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<bloc
     io.ReceiveBlocks(P.data(), ROW_NUM/128 * COLUMN_NUM); 
 
     // compute Q XOR sP
+    //#pragma omp parallel for
     for(auto i = 0; i < COLUMN_NUM; i++){
         for(auto j = 0; j < ROW_NUM/128; j++){
             if(vec_sender_selection_bit[i] == 1){
@@ -269,7 +270,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     std::vector<block> vec_outer_C0(ROW_NUM); 
     std::vector<block> vec_outer_C1(ROW_NUM); 
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {       
         vec_outer_C0[i] = vec_m0[i]^vec_K0[i]; 
@@ -318,7 +319,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver
     #endif
 
     std::vector<block> vec_result(ROW_NUM);
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         if(vec_receiver_selection_bit[i] == 0){
@@ -373,7 +374,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     // begin to transmit the real message
     std::vector<block> vec_outer_C(ROW_NUM);
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(auto i = 0; i < ROW_NUM; i++)
     {
         vec_outer_C[i] = vec_m[i]^vec_K1[i];
