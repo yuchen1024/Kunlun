@@ -184,12 +184,12 @@ inline ECPoint ThreadSafeBlockToECPoint(const block &var)
     block buffer[2];
     buffer[0] = Block::zero_block;
     buffer[1] = var; 
-    AES::FastECBEnc(fix_aes_enc_key, buffer, 2); 
+    AES::CBCEnc(fix_aes_enc_key, buffer, 2); 
     while (true) { 
         BN_bin2bn((unsigned char*)buffer, 32, x);
-        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, temp_bn_ctx)==1) break;      
+        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, temp_bn_ctx) ==1) break;      
         //BasicHash(buffer, 32, buffer);
-        AES::FastECBEnc(fix_aes_enc_key, buffer, 2); 
+        AES::CBCEnc(fix_aes_enc_key, buffer, 2); 
     }
     BN_free(x);    
     BN_CTX_free(temp_bn_ctx); 

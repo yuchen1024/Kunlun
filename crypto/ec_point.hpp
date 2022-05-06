@@ -76,6 +76,7 @@ public:
 
     // Returns true if this equals point, false otherwise.
     bool CompareTo(const ECPoint& point) const;
+    bool ThreadSafeCompareTo(const ECPoint& point) const;
 
 
     inline ECPoint& operator=(const ECPoint& other) { EC_POINT_copy(this->point_ptr, other.point_ptr); return *this; }
@@ -234,6 +235,10 @@ bool ECPoint::IsValid() const{
 
 bool ECPoint::CompareTo(const ECPoint& other) const{
     return (0 == EC_POINT_cmp(group, this->point_ptr, other.point_ptr, bn_ctx));
+}
+
+bool ECPoint::ThreadSafeCompareTo(const ECPoint& other) const{
+    return (0 == EC_POINT_cmp(group, this->point_ptr, other.point_ptr, nullptr));
 }
 
 void ECPoint::SetInfinity()
@@ -558,8 +563,6 @@ void PrintECPointVector(const std::vector<ECPoint> &vec_A, std::string note)
     }
 }
 
-
-
 /* customized hash for ECPoint class */
 
 class ECPointHash{
@@ -574,6 +577,8 @@ public:
 auto ECPoint_Lexical_Compare = [](ECPoint A, ECPoint B){ 
     return A.ToByteString() < B.ToByteString(); 
 };
+
+
 
 
 #endif  // KUNLUN_EC_POINT_HPP_

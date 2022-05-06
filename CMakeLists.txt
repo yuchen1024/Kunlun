@@ -85,6 +85,10 @@ TARGET_LINK_LIBRARIES(test_pso ${OPENSSL_LIBRARIES} -lomp)
 ADD_EXECUTABLE(test_mpoprf_based_psi test/test_mpoprf_based_psi.cpp)
 TARGET_LINK_LIBRARIES(test_mpoprf_based_psi ${OPENSSL_LIBRARIES} -lomp)
 
+# peqt
+ADD_EXECUTABLE(test_peqt test/test_peqt.cpp)
+TARGET_LINK_LIBRARIES(test_peqt ${OPENSSL_LIBRARIES} -lomp)
+
 # misc
 ADD_EXECUTABLE(test_misc test/test_misc.cpp)
 TARGET_LINK_LIBRARIES(test_misc ${OPENSSL_LIBRARIES} -lomp)
