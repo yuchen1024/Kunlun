@@ -11,11 +11,9 @@
 
 
 /*
-** implement multi-point RPMT based on weak commutative PSU
+** implement multi-query RPMT based on weak commutative PSU
 ** cuckoo filter is not gurantteed to be safe here, cause the filter may reveal the order of X
 */
-
-//#define THREAD_SAFE
 
 namespace cwPRFmqRPMT{
 

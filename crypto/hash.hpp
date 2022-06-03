@@ -8,7 +8,7 @@ this hpp implements hash functions
 #define KUNLUN_CRYPTO_HASH_HPP_
 
 #include "global.hpp"
-#include "constants.h"
+// #include "constants.h"
 #include "block.hpp"
 #include "bigint.hpp"
 #include "ec_point.hpp"
@@ -113,6 +113,13 @@ block ECPointToBlock(const ECPoint &A)
     std::string str_input = A.ToByteString();
     return StringToBlock(str_input);  
 }
+
+block ThreadSafeECPointToBlock(const ECPoint &A) 
+{
+    std::string str_input = A.ThreadSafeToByteString();
+    return StringToBlock(str_input);  
+}
+
 
 std::string ECPointToString(const ECPoint &A) 
 { 

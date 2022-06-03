@@ -48,8 +48,6 @@ PP Setup()
 	return pp; 
 }
 
-
-
 // save pp to file
 void SavePP(PP &pp, std::string pp_filename)
 {
@@ -63,7 +61,6 @@ void SavePP(PP &pp, std::string pp_filename)
     fout << pp; 
     fout.close(); 
 }
-
 
 
 // fetch pp from file
@@ -100,10 +97,11 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	ECPoint C = pp.g * d;  // compute C = g^d
 
 	//  compute g^r[i] and C^r[i]
+	#pragma omp parallel num_threads(thread_count)
 	for(auto i = 0; i < LEN; i++) {
 		vec_r[i] = GenRandomBigIntLessThan(order);
-		vec_X[i] = pp.g * vec_r[i];
-		vec_Z[i] = C * vec_r[i];
+		vec_X[i] = pp.g.ThreadSafeMul(vec_r[i]);
+		vec_Z[i] = C.ThreadSafeMul(vec_r[i]);
 	}
 
 	// send C
@@ -122,10 +120,10 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 
 	// send m0 and m1
 	for(auto i = 0 ; i < LEN; ++i) {
-		vec_K0[i] = vec_pk0[i] * vec_r[i];
-		vec_K1[i] = vec_Z[i] - vec_K0[i];
-		vec_Y0[i] = Hash::ECPointToBlock(vec_K0[i]) ^ vec_m0[i];
-		vec_Y1[i] = Hash::ECPointToBlock(vec_K1[i]) ^ vec_m1[i];
+		vec_K0[i] = vec_pk0[i].ThreadSafeMul(vec_r[i]);
+		vec_K1[i] = vec_Z[i].ThreadSafeSub(vec_K0[i]);
+		vec_Y0[i] = Hash::ThreadSafeECPointToBlock(vec_K0[i]) ^ vec_m0[i];
+		vec_Y1[i] = Hash::ThreadSafeECPointToBlock(vec_K1[i]) ^ vec_m1[i];
 	}
 	io.SendBlocks(vec_Y0.data(), LEN);
 	io.SendBlocks(vec_Y1.data(), LEN);
@@ -163,11 +161,11 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
 	io.ReceiveECPoints(vec_X.data(), LEN);
 
 	// send pk0[i]
+	//#pragma omp parallel num_threads(thread_count)
 	for(auto i = 0; i < LEN; i++) {
+		vec_pk0[i] = pp.g.ThreadSafeMul(vec_sk[i]);
 		if(vec_selection_bit[i] == 1){
-			vec_pk0[i] = C - pp.g * vec_sk[i]; 
-		} else {
-			vec_pk0[i] = pp.g * vec_sk[i];
+			vec_pk0[i] = C.ThreadSafeSub(vec_pk0[i]); 
 		}
 	}
 	io.SendECPoints(vec_pk0.data(), LEN);
@@ -183,15 +181,21 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
 	io.ReceiveBlocks(vec_Y0.data(), LEN);
 	io.ReceiveBlocks(vec_Y1.data(), LEN); 
 
+	//#pragma omp parallel num_threads(thread_count)
 	for(auto i = 0; i < LEN; i++)
 	{
-		vec_K[i] = vec_X[i]* vec_sk[i];
+		vec_K[i] = vec_X[i].ThreadSafeMul(vec_sk[i]);
 	}
 
 	// decrypt with Kb[i]
+	//#pragma omp parallel num_threads(thread_count)
 	for(auto i = 0; i < LEN; i++) {
-		if(vec_selection_bit[i] == 0) vec_result[i] = vec_Y0[i] ^ Hash::ECPointToBlock(vec_K[i]);
-		else vec_result[i] = vec_Y1[i] ^ Hash::ECPointToBlock(vec_K[i]);
+		if(vec_selection_bit[i] == 0){
+			vec_result[i] = vec_Y0[i] ^ Hash::ThreadSafeECPointToBlock(vec_K[i]);
+		}
+		else{
+			vec_result[i] = vec_Y1[i] ^ Hash::ThreadSafeECPointToBlock(vec_K[i]);
+		}
 	}
 
 	std::cout <<"Naor-Pinkas OT [step 4]: Receiver obtains vec_m" << std::endl;

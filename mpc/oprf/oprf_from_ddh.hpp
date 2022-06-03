@@ -1,5 +1,5 @@
-#ifndef KUNLUN_POPRF_HPP_
-#define KUNLUN_POPRF_HPP_
+#ifndef KUNLUN_DDH_OPRF_HPP_
+#define KUNLUN_DDH_OPRF_HPP_
 
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"

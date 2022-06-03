@@ -121,7 +121,7 @@ int main()
     Context_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1); 
 
-    PSO_type current = PSU; 
+    PSO_type current = PSI; 
 
     switch(current) {
         case PSI: std::cout << "PSI"; break; 

@@ -401,7 +401,6 @@ bool IsSquare(const BigInt& q) {
 }
 
 
-
 // ecpoint vector operations
 
 // mul exp operations

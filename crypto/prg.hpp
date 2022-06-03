@@ -8,7 +8,7 @@
 
 
 #include "aes.hpp"
-#include "constants.h"
+#include "global.hpp"
 
 #ifdef ENABLE_RDSEED
 #include <x86intrin.h>
