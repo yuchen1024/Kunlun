@@ -75,8 +75,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * serialization.hpp: overload serialization for uint and string type data
 
 - /crypto: C++ wrapper for OpenSSL
-  * constant.h: define global constants
-  * context.hpp: initialize openssl environment
+  * global.hpp: define global constants and initialize openssl environment
   * ec_group.hpp: initialize ec group environment
   * bigint.hpp: class for BIGNUM
   * ec_point.hpp: class for EC_POINT
@@ -136,6 +135,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 - /docs: the manual of all codes
 
+---
 
 ## Compile and Run
 ```
@@ -147,6 +147,30 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 ---
 
+## Multi-threads Support
+- Kunlun supports multithread by leveraging openmp. Since OpenSSL is not thread-safe, 
+I slightly hack the code to work around using the following facts about bn_ctx: 
+* bn_ctx is necessary for most big number operations, but not necessary for elliptic curve crypto operations. 
+* bn_ctx can improve the performance
+* one can set bn_ctx = nullptr for thread safety when dealing with ECC operations
+* one could still use the original bn_ctx in single thread setting    
+
+- The global setting for multi-thread support lies at "global.hpp" line 21-22, 
+and the bn_ctx setting lies at line 58-69. 
+
+- For multi-thread
+```
+#define PARALLEL
+const static size_t thread_count = 8; // maximum thread count 
+```
+
+- For single-thread
+```
+//#define PARALLEL
+const static size_t thread_count = 1; // maximum thread count 
+```
+
+
 ## Evolution and Updates Log
 
    * 20210827: post the initial version, mainly consists of wrapper class for BIGNUM* and EC_Point*
@@ -154,6 +178,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
    * 20211011: feed my first grammer sugar "namespace" to Kunlun, add OT primitive
    * 20220319: add private set operation and re-org many places 
    * 20220329: speeding Shanks DLOG algorithm and add ElGamal PKE and Schnorr SIG
+   * 20220605: greatly improve the multi-thread support (simplify the code and unify the interface)
 
 ---
 
