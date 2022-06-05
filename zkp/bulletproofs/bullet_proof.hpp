@@ -299,7 +299,7 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
 
     ip_pp.vec_h.resize(LEN); 
     std::copy(pp.vec_h.begin(), pp.vec_h.begin()+LEN, ip_pp.vec_h.begin()); 
-    ip_pp.vec_h = ThreadSafeECPointVectorProduct(ip_pp.vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new  
+    ip_pp.vec_h = ECPointVectorProduct(ip_pp.vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new  
 
     transcript_str += x.ToByteString();  
     BigInt e = Hash::StringToBigInt(transcript_str);   
@@ -424,7 +424,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     ip_pp.vec_h.resize(LEN); 
     std::copy(pp.vec_h.begin(), pp.vec_h.begin()+LEN, ip_pp.vec_h.begin()); 
     std::vector<BigInt> vec_y_inverse_power = GenBigIntPowerVector(LEN, y_inverse); // y^nm
-    ip_pp.vec_h = ThreadSafeECPointVectorProduct(ip_pp.vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new  
+    ip_pp.vec_h = ECPointVectorProduct(ip_pp.vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new  
 
     // ip_pp.vec_g = pp.vec_g;
     // ip_pp.vec_h = vec_h_new;  
@@ -582,7 +582,7 @@ bool FastVerify(const PP &pp, Instance &instance, std::string &transcript_str, P
     std::vector<ECPoint> vec_h; 
     vec_h.resize(VECTOR_LEN); 
     std::copy(pp.vec_h.begin(), pp.vec_h.begin()+VECTOR_LEN, vec_h.begin()); 
-    vec_h = ThreadSafeECPointVectorProduct(vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new 
+    vec_h = ECPointVectorProduct(vec_h, vec_y_inverse_power);  // ip_pp.vec_h = vec_h_new 
 
     std::copy(pp.vec_g.begin(), pp.vec_g.begin()+VECTOR_LEN, vec_A.begin()+index_A);
     index_A += VECTOR_LEN;  

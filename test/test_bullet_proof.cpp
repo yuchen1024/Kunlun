@@ -152,7 +152,7 @@ void test_bulletproof(size_t RANGE_LEN, size_t MAX_AGG_NUM, bool STATEMENT_FLAG)
 
 int main()
 { 
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);   
 
     size_t RANGE_LEN = 32; // range size
@@ -164,12 +164,8 @@ int main()
     test_bulletproof(RANGE_LEN, MAX_AGG_NUM, false);
     test_bulletproof(RANGE_LEN, MAX_AGG_NUM, true);
 
-
-
     ECGroup_Finalize(); 
-    Context_Finalize(); 
+    Global_Finalize(); 
 
-    return 0; 
-    
     return 0;
 }

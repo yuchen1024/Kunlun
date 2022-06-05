@@ -97,7 +97,7 @@ void FetchTestCase(MPOPRFPSITestCase &testcase, std::string testcase_filename)
 
 int main()
 {
-	Context_Initialize(); 
+	Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1); 
 
     std::cout << "mpoprf-based PSI test begins >>>" << std::endl; 
@@ -158,6 +158,6 @@ int main()
 	}
 
 	ECGroup_Finalize(); 
-    Context_Finalize();  
+    Global_Finalize();  
 	return 0; 
 }

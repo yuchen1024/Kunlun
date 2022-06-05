@@ -125,7 +125,7 @@ void test_gadget2(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN, si
 
 int main()
 { 
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);   
 
     size_t RANGE_LEN = 32; // range size
@@ -138,7 +138,7 @@ int main()
     test_gadget2(LEFT_BOUND, RIGHT_BOUND, RANGE_LEN, AGG_NUM); 
 
     ECGroup_Finalize(); 
-    Context_Finalize(); 
+    Global_Finalize(); 
 
     return 0; 
 }

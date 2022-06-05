@@ -117,11 +117,10 @@ void FetchTestCase(PSOTestCase &testcase, std::string testcase_filename)
 
 int main()
 {
-    Global_Setup(); 
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1); 
 
-    PSO_type current = PSI; 
+    PSO_type current = PSU; 
 
     switch(current) {
         case PSI: std::cout << "PSI"; break; 
@@ -240,6 +239,6 @@ int main()
     }
 
     ECGroup_Finalize(); 
-    Context_Finalize();   
+    Global_Finalize();   
     return 0; 
 }

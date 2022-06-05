@@ -63,9 +63,8 @@ void FetchTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1,
 }
 
 int main()
-{
-	Global_Setup(); 
-	Context_Initialize(); 
+{ 
+	Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
 
 	PrintSplitLine('-'); 
@@ -127,6 +126,6 @@ int main()
     PrintSplitLine('-'); 
 
 	ECGroup_Finalize(); 
-    Context_Finalize();   
+    Global_Finalize();   
 	return 0; 
 }

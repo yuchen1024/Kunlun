@@ -282,14 +282,14 @@ void Prove(PP pp, Instance instance, Witness witness, std::string &transcript_st
         PP pp_sub = Setup(pp.VECTOR_LEN/2, false);
 
         // compute vec_g
-        vec_gL = ThreadSafeECPointVectorScalar(vec_gL, x_inverse); 
-        vec_gR = ThreadSafeECPointVectorScalar(vec_gR, x); 
-        pp_sub.vec_g = ThreadSafeECPointVectorAdd(vec_gL, vec_gR); // Eq (29)
+        vec_gL = ECPointVectorScalar(vec_gL, x_inverse); 
+        vec_gR = ECPointVectorScalar(vec_gR, x); 
+        pp_sub.vec_g = ECPointVectorAdd(vec_gL, vec_gR); // Eq (29)
 
         // compute vec_h
-        vec_hL = ThreadSafeECPointVectorScalar(vec_hL, x); 
-        vec_hR = ThreadSafeECPointVectorScalar(vec_hR, x_inverse); 
-        pp_sub.vec_h = ThreadSafeECPointVectorAdd(vec_hL, vec_hR); // Eq (30)
+        vec_hL = ECPointVectorScalar(vec_hL, x); 
+        vec_hR = ECPointVectorScalar(vec_hR, x_inverse); 
+        pp_sub.vec_h = ECPointVectorAdd(vec_hL, vec_hR); // Eq (30)
 
         // generate new instance
         Instance instance_sub; 

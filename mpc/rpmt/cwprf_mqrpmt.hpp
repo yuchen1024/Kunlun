@@ -82,9 +82,9 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t
     BigInt k1 = GenRandomBigIntLessThan(order); // pick a key k1
 
     std::vector <ECPoint> vec_Fk1_Y(LEN);
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){
-        vec_Fk1_Y[i] = Hash::ThreadSafeBlockToECPoint(vec_Y[i]).ThreadSafeMul(k1); // H(x_i)^k1
+        vec_Fk1_Y[i] = Hash::BlockToECPoint(vec_Y[i]) * k1; // H(x_i)^k1
     }
 
     io.SendECPoints(vec_Fk1_Y.data(), LEN); 
@@ -100,9 +100,9 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t
     io.ReceiveECPoints(vec_Fk2_X.data(), LEN);
 
     std::vector<ECPoint> vec_Fk1k2_X(LEN); 
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){ 
-        vec_Fk1k2_X[i] = vec_Fk2_X[i].ThreadSafeMul(k1); 
+        vec_Fk1k2_X[i] = vec_Fk2_X[i] * k1; 
     }
 
     // compute the indication bit vector
@@ -156,9 +156,9 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     BigInt k2 = GenRandomBigIntLessThan(order); // pick a key
 
     std::vector<ECPoint> vec_Fk2_X(LEN); 
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){
-        vec_Fk2_X[i] = Hash::ThreadSafeBlockToECPoint(vec_X[i]).ThreadSafeMul(k2); // H(x_i)^k2
+        vec_Fk2_X[i] = Hash::BlockToECPoint(vec_X[i]) * k2; // H(x_i)^k2
     } 
 
     // first receive incoming data
@@ -176,9 +176,9 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     #endif
 
     std::vector<ECPoint> vec_Fk2k1_Y(LEN);
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){
-        vec_Fk2k1_Y[i] = vec_Fk1_Y[i].ThreadSafeMul(k2); 
+        vec_Fk2k1_Y[i] = vec_Fk1_Y[i] * k2; 
     }
 
     // permutation

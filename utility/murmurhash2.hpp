@@ -17,7 +17,7 @@
 #ifndef MURMURHASH2_HPP_
 #define MURMURHASH2_HPP_
 
-#include "../crypto/constants.h"
+#include "../crypto/global.hpp"
 
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros

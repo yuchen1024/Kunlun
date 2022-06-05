@@ -1,7 +1,6 @@
 //#define DEBUG
+#include "../include/kunlun.hpp"
 #include "../pke/elgamal.hpp"
-#include "../utility/print.hpp"
-
 
 void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 {
@@ -184,8 +183,7 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
 
 int main()
 {  
-    Global_Setup();
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
     
     std::ios::sync_with_stdio(false);
@@ -193,7 +191,6 @@ int main()
     PrintSplitLine('-'); 
     std::cout << "ElGamal PKE test begins >>>>>>" << std::endl; 
     PrintSplitLine('-'); 
-
 
 
     size_t MSG_LEN = 32; 
@@ -209,7 +206,7 @@ int main()
     PrintSplitLine('-'); 
 
     ECGroup_Finalize(); 
-    Context_Finalize(); 
+    Global_Finalize(); 
     return 0; 
 }
 

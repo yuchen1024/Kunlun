@@ -84,7 +84,7 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
     {
         hashkey = startpoint.ToUint64(); 
         std::memcpy(buffer+(startindex+i)*KEY_LEN, &hashkey, KEY_LEN);
-        startpoint = startpoint.ThreadSafeAdd(g); 
+        startpoint = startpoint +g; 
     } 
 }
 
@@ -112,22 +112,16 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     * to show full power of omp, this value is not real CPU core number
     * but an emprical value, should less than and dividable by BABYSTEP_NUM 
     */
-    //size_t THREAD_NUM = pow(2, 6);  
+
     size_t SLICED_BABYSTEP_NUM = BABYSTEP_NUM/BUILD_TASK_NUM; 
 
     std::vector<ECPoint> startpoint(BUILD_TASK_NUM); 
     std::vector<size_t> startindex(BUILD_TASK_NUM); 
 
-    // generate start index
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for (auto i = 0; i < BUILD_TASK_NUM; i++){
-        startindex[i] = i * SLICED_BABYSTEP_NUM; 
-    }
-
-    // compute start point
-    #pragma omp parallel for
-    for (auto i = 0; i < BUILD_TASK_NUM; i++){
-        startpoint[i] = g.ThreadSafeMul(startindex[i]);
+        startindex[i] = i * SLICED_BABYSTEP_NUM;  // generate start index
+        startpoint[i] = g * startindex[i];     // compute start point
     }
     
     // allocate memory
@@ -139,7 +133,7 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     } 
 
     // part 1: parallel build babystep key 
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < BUILD_TASK_NUM; i++){ 
         BuildSlicedKeyTable(g, startpoint[i], startindex[i], SLICED_BABYSTEP_NUM, buffer);
     }  
@@ -161,9 +155,9 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     ECPoint giantgiantstep = giantstep * BigInt(SLICED_GIANTSTEP_NUM);
 
     vec_searchanchor.resize(SEARCH_TASK_NUM); 
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for (auto i = 0; i < SEARCH_TASK_NUM; i++){
-        vec_searchanchor[i] = giantgiantstep.ThreadSafeMul(BigInt(i));         
+        vec_searchanchor[i] = giantgiantstep * (BigInt(i));         
     }
 
     std::ofstream fout; 
@@ -191,8 +185,6 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     std::cout << "build and save precompute table takes time = " 
         << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 }
-
-
 
 /* 
 ** load table 
@@ -280,7 +272,7 @@ bool SearchSlicedRange(size_t SEARCH_TASK_INDEX, ECPoint target, size_t &SLICED_
                        size_t &babystep_index, size_t &giantstep_index, bool &FIND)
 {    
     // obtain relative target in sliced range
-    target = target.ThreadSafeAdd(vec_searchanchor[SEARCH_TASK_INDEX]); 
+    target = target + vec_searchanchor[SEARCH_TASK_INDEX]; 
     size_t hashkey; 
     // giantgiant-step 
     for(giantstep_index = 0; giantstep_index < SLICED_GIANTSTEP_NUM; giantstep_index++)
@@ -293,7 +285,7 @@ bool SearchSlicedRange(size_t SEARCH_TASK_INDEX, ECPoint target, size_t &SLICED_
         // baby-step search in the hash map
         if (encoding2index_map.find(hashkey) == encoding2index_map.end())
         { 
-            target = target.ThreadSafeAdd(giantstep); 
+            target = target + giantstep; 
         }
         else{
             babystep_index = encoding2index_map[hashkey]; 
@@ -327,7 +319,7 @@ bool ShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRA
     // a beacon value: used to notify other tasks break if one task has already succeed
     bool FIND = false;
 
-    #pragma omp parallel for shared(FIND)
+    #pragma omp parallel for shared(FIND) num_threads(thread_count)
     for(auto i = 0; i < SEARCH_TASK_NUM; i++){
         if(FIND == false)
         {

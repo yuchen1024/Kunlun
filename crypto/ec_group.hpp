@@ -3,7 +3,7 @@
 
 #define PRECOMPUTE_ENABLE
 
-#include "context.hpp"
+#include "global.hpp"
 
 static EC_GROUP *group;
 const static EC_POINT *generator; 

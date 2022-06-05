@@ -68,8 +68,7 @@ void FetchTestInstance(PEQTTestcase &testcase, std::string testcase_filename)
 
 int main()
 {
-    Global_Setup(); 
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1); 
 
     PrintSplitLine('-'); 
@@ -112,17 +111,6 @@ int main()
     {
         NetIO client("client", "127.0.0.1", 8080);        
         std::vector<uint8_t> vec_result = DDHPEQT::Receive(client, testcase.vec_Y, ROW_NUM, COLUMN_NUM);
-
-        // bool SUCCESS = true; 
-        // for(auto i = 0; i < LEN; i++){
-        //     if(vec_result[i] != testcase.vec_indication_bit[i]){
-        //         SUCCESS = false; 
-        //         break;
-        //     }
-        // }
-
-        // if(SUCCESS) std::cout << "DDH-based PEQT test succeeds" << std::endl; 
-        // else std::cout << "DDH-based PEQT test fails" << std::endl; 
     } 
 
 
@@ -132,6 +120,6 @@ int main()
     PrintSplitLine('-'); 
 
     ECGroup_Finalize(); 
-    Context_Finalize();   
+    Global_Finalize();   
     return 0; 
 }

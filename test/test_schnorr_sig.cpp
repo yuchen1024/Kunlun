@@ -50,8 +50,7 @@ void test_schnorr(size_t TEST_NUM)
 
 int main()
 {  
-    Global_Setup();
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
     
     std::ios::sync_with_stdio(false);
@@ -68,7 +67,7 @@ int main()
     PrintSplitLine('-'); 
 
     ECGroup_Finalize(); 
-    Context_Finalize(); 
+    Global_Finalize(); 
     return 0; 
     
     return 0; 

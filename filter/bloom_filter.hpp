@@ -111,22 +111,22 @@ size_t ObjectSize()
    return 3 * sizeof(uint32_t) + 2 * sizeof(size_t) + table_size/8;
 }
 
-inline void PlainInsert(const void* input, size_t LEN)
-{
-   size_t bit_index;
-   for (auto i = 0; i < hash_num; i++){
-      bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
-      //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
-      bit_table[bit_index >> 3] |= bit_mask[bit_index & 0x07]; // more efficient implementation
-   }
-   inserted_element_num++;
-}
+// inline void PlainInsert(const void* input, size_t LEN)
+// {
+//    size_t bit_index;
+//    for (auto i = 0; i < hash_num; i++){
+//       bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size;
+//       //bit_table[bit_index / 8] |= bit_mask[bit_index % 8]; // naive implementation
+//       bit_table[bit_index >> 3] |= bit_mask[bit_index & 0x07]; // more efficient implementation
+//    }
+//    inserted_element_num++;
+// }
 
-inline void ParallelPlainInsert(const void* input, size_t LEN)
+inline void PlainInsert(const void* input, size_t LEN)
 {
    size_t bit_index[hash_num];
 
-   #pragma omp parallel for
+   #pragma omp parallel for num_threads(thread_count)
    for (auto i = 0; i < hash_num; i++){
       bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size;    
       #pragma omp atomic // atomic operation
@@ -145,7 +145,7 @@ inline void Insert(const ElementType& element)
 template <> // specialize for string
 inline void Insert(const std::string& str)
 {
-   ParallelPlainInsert(str.data(), str.size());
+   PlainInsert(str.data(), str.size());
 }
 
 /*
@@ -163,7 +163,7 @@ inline void Insert(const ECPoint &A)
       unsigned char buffer[POINT_BYTE_LEN]; 
       memset(buffer, 0, POINT_BYTE_LEN); 
       EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-      ParallelPlainInsert(buffer, POINT_BYTE_LEN);
+      PlainInsert(buffer, POINT_BYTE_LEN);
    #endif
 }
 
@@ -180,7 +180,7 @@ inline void Insert(const InputIterator begin, const InputIterator end)
 template <class T, class Allocator, template <class,class> class Container>
 inline void Insert(const Container<T, Allocator>& container)
 {
-   #pragma omp parallel for
+   #pragma omp parallel for num_threads(thread_count)
    for(auto i = 0; i < container.size(); i++){
       Insert(container[i]); 
    }
@@ -190,32 +190,32 @@ template <> // specialize for vector<ECPoint>
 inline void Insert(const std::vector<ECPoint> &vec_A)
 {   
    //sequential implementation
-   #pragma omp parallel for
+   #pragma omp parallel for num_threads(thread_count)
    for(auto i = 0; i < vec_A.size(); i++){
       Insert(vec_A[i]); 
    }
 }
 
-inline bool PlainContain(const void* input, size_t LEN) const
-{
-   size_t bit_index = 0;
-   size_t local_bit_index = 0; 
-   for(auto i = 0; i < vec_salt.size(); i++)
-   {
-      bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size; 
-      local_bit_index = bit_index & 0x07;  // bit_index mod 8
-      if ((bit_table[bit_index >> 3] & bit_mask[local_bit_index]) != bit_mask[local_bit_index]) 
-         return false;
-   }
-   return true;
-}
+// inline bool PlainContain(const void* input, size_t LEN) const
+// {
+//    size_t bit_index = 0;
+//    size_t local_bit_index = 0; 
+//    for(auto i = 0; i < vec_salt.size(); i++)
+//    {
+//       bit_index = FastKeyedHash(vec_salt[i], input, LEN) % table_size; 
+//       local_bit_index = bit_index & 0x07;  // bit_index mod 8
+//       if ((bit_table[bit_index >> 3] & bit_mask[local_bit_index]) != bit_mask[local_bit_index]) 
+//          return false;
+//    }
+//    return true;
+// }
 
-inline bool ParallelPlainContain(const void* input, size_t LEN) const
+inline bool PlainContain(const void* input, size_t LEN) const
 {
    bool CONTAIN = true; // assume input in filter at the beginning
    std::vector<size_t> bit_index(hash_num);
    std::vector<size_t> local_bit_index(hash_num); 
-   #pragma omp parallel for
+   #pragma omp parallel for num_threads(thread_count)
    for(auto i = 0; i < hash_num; i++)
    {
       if(CONTAIN == true)
@@ -239,7 +239,7 @@ inline bool Contain(const ElementType& element) const
 
 inline bool Contain(const std::string& str) const
 {
-   return ParallelPlainContain(str.data(), str.size());
+   return PlainContain(str.data(), str.size());
 }
 
 template <> // specialize for ECPoint
@@ -254,7 +254,7 @@ inline bool Contain(const ECPoint& A) const
       unsigned char buffer[POINT_BYTE_LEN];
       memset(buffer, 0, POINT_BYTE_LEN);  
       EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
-      return ParallelPlainContain(buffer, POINT_BYTE_LEN);
+      return PlainContain(buffer, POINT_BYTE_LEN);
    #endif
 }
 
@@ -263,7 +263,7 @@ inline std::vector<uint8_t> Contain(const Container<T, Allocator>& container)
 {
    size_t LEN = container.size();
    std::vector<uint8_t> vec_indication_bit(LEN); 
-   #pragma omp parallel for
+   #pragma omp parallel for num_threads(thread_count)
    for(auto i = 0; i < container.size(); i++){
       if(Contain(container[i]) == true) vec_indication_bit[i] = 1;
       else vec_indication_bit[i] = 0; 
@@ -278,7 +278,7 @@ inline std::vector<uint8_t> Contain(const std::vector<ECPoint> &vec_A)
    size_t LEN = vec_A.size();
    std::vector<uint8_t> vec_indication_bit(LEN); 
 
-   #pragma omp parallel for
+   #pragma omp parallel for num_threads(thread_count)
    for(auto i = 0; i < vec_A.size(); i++){
       if(Contain(vec_A[i]) == true) vec_indication_bit[i] = 1;
       else vec_indication_bit[i] = 0; 

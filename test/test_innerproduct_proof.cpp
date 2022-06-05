@@ -71,13 +71,13 @@ void test_innerproduct_proof()
 
 int main()
 {
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);   
     
     test_innerproduct_proof();
 
     ECGroup_Finalize(); 
-    Context_Finalize(); 
+    Global_Finalize(); 
 
     return 0; 
 }

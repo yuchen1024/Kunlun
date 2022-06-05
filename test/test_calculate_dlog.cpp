@@ -1,7 +1,6 @@
 //#define DEBUG
+#include "../include/kunlun.hpp"
 #include "../pke/calculate_dlog.hpp"
-#include "../utility/print.hpp"
-
 
 void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 {
@@ -65,8 +64,7 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 
 int main()
 {  
-    Global_Setup();
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
     
     std::ios::sync_with_stdio(false);
@@ -78,7 +76,7 @@ int main()
     benchmark_dlog(RANGE_LEN, TRADEOFF_NUM, TEST_NUM);
 
     ECGroup_Finalize(); 
-    Context_Finalize(); 
+    Global_Finalize(); 
 
     return 0; 
 }

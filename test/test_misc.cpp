@@ -62,9 +62,9 @@ void test_hash_to_point(size_t LEN)
     
 
     auto start_time = std::chrono::steady_clock::now(); 
-    //#pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){
-        Hash::ThreadSafeBlockToECPoint(vec_M[i]); 
+        Hash::BlockToECPoint(vec_M[i]); 
     }
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -148,8 +148,7 @@ void test_hash_to_point(size_t LEN)
 
 int main()
 {  
-    Global_Setup();
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);  
 
     //size_t TEST_NUM = 1024*1024;  
@@ -196,7 +195,7 @@ int main()
     // Block::Calc2ToTheN(23);
 
     ECGroup_Finalize(); 
-    Context_Finalize(); 
+    Global_Finalize(); 
     return 0; 
 }
 

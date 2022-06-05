@@ -81,14 +81,14 @@ void test_nizk_enc_relation(bool flag)
 
 int main()
 {
-    Context_Initialize(); 
+    Global_Initialize(); 
     ECGroup_Initialize(NID_X9_62_prime256v1);   
     
     test_nizk_enc_relation(true);
     test_nizk_enc_relation(false); 
 
     ECGroup_Finalize(); 
-    Context_Finalize(); 
+    Global_Finalize(); 
 
     return 0; 
 }

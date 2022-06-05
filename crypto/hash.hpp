@@ -114,11 +114,11 @@ block ECPointToBlock(const ECPoint &A)
     return StringToBlock(str_input);  
 }
 
-block ThreadSafeECPointToBlock(const ECPoint &A) 
-{
-    std::string str_input = A.ThreadSafeToByteString();
-    return StringToBlock(str_input);  
-}
+// block ThreadSafeECPointToBlock(const ECPoint &A) 
+// {
+//     std::string str_input = A.ThreadSafeToByteString();
+//     return StringToBlock(str_input);  
+// }
 
 
 std::string ECPointToString(const ECPoint &A) 
@@ -160,7 +160,7 @@ block FastBlocksToBlock(const std::vector<block> input_block)
 }
 
 
-// fast block to ecpoint hash using low level openssl code
+// fast and threadsafe block to ecpoint hash using low level openssl code
 inline ECPoint BlockToECPoint(const block &var)
 {
     ECPoint ecp_result; 
@@ -171,38 +171,38 @@ inline ECPoint BlockToECPoint(const block &var)
     memcpy(buffer, &var, 16);    
     while (true) { 
         BN_bin2bn(buffer, 32, x);
-        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, bn_ctx)==1) break;      
+        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, ec_ctx)==1) break;      
         BasicHash(buffer, 32, buffer);
     }
     BN_free(x);    
     return ecp_result;
 }
 
-// fast block to ecpoint hash using low level openssl code
-inline ECPoint ThreadSafeBlockToECPoint(const block &var)
-{
-    BN_CTX *temp_bn_ctx = BN_CTX_new(); 
-    ECPoint ecp_result; 
+// // fast block to ecpoint hash using low level openssl code
+// inline ECPoint ThreadSafeBlockToECPoint(const block &var)
+// {
+//     BN_CTX *temp_bn_ctx = BN_CTX_new(); 
+//     ECPoint ecp_result; 
  
-    BIGNUM *x = BN_new();
-    // unsigned char buffer[32];
-    // memset(buffer, 0, 32);
-    // memcpy(buffer, &var, 16);    
-    block buffer[2];
-    buffer[0] = Block::zero_block;
-    buffer[1] = var; 
-    AES::CBCEnc(fix_aes_enc_key, buffer, 2); 
-    while (true) { 
-        BN_bin2bn((unsigned char*)buffer, 32, x);
-        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, temp_bn_ctx) ==1) break;      
-        //BasicHash(buffer, 32, buffer);
-        AES::CBCEnc(fix_aes_enc_key, buffer, 2); 
-    }
-    BN_free(x);    
-    BN_CTX_free(temp_bn_ctx); 
+//     BIGNUM *x = BN_new();
+//     // unsigned char buffer[32];
+//     // memset(buffer, 0, 32);
+//     // memcpy(buffer, &var, 16);    
+//     block buffer[2];
+//     buffer[0] = Block::zero_block;
+//     buffer[1] = var; 
+//     AES::CBCEnc(fix_aes_enc_key, buffer, 2); 
+//     while (true) { 
+//         BN_bin2bn((unsigned char*)buffer, 32, x);
+//         if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, temp_bn_ctx) ==1) break;      
+//         //BasicHash(buffer, 32, buffer);
+//         AES::CBCEnc(fix_aes_enc_key, buffer, 2); 
+//     }
+//     BN_free(x);    
+//     BN_CTX_free(temp_bn_ctx); 
    
-    return ecp_result;
-}
+//     return ecp_result;
+// }
 
 }
 

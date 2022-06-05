@@ -51,19 +51,15 @@ public:
     
     // Returns an ECPoint whose value is (this * scalar).
     ECPoint Mul(const BigInt& scalar) const;
-    ECPoint ThreadSafeMul(const BigInt& scalar) const;
 
     // Returns an ECPoint whose value is (this + other).
     ECPoint Add(const ECPoint& other) const;
-    ECPoint ThreadSafeAdd(const ECPoint& other) const;
 
     // Returns an ECPoint whose value is (- this), the additive inverse of this.
     ECPoint Invert() const;
-    ECPoint ThreadSafeInvert() const;
 
     // Returns an ECPoint whose value is (this - other).
     ECPoint Sub(const ECPoint& other) const; 
-    ECPoint ThreadSafeSub(const ECPoint& other) const; 
 
 
     // attribute check operations
@@ -146,70 +142,39 @@ void ECPoint::ReInitialize(){
 ECPoint ECPoint::Mul(const BigInt& scalar) const {
     ECPoint result; 
     // use fix-point exp with precomputation
-    if (EC_POINT_cmp(group, this->point_ptr, generator, bn_ctx) == 0){
-        CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, scalar.bn_ptr, nullptr, nullptr, bn_ctx));
+    if (EC_POINT_cmp(group, this->point_ptr, generator, ec_ctx) == 0){
+        CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, scalar.bn_ptr, nullptr, nullptr, ec_ctx));
     }
     else{
-        CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, bn_ctx));
+        CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, ec_ctx));
     }
  
     return result;
 }
 
 
-ECPoint ECPoint::ThreadSafeMul(const BigInt& scalar) const {
-    ECPoint result;
-    // use fix-point exp with precomputation
-    if (EC_POINT_cmp(group, this->point_ptr, generator, nullptr) == 0){
-        CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, scalar.bn_ptr, nullptr, nullptr, nullptr));  
-    }
-    else{
-        CRYPTO_CHECK(1 == EC_POINT_mul(group, result.point_ptr, nullptr, this->point_ptr, scalar.bn_ptr, nullptr));
-    }
-    return result;
-}
-
-
-
 ECPoint ECPoint::Add(const ECPoint& other) const {  
 
     ECPoint result; 
-    CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, other.point_ptr, bn_ctx)); 
+    CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, other.point_ptr, ec_ctx)); 
     return result; 
 }
 
-ECPoint ECPoint::ThreadSafeAdd(const ECPoint& other) const {  
-    ECPoint result; 
-    CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, other.point_ptr, nullptr)); 
-    return result; 
-}
 
 ECPoint ECPoint::Invert() const {
     // Create a copy of this.
     ECPoint result = (*this);  
-    CRYPTO_CHECK(1 == EC_POINT_invert(group, result.point_ptr, bn_ctx)); 
-    return result; 
-}
-
-ECPoint ECPoint::ThreadSafeInvert() const {
-    // Create a copy of this.
-    ECPoint result = (*this);  
-    CRYPTO_CHECK(1 == EC_POINT_invert(group, result.point_ptr, nullptr)); 
+    CRYPTO_CHECK(1 == EC_POINT_invert(group, result.point_ptr, ec_ctx)); 
     return result; 
 }
 
 
 ECPoint ECPoint::Sub(const ECPoint& other) const { 
     ECPoint result = other.Invert(); 
-    CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, result.point_ptr, bn_ctx));
+    CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, result.point_ptr, ec_ctx));
     return result; 
 }
 
-ECPoint ECPoint::ThreadSafeSub(const ECPoint& other) const { 
-    ECPoint result = other.Invert(); 
-    CRYPTO_CHECK(1 == EC_POINT_add(group, result.point_ptr, this->point_ptr, result.point_ptr, nullptr)); 
-    return result; 
-}
 
 void ECPoint::Clone(const ECPoint& other) const {
     CRYPTO_CHECK(1 == EC_POINT_copy(this->point_ptr, other.point_ptr)); 
@@ -234,12 +199,9 @@ bool ECPoint::IsValid() const{
 }
 
 bool ECPoint::CompareTo(const ECPoint& other) const{
-    return (0 == EC_POINT_cmp(group, this->point_ptr, other.point_ptr, bn_ctx));
+    return (0 == EC_POINT_cmp(group, this->point_ptr, other.point_ptr, ec_ctx));
 }
 
-bool ECPoint::ThreadSafeCompareTo(const ECPoint& other) const{
-    return (0 == EC_POINT_cmp(group, this->point_ptr, other.point_ptr, nullptr));
-}
 
 void ECPoint::SetInfinity()
 {
@@ -263,23 +225,20 @@ void ECPoint::Print(std::string note) const
 
 std::string ECPoint::ToByteString() const
 {
-    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];  
-    memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
+    std::string ecp_str(POINT_COMPRESSED_BYTE_LEN, '0'); 
 
-    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
-    std::string result; 
-    result.assign(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN);
-
-    return result; 
-}
-
-std::string ECPoint::ThreadSafeToByteString() const
-{
-    std::string ecp_str(POINT_COMPRESSED_BYTE_LEN, '0');   
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, 
-                       reinterpret_cast<unsigned char *>(&ecp_str[0]), POINT_COMPRESSED_BYTE_LEN, nullptr);
+                       reinterpret_cast<unsigned char *>(&ecp_str[0]), POINT_COMPRESSED_BYTE_LEN, ec_ctx);
     return ecp_str; 
 }
+
+// std::string ECPoint::ThreadSafeToByteString() const
+// {
+//     std::string ecp_str(POINT_COMPRESSED_BYTE_LEN, '0');   
+//     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, 
+//                        reinterpret_cast<unsigned char *>(&ecp_str[0]), POINT_COMPRESSED_BYTE_LEN, nullptr);
+//     return ecp_str; 
+// }
 
 // make sure you have allocate enough memory for buffer
 // does not make this check to efficiency concern
@@ -292,7 +251,7 @@ std::string ECPoint::ThreadSafeToByteString() const
 std::string ECPoint::ToHexString() const
 {
     std::stringstream ss; 
-    ss << EC_POINT_point2hex(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, bn_ctx);
+    ss << EC_POINT_point2hex(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, ec_ctx);
     return ss.str();  
 }
 
@@ -302,7 +261,8 @@ size_t ECPoint::ToUint64() const
     // standard method
     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
     memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
-    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, 
+                       POINT_COMPRESSED_BYTE_LEN, ec_ctx);
     return MurmurHash64A(buffer, POINT_COMPRESSED_BYTE_LEN, fixed_salt); 
 }
 
@@ -312,7 +272,8 @@ size_t ECPoint::FastToUint64() const
 
     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
     memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
-    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+    EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, 
+                       POINT_COMPRESSED_BYTE_LEN, ec_ctx);
 
     block data[2];
     data[0] = _mm_load_si128((block *)(buffer));
@@ -333,7 +294,7 @@ size_t ECPoint::FastToUint64() const
 std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A)
 { 
     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, ec_ctx);
     // write to outfile
     fout.write(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
     return fout;            
@@ -343,7 +304,7 @@ std::ifstream &operator>>(std::ifstream &fin, ECPoint &A)
 { 
     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
     fin.read(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
-    EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+    EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, ec_ctx);
     return fin;            
 }
 
@@ -412,7 +373,7 @@ ECPoint ECPointVectorMul(const std::vector<ECPoint> &vec_A, std::vector<BigInt> 
     ECPoint result; 
     size_t LEN = vec_A.size(); 
     CRYPTO_CHECK(1 == EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, 
-                 (const EC_POINT**)vec_A.data(), (const BIGNUM**)vec_a.data(), bn_ctx));
+                 (const EC_POINT**)vec_A.data(), (const BIGNUM**)vec_a.data(), ec_ctx));
     return result; 
 }
 
@@ -421,20 +382,6 @@ ECPoint ECPointVectorMul(const std::vector<ECPoint> &vec_A, std::vector<BigInt> 
     std::vector<ECPoint> subvec_A(vec_A.begin()+start_index, vec_A.begin()+end_index);
     std::vector<BigInt>  subvec_a(vec_a.begin()+start_index, vec_a.begin()+end_index);
     return ECPointVectorMul(subvec_A, subvec_a); 
-}
-
-
-inline ECPoint ThreadSafeECPointVectorMul(const std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
-{
-    if (vec_A.size()!=vec_a.size()){
-        std::cerr << "vector size does not match" << std::endl; 
-        exit(EXIT_FAILURE); 
-    }
-    ECPoint result;  
-    size_t LEN = vec_A.size();
-    CRYPTO_CHECK(1 == EC_POINTs_mul(group, result.point_ptr, nullptr, LEN, 
-                 (const EC_POINT**)vec_A.data(), (const BIGNUM**)vec_a.data(), nullptr));
-    return result; 
 }
 
 
@@ -447,26 +394,10 @@ std::vector<ECPoint> ECPointVectorAdd(std::vector<ECPoint> &vec_A, std::vector<E
     }
     size_t LEN = vec_A.size();
     std::vector<ECPoint> vec_result(LEN); 
-    
+
+    #pragma omp parallel for num_threads(thread_count)
     for (auto i = 0; i < vec_A.size(); i++) {
         vec_result[i] = vec_A[i] + vec_B[i]; 
-    }
-    return vec_result;
-}
-
-/* g[i] = g[i]+h[i] */ 
-std::vector<ECPoint> ThreadSafeECPointVectorAdd(std::vector<ECPoint> &vec_A, std::vector<ECPoint> &vec_B)
-{
-    if (vec_A.size()!= vec_B.size()) {
-        std::cerr << "vector size does not match!" << std::endl;
-        exit(EXIT_FAILURE); 
-    }
-    size_t LEN = vec_A.size();
-    std::vector<ECPoint> vec_result(LEN); 
-    
-    #pragma OMP
-    for (auto i = 0; i < LEN; i++) {
-        vec_result[i] = vec_A[i].ThreadSafeAdd(vec_B[i]); 
     }
     return vec_result;
 }
@@ -478,24 +409,13 @@ inline std::vector<ECPoint> ECPointVectorScalar(std::vector<ECPoint> &vec_A, Big
     size_t LEN = vec_A.size();
     std::vector<ECPoint> vec_result(LEN);  
 
+    #pragma omp parallel for num_threads(thread_count)
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i] * a;  
     }
     return vec_result;  
 }
 
-/* vec_result[i] = vec_A[i] * a */ 
-inline std::vector<ECPoint> ThreadSafeECPointVectorScalar(std::vector<ECPoint> &vec_A, BigInt &a)
-{
-    size_t LEN = vec_A.size();
-    std::vector<ECPoint> vec_result(LEN);  
-
-    #pragma omp parallel for
-    for (auto i = 0; i < LEN; i++) {
-        vec_result[i] = vec_A[i].ThreadSafeMul(a);  
-    }
-    return vec_result;  
-}
 
 
 /* result[i] = A[i]*a[i] */ 
@@ -508,27 +428,10 @@ inline std::vector<ECPoint> ECPointVectorProduct(const std::vector<ECPoint> &vec
 
     size_t LEN = vec_A.size(); 
     std::vector<ECPoint> vec_result(LEN);
-
+    
+    #pragma omp parallel for num_threads(thread_count)
     for (auto i = 0; i < LEN; i++) {
         vec_result[i] = vec_A[i] * vec_a[i];  
-    } 
-    return vec_result;  
-}
-
-/* result[i] = A[i]*a[i] */ 
-inline std::vector<ECPoint> ThreadSafeECPointVectorProduct(const std::vector<ECPoint> &vec_A, std::vector<BigInt> &vec_a)
-{
-    if (vec_A.size() != vec_a.size()) {
-        std::cerr << "vector size does not match!" << std::endl;
-        exit(EXIT_FAILURE); 
-    } 
-
-    size_t LEN = vec_A.size(); 
-    std::vector<ECPoint> vec_result(LEN);
-
-    #pragma omp parallel for
-    for (auto i = 0; i < LEN; i++) {
-        vec_result[i] = vec_A[i].ThreadSafeMul(vec_a[i]);  
     } 
     return vec_result;  
 }
@@ -538,9 +441,7 @@ inline std::vector<ECPoint> ThreadSafeECPointVectorProduct(const std::vector<ECP
 std::vector<ECPoint> GenRandomECPointVector(size_t LEN)
 {
     std::vector<ECPoint> vec_result(LEN); 
-    #ifdef OMP
-    #pragma omp parallel for
-    #endif
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){ 
         vec_result[i] = GenRandomGenerator(); 
     }
@@ -576,8 +477,6 @@ public:
 auto ECPoint_Lexical_Compare = [](ECPoint A, ECPoint B){ 
     return A.ToByteString() < B.ToByteString(); 
 };
-
-
 
 
 #endif  // KUNLUN_EC_POINT_HPP_

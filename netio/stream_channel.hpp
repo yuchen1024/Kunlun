@@ -13,11 +13,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h> // Include this header file for using socket feature
 
-#include "../include/std.inc"
-#include "../crypto/constants.h"
-#include "../crypto/ec_point.hpp"
-#include "../crypto/block.hpp"
-
+#include "../include/kunlun.hpp"
 
 class NetIO{ 
 public:

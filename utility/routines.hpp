@@ -8,7 +8,6 @@ this hpp implements some routine algorithms
 #define KUNLUN_UTILITY_ROUTINES_HPP_
 
 #include "../include/std.inc"
-#include "../config/config.h"
 
 // check the existence of a given file
 inline bool FileExist(const std::string& filename)

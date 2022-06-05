@@ -1,10 +1,7 @@
-
 #ifndef CRYPTO_BIGINT_HPP_
 #define CRYPTO_BIGINT_HPP_
 
-#include "../include/std.inc"
-#include "../include/openssl.inc"
-#include "context.hpp"
+#include "global.hpp"
 
 // wrapper class for openssl BIGNUM
 
@@ -769,9 +766,7 @@ std::vector<BigInt> GenRandomBigIntVectorLessThan(size_t LEN, const BigInt &modu
 {
     std::vector<BigInt> vec_result(LEN);
     
-    #ifdef OMP
-    #pragma omp parallel for
-    #endif
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){ 
         vec_result[i] = GenRandomBigIntLessThan(modulus); 
     }

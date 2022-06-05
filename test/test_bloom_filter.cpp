@@ -1,8 +1,8 @@
 #define DEBUG
-#define OMP
 
+#include "../include/kunlun.hpp"
 #include "../filter/bloom_filter.hpp"
-#include "../utility/print.hpp"
+
 
 template <class T, class Allocator, template <class,class> class Container>
 bool ReadFileToContainer(std::string file_name, Container<T, Allocator>& container)
