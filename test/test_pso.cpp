@@ -34,7 +34,7 @@ PSOTestCase GenTestCase(size_t LEN)
     PSOTestCase testcase;
     testcase.LEN = LEN; 
 
-    PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_indication_bit = PRG::GenRandomBits(seed, LEN); 
@@ -117,8 +117,7 @@ void FetchTestCase(PSOTestCase &testcase, std::string testcase_filename)
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1); 
+    CRYPTO_Initialize(); 
 
     PSO_type current = PSU; 
 
@@ -238,7 +237,7 @@ int main()
         } 
     }
 
-    ECGroup_Finalize(); 
-    Global_Finalize();   
+    CRYPTO_Finalize();   
+    
     return 0; 
 }

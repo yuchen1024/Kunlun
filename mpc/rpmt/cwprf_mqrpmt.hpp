@@ -11,7 +11,7 @@
 
 
 /*
-** implement multi-query RPMT based on weak commutative PSU
+** implement multi-query RPMT based on weak commutative PRF
 ** cuckoo filter is not gurantteed to be safe here, cause the filter may reveal the order of X
 */
 
@@ -40,10 +40,10 @@ std::ifstream &operator>>(std::ifstream &fin, PP &pp)
     return fin; 
 }
 
-PP Setup(std::string filter_type, size_t lambda)
+PP Setup(std::string filter_type, size_t statistical_security_parameter)
 {
     PP pp; 
-    pp.statistical_security_parameter = lambda; 
+    pp.statistical_security_parameter = statistical_security_parameter; 
     pp.filter_type = filter_type; 
     return pp; 
 }
@@ -52,8 +52,7 @@ void SavePP(PP &pp, std::string pp_filename)
 {
     std::ofstream fout; 
     fout.open(pp_filename, std::ios::binary); 
-    if(!fout)
-    {
+    if(!fout){
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }
@@ -65,8 +64,7 @@ void FetchPP(PP &pp, std::string pp_filename)
 {
     std::ifstream fin; 
     fin.open(pp_filename, std::ios::binary); 
-    if(!fin)
-    {
+    if(!fin){
         std::cerr << pp_filename << " open error" << std::endl;
         exit(1); 
     }

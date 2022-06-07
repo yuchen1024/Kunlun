@@ -7,15 +7,17 @@ this hpp implements hash functions
 #ifndef KUNLUN_CRYPTO_HASH_HPP_
 #define KUNLUN_CRYPTO_HASH_HPP_
 
-#include "global.hpp"
-// #include "constants.h"
-#include "block.hpp"
+#include "../include/global.hpp"
 #include "bigint.hpp"
 #include "ec_point.hpp"
 
+const static size_t HASH_BUFFER_SIZE = 1024*8;
+const static size_t HASH_OUTPUT_LEN = 32;  // hash output = 256-bit string
 
 //#define BasicHash(input, HASH_INPUT_LEN, output) SM3(input, HASH_INPUT_LEN, output)
 #define BasicHash(input, HASH_INPUT_LEN, output) SHA256(input, HASH_INPUT_LEN, output)
+
+
 
 namespace Hash{
 
@@ -53,20 +55,19 @@ void CBCAES(const unsigned char *input, size_t HASH_INPUT_LEN, unsigned char *ou
     } 
 
     // use CBC-AES hash: digest lies in the last block
-    AES::CBCEnc(fix_aes_enc_key, data, BLOCK_NUM);  
+    AES::CBCEnc(AES::fixed_enc_key, data, BLOCK_NUM);  
 
-    _mm_storeu_si128((block *)output, data[BLOCK_NUM-1]);
+    _mm_storeu_si128((block*)output, data[BLOCK_NUM-1]);
 }
 
 __attribute__((target("sse2")))
 block StringToBlock(const std::string &str_input) 
 {
     unsigned char output[HASH_OUTPUT_LEN];
-    const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());
-    size_t HASH_INPUT_LEN = str_input.length();
-    BasicHash(input, HASH_INPUT_LEN, output); 
-    //std::cout << "we are here" << std::endl;
-    return _mm_load_si128((__m128i*)&output[0]);
+    //const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());
+    //size_t HASH_INPUT_LEN = str_input.length();
+    BasicHash(reinterpret_cast<const unsigned char*>(str_input.c_str()), str_input.length(), output); 
+    return _mm_load_si128((block*)&output[0]);
 }
 
 BigInt StringToBigInt(const std::string& str_input){
@@ -114,13 +115,6 @@ block ECPointToBlock(const ECPoint &A)
     return StringToBlock(str_input);  
 }
 
-// block ThreadSafeECPointToBlock(const ECPoint &A) 
-// {
-//     std::string str_input = A.ThreadSafeToByteString();
-//     return StringToBlock(str_input);  
-// }
-
-
 std::string ECPointToString(const ECPoint &A) 
 { 
     unsigned char input[POINT_COMPRESSED_BYTE_LEN];
@@ -155,7 +149,7 @@ block FastBlocksToBlock(const std::vector<block> input_block)
     std::vector<block> vec_B = input_block;
     // use CBC-AES hash: digest lies in the last block
     size_t BLOCK_NUM = vec_B.size();
-    AES::CBCEnc(fix_aes_enc_key, vec_B.data(), BLOCK_NUM);  
+    AES::CBCEnc(AES::fixed_enc_key, vec_B.data(), BLOCK_NUM);  
     return vec_B[BLOCK_NUM-1];
 }
 
@@ -173,6 +167,24 @@ inline ECPoint BlockToECPoint(const block &var)
         BN_bin2bn(buffer, 32, x);
         if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, ec_ctx)==1) break;      
         BasicHash(buffer, 32, buffer);
+    }
+    BN_free(x);    
+    return ecp_result;
+}
+
+
+// fast and threadsafe block to ecpoint hash using low level openssl code
+inline ECPoint DataToECPoint(const void* data, size_t HASH_INPUT_LEN)
+{
+    ECPoint ecp_result; 
+ 
+    BIGNUM *x = BN_new();
+    unsigned char buffer[HASH_OUTPUT_LEN];
+    BasicHash((unsigned char*)data, HASH_INPUT_LEN, buffer);    
+    while (true) { 
+        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, ec_ctx)==1) break;      
+        BasicHash(buffer, HASH_INPUT_LEN, buffer); // iterative hash
+        BN_bin2bn(buffer, HASH_OUTPUT_LEN, x);
     }
     BN_free(x);    
     return ecp_result;

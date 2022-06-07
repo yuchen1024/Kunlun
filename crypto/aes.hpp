@@ -6,16 +6,23 @@
 #ifndef KUNLUN_AES_HPP_
 #define KUNLUN_AES_HPP_
 
+#include "../include/global.hpp"
 #include "block.hpp"
+
 
 namespace AES{
 
 static const block IV = Block::zero_block; 
+const static size_t BATCH_SIZE = 8;
 
 struct Key{ 
     block roundkey[11]; 
     size_t ROUND_NUM; 
 };
+
+static Key fixed_enc_key; // global aes enc key
+static Key fixed_dec_key; // global aes dec key
+
 
 #define EXPAND_ASSIST(v1, v2, v3, v4, SHUFFLE_CONST, AES_CONST)                               \
     v2 = _mm_aeskeygenassist_si128(v4, AES_CONST);                                          \
@@ -100,7 +107,7 @@ inline void Dec(const Key &key, block &data)
 __attribute__((target("aes,sse2")))
 inline void ECBEnc(const Key &key, block* data, size_t BLOCK_LEN) 
 {
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for (auto i = 0; i < BLOCK_LEN; i++)
         Enc(key, data[i]);
 }
@@ -142,7 +149,7 @@ inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN)
 __attribute__((target("aes,sse2")))
 inline void ECBDec(const Key &key, block* data, size_t BLOCK_LEN) 
 {
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for (auto i = 0; i < BLOCK_LEN; i++)
         Dec(key, data[i]);
 }
@@ -172,6 +179,15 @@ inline void CBCDec(const Key &key, block* data, size_t BLOCK_LEN)
     data[0] = _mm_xor_si128(data[0], IV);
 }
 
+}
+
+
+void AES_Initialize()
+{
+    // initialize fixed aes key
+    block salt = Block::zero_block;
+    AES::fixed_enc_key = AES::GenEncKey(salt); 
+    AES::fixed_dec_key = AES::DeriveDecKeyFromEncKey(AES::fixed_enc_key); 
 }
 #endif
 

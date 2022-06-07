@@ -4,7 +4,7 @@
 void GenTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1, std::vector<uint8_t> &vec_selection_bit, 
                  std::vector<block> &vec_result, size_t NUM)
 {	
-	PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
+	PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
 	vec_m0 = PRG::GenRandomBlocks(seed, NUM);
 	vec_m1 = PRG::GenRandomBlocks(seed, NUM);	
 	vec_selection_bit = PRG::GenRandomBits(seed, NUM);
@@ -64,8 +64,7 @@ void FetchTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1,
 
 int main()
 { 
-	Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);  
+	CRYPTO_Initialize(); 
 
 	PrintSplitLine('-'); 
     std::cout << "Naor-Pinkas OT test begins >>>" << std::endl; 
@@ -125,7 +124,6 @@ int main()
     std::cout << "Naor-Pinkas OT test ends >>>" << std::endl; 
     PrintSplitLine('-'); 
 
-	ECGroup_Finalize(); 
-    Global_Finalize();   
+    CRYPTO_Finalize();   
 	return 0; 
 }

@@ -3,7 +3,8 @@
 
 #define PRECOMPUTE_ENABLE
 
-#include "global.hpp"
+#include "../include/global.hpp"
+#include "bigint.hpp"
 
 static EC_GROUP *group;
 const static EC_POINT *generator; 
@@ -18,7 +19,17 @@ static BIGNUM *curve_params_q; // q = (p-1)/2
 static size_t POINT_BYTE_LEN; // the byte length of ec point
 static size_t POINT_COMPRESSED_BYTE_LEN; // the byte length of ec point in compressed form
 
-void ECGroup_Initialize(int curve_id){
+static BN_CTX *ec_ctx; // define ctx for ecc operations
+
+static int curve_id = NID_X9_62_prime256v1; 
+
+void ECGroup_Initialize(){
+    #ifdef PARALLEL
+        ec_ctx = nullptr;
+    #else
+        ec_ctx = bn_ctx; 
+    #endif
+
     group = EC_GROUP_new_by_curve_name(curve_id);
     // If this fails, this is usually due to an invalid curve id.
     CRYPTO_CHECK(group !=nullptr);
@@ -45,9 +56,6 @@ void ECGroup_Initialize(int curve_id){
     BN_BYTE_LEN = BN_num_bits(curve_params_p)/8 + BN_num_bits(curve_params_p)%8;
     POINT_BYTE_LEN = BN_BYTE_LEN * 2 + 1; 
     POINT_COMPRESSED_BYTE_LEN = BN_BYTE_LEN + 1; 
-
-    //BN_BIT_LEN = BN_BYTE_LEN * 8; 
-    INT_BYTE_LEN = sizeof(size_t); 
 
     EC_GROUP_precompute_mult((EC_GROUP*) group, bn_ctx); // pre-compute the table of g     
     

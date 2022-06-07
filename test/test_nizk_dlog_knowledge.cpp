@@ -1,6 +1,7 @@
 #define DEBUG
 
 #include "../zkp/nizk/nizk_dlog_knowledge.hpp"
+#include "../include/kunlun.hpp"
 
 void GenRandomDLOGInstanceWitness(DLOGKnowledge::PP &pp, DLOGKnowledge::Instance &instance, DLOGKnowledge::Witness &witness)
 {
@@ -50,13 +51,11 @@ void test_nizk_dlog_knowledge()
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize();   
     
     test_nizk_dlog_knowledge();
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

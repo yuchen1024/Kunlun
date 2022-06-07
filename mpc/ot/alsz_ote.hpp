@@ -3,6 +3,7 @@
 
 #include "naor_pinkas_ot.hpp"
 #include "../../utility/routines.hpp"
+#include "../../crypto/otp.hpp"
 /*
  * ALSZ OT Extension
  * [REF] With optimization of "More Efficient Oblivious Transfer and Extensions for Faster Secure Computation"
@@ -355,7 +356,6 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver
     return vec_result; 
 }
 
-
 void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LEN) 
 {
     /* 
@@ -432,6 +432,100 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_
         // only decrypt when selection bit is 1
         if(vec_receiver_selection_bit[i] == 1){
             vec_result.emplace_back(vec_outer_C[i]^vec_K[i]);
+        }
+    }   
+
+    #ifdef DEBUG
+        std::cout << "ALSZ OTE: Receiver get "<< ROW_NUM << " number of ciphertexts from Sender" << std::endl; 
+        PrintSplitLine('*'); 
+    #endif
+
+    std::cout << "ALSZ OTE [step 4]: Receiver obtains vec_m" << std::endl; 
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "ALSZ OTE: Receiver side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
+
+    return vec_result; 
+}
+
+// support arbitrary message
+// LEN is the byte length of single message, EXTEND_LEN is the number of OT
+void OnesidedSend(NetIO &io, PP &pp, std::vector<std::string> &vec_m, size_t LEN, size_t EXTEND_LEN) 
+{
+    PrintSplitLine('-'); 
+	
+    auto start_time = std::chrono::steady_clock::now(); 
+
+    // prepare to receive a secret shared matrix Q from receiver
+    size_t ROW_NUM = EXTEND_LEN;   // set row num as the length of long ot
+    size_t COLUMN_NUM = pp.BASE_LEN;  // set column num as the length of base ot
+
+    CheckParameters(ROW_NUM, COLUMN_NUM); 
+
+    std::vector<block> vec_K0(ROW_NUM);
+    std::vector<block> vec_K1(ROW_NUM); 
+
+    RandomSend(io, pp, vec_K0, vec_K1, EXTEND_LEN); 
+
+    // begin to transmit the real message
+    std::vector<std::string> vec_outer_C(ROW_NUM);
+
+    #pragma omp parallel for num_threads(thread_count)
+    for(auto i = 0; i < ROW_NUM; i++)
+    {
+        vec_outer_C[i] = OTP::Enc(vec_K1[i], vec_m[i]);
+    }
+    io.SendBytes(vec_outer_C.data(), ROW_NUM*LEN); 
+
+    std::cout << "ALSZ OTE [step 3]: Sender ===> vec_C ===> Receiver" << " [" 
+              << (double)ROW_NUM*LEN/(1024*1024) << " MB]" << std::endl;
+
+    #ifdef DEBUG
+        std::cout << "ALSZ OTE: Sender sends "<< ROW_NUM << " number of ciphertexts to receiver" << std::endl; 
+        PrintSplitLine('*'); 
+    #endif
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "ALSZ OTE: Sender side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
+}
+
+// support arbitrary message
+// LEN is the byte length of single message, EXTEND_LEN is the number of OT
+std::vector<std::string> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver_selection_bit, 
+                                         size_t LEN, size_t EXTEND_LEN)
+{
+    PrintSplitLine('-'); 
+
+    std::vector<std::string> vec_result;
+    // first act as sender in base OT
+    
+    auto start_time = std::chrono::steady_clock::now(); 
+    // prepare a random matrix
+    size_t ROW_NUM = EXTEND_LEN; 
+    size_t COLUMN_NUM = pp.BASE_LEN; 
+
+    CheckParameters(ROW_NUM, COLUMN_NUM); 
+
+    std::vector<block> vec_K(ROW_NUM); 
+
+    RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
+
+    std::vector<std::string> vec_outer_C(ROW_NUM); 
+    io.ReceiveBytes(vec_outer_C.data(), ROW_NUM*LEN);
+
+    for(auto i = 0; i < ROW_NUM; i++)
+    {        
+        // only decrypt when selection bit is 1
+        if(vec_receiver_selection_bit[i] == 1){
+            vec_result.emplace_back(OTP::Dec(vec_K[i], vec_outer_C[i]));
         }
     }   
 

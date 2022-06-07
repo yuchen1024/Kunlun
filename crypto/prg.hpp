@@ -6,9 +6,7 @@
 #ifndef KUNLUN_CRYPTO_PRG_HPP_
 #define KUNLUN_CRYPTO_PRG_HPP_
 
-
 #include "aes.hpp"
-#include "global.hpp"
 
 #ifdef ENABLE_RDSEED
 #include <x86intrin.h>
@@ -17,6 +15,8 @@
 #endif
 
 namespace PRG{
+
+const char fixed_salt[] = "\x61\x7e\x8d\xa2\xa0\x51\x1e\x96\x5e\x41\xc2\x9b\x15\x3f\xc7\x7a";
 
 struct Seed{ 
     size_t counter = 0; 
@@ -68,18 +68,18 @@ Seed SetSeed(const void* salt = nullptr, uint64_t id = 0) {
 std::vector<block> GenRandomBlocks(Seed &seed, size_t LEN)
 {
     std::vector<block> vec_b(LEN); 
-    block temp_block[AES_BATCH_SIZE];
-    for(auto i = 0; i < LEN/AES_BATCH_SIZE; i++){
-        for (auto j = 0; j < AES_BATCH_SIZE; j++)
+    block temp_block[AES::BATCH_SIZE];
+    for(auto i = 0; i < LEN/AES::BATCH_SIZE; i++){
+        for (auto j = 0; j < AES::BATCH_SIZE; j++)
             temp_block[j] = Block::MakeBlock(0LL, seed.counter++);
-        AES::FastECBEnc(seed.aes_key, temp_block, AES_BATCH_SIZE);
-        memcpy(vec_b.data() + i*AES_BATCH_SIZE, temp_block, AES_BATCH_SIZE*sizeof(block));
+        AES::FastECBEnc(seed.aes_key, temp_block, AES::BATCH_SIZE);
+        memcpy(vec_b.data() + i*AES::BATCH_SIZE, temp_block, AES::BATCH_SIZE*sizeof(block));
     }
-    size_t REMAIN_LEN = LEN % AES_BATCH_SIZE;
+    size_t REMAIN_LEN = LEN % AES::BATCH_SIZE;
     for (auto j = 0; j < REMAIN_LEN; j++)
         temp_block[j] = Block::MakeBlock(0LL, seed.counter++);
     AES::FastECBEnc(seed.aes_key, temp_block, REMAIN_LEN);
-    memcpy(vec_b.data()+(LEN/AES_BATCH_SIZE)*AES_BATCH_SIZE, temp_block, REMAIN_LEN*sizeof(block));
+    memcpy(vec_b.data()+(LEN/AES::BATCH_SIZE)*AES::BATCH_SIZE, temp_block, REMAIN_LEN*sizeof(block));
 
     return vec_b; 
 }

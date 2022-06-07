@@ -276,14 +276,12 @@ void Emulate_ADCP_System()
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize();   
 
     Build_ADCP_Test_Enviroment(); 
     Emulate_ADCP_System();
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

@@ -1,6 +1,7 @@
 //#define DEBUG
 #include "../signature/schnorr.hpp"
 #include "../utility/print.hpp"
+#include "../include/kunlun.hpp"
 
 void test_schnorr(size_t TEST_NUM)
 {
@@ -50,8 +51,8 @@ void test_schnorr(size_t TEST_NUM)
 
 int main()
 {  
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);  
+    CRYPTO_Initialize(); 
+ 
     
     std::ios::sync_with_stdio(false);
 
@@ -66,9 +67,8 @@ int main()
     std::cout << "Schnorr SIG test finishes >>>" << std::endl; 
     PrintSplitLine('-'); 
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
-    return 0; 
+  
+    CRYPTO_Finalize(); 
     
     return 0; 
 }

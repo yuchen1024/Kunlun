@@ -7,9 +7,7 @@
 #ifndef KUNLUN_EC_POINT_HPP_
 #define KUNLUN_EC_POINT_HPP_
 
-#include "bigint.hpp"
 #include "ec_group.hpp"
-#include "global.hpp"
 #include "aes.hpp"
 #include "../utility/murmurhash2.hpp"
 #include "../utility/routines.hpp"
@@ -232,21 +230,6 @@ std::string ECPoint::ToByteString() const
     return ecp_str; 
 }
 
-// std::string ECPoint::ThreadSafeToByteString() const
-// {
-//     std::string ecp_str(POINT_COMPRESSED_BYTE_LEN, '0');   
-//     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, 
-//                        reinterpret_cast<unsigned char *>(&ecp_str[0]), POINT_COMPRESSED_BYTE_LEN, nullptr);
-//     return ecp_str; 
-// }
-
-// make sure you have allocate enough memory for buffer
-// does not make this check to efficiency concern
-// inline void ECPoint::ThreadSafeToByteArray(unsigned char* buffer) const
-// {
-//     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr); 
-// }
-
 /* convert an EC point to string */
 std::string ECPoint::ToHexString() const
 {
@@ -279,7 +262,7 @@ size_t ECPoint::FastToUint64() const
     data[0] = _mm_load_si128((block *)(buffer));
     data[1] = _mm_load_si128((block *)(buffer+16));
 
-    AES::FastECBEnc(fix_aes_enc_key, &data[0], 1);
+    AES::FastECBEnc(AES::fixed_enc_key, &data[0], 1);
 
     data[1] = _mm_xor_si128(data[1], data[0]);
 

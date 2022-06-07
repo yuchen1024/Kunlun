@@ -1,12 +1,9 @@
 #include "../crypto/aes.hpp"
-#include "../crypto/global.hpp"
-#include "../crypto/ec_point.hpp"
-#include "../utility/print.hpp"
+#include "../include/kunlun.hpp"
 
 int main()
 {  
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);  
+    CRYPTO_Initialize(); 
     
     std::ios::sync_with_stdio(false);
 
@@ -28,16 +25,15 @@ int main()
     PrintSplitLine('-');
     
     std::cout << "after encryption ==" << std::endl; 
-    AES::CBCEnc(fix_aes_enc_key, data, 4);
+    AES::CBCEnc(AES::fixed_enc_key, data, 4);
     Block::PrintBlocks(data, 4); 
     PrintSplitLine('-');
 
     std::cout << "after decryption ==" << std::endl; 
-    AES::CBCDec(fix_aes_dec_key, data, 4);
+    AES::CBCDec(AES::fixed_dec_key, data, 4);
     Block::PrintBlocks(data, 4); 
     PrintSplitLine('-');
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
     return 0; 
 }

@@ -2,6 +2,7 @@
 
 #include "../pke/twisted_elgamal.hpp"
 #include "../zkp/nizk/nizk_plaintext_knowledge.hpp"
+#include "../include/kunlun.hpp"
 
 
 void GenRandomEncInstanceWitness(PlaintextKnowledge::PP &pp, PlaintextKnowledge::Instance &instance, 
@@ -53,13 +54,11 @@ void test_nizk_plaintext_knowledge()
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize(); 
     
     test_nizk_plaintext_knowledge();
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

@@ -7,13 +7,15 @@ this hpp implements some routine algorithms
 #ifndef KUNLUN_HPP_
 #define KUNLUN_HPP_
 
-#include "../crypto/global.hpp"
+#include "global.hpp"
+
 #include "../crypto/bigint.hpp"
 #include "../crypto/ec_point.hpp"
 #include "../crypto/block.hpp"
 #include "../crypto/aes.hpp"
 #include "../crypto/prg.hpp"
 #include "../crypto/hash.hpp"
+#include "../crypto/setup.hpp"
 
 #include "../netio/stream_channel.hpp"
 
@@ -24,6 +26,7 @@ this hpp implements some routine algorithms
 #include "../utility/print.hpp"
 #include "../utility/routines.hpp"
 #include "../utility/serialization.hpp"
+
 
 namespace kunlun{
     using Serialization::operator<<;

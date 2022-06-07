@@ -1,6 +1,7 @@
 #define DEBUG
 
 #include "../zkp/nizk/nizk_enc_relation.hpp"
+#include "../include/kunlun.hpp"
 
 
 void GenRandomEncInstanceWitness(EncRelation::PP &pp, EncRelation::Instance &instance, 
@@ -81,14 +82,12 @@ void test_nizk_enc_relation(bool flag)
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize();  
     
     test_nizk_enc_relation(true);
     test_nizk_enc_relation(false); 
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

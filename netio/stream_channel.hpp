@@ -15,6 +15,9 @@
 
 #include "../include/kunlun.hpp"
 
+const static size_t NETWORK_BUFFER_SIZE = 1024*1024;
+const static size_t FILE_BUFFER_SIZE = 1024*16;
+
 class NetIO{ 
 public:
 	bool IS_SERVER;

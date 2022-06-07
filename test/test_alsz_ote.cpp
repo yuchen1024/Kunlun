@@ -20,7 +20,7 @@ OTETestcase GenTestCase(size_t EXTEND_LEN)
     testcase.EXTEND_LEN = EXTEND_LEN; 
     testcase.HAMMING_WEIGHT = 0; 
 
-	PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
+	PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
 	
     testcase.vec_m0 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
 	testcase.vec_m1 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
@@ -94,8 +94,7 @@ void FetchTestCase(OTETestcase &testcase, std::string testcase_filename)
 
 int main()
 {
-	Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1); 
+	CRYPTO_Initialize(); 
 
 	PrintSplitLine('-'); 
     std::cout << "ALSZ OTE test begins >>>" << std::endl; 
@@ -173,7 +172,6 @@ int main()
     std::cout << "ALSZ OTE test ends >>>" << std::endl; 
     PrintSplitLine('-'); 
 
-	ECGroup_Finalize(); 
-    Global_Finalize();   
+    CRYPTO_Finalize();   
 	return 0; 
 }

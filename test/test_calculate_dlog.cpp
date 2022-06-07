@@ -64,8 +64,7 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 
 int main()
 {  
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);  
+    CRYPTO_Initialize();   
     
     std::ios::sync_with_stdio(false);
 
@@ -75,8 +74,7 @@ int main()
 
     benchmark_dlog(RANGE_LEN, TRADEOFF_NUM, TEST_NUM);
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

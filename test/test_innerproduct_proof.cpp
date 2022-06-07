@@ -1,6 +1,7 @@
 #define DEBUG
 
 #include "../zkp/bulletproofs/innerproduct_proof.hpp"
+#include "../include/kunlun.hpp"
 
 // generate a random instance-witness pair
 void GenRandomInnerProductInstanceWitness(InnerProduct::PP &pp, InnerProduct::Instance &instance, InnerProduct::Witness &witness)
@@ -71,13 +72,11 @@ void test_innerproduct_proof()
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize();  
     
     test_innerproduct_proof();
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

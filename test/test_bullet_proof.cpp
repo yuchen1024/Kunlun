@@ -152,8 +152,7 @@ void test_bulletproof(size_t RANGE_LEN, size_t MAX_AGG_NUM, bool STATEMENT_FLAG)
 
 int main()
 { 
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize();  
 
     size_t RANGE_LEN = 32; // range size
     size_t MAX_AGG_NUM = 4;  // number of sub-argument
@@ -164,8 +163,7 @@ int main()
     test_bulletproof(RANGE_LEN, MAX_AGG_NUM, false);
     test_bulletproof(RANGE_LEN, MAX_AGG_NUM, true);
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0;
 }

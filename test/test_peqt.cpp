@@ -1,4 +1,5 @@
 #include "../mpc/peqt/peqt_from_ddh.hpp"
+#include "../include/kunlun.hpp"
 
 using Serialization::operator<<; 
 using Serialization::operator>>; 
@@ -14,7 +15,7 @@ PEQTTestcase GenTestInstance(size_t LEN)
 {
     PEQTTestcase testcase; 
     testcase.LEN = LEN;  
-    PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_indication_bit = PRG::GenRandomBits(seed, LEN);  
@@ -68,8 +69,7 @@ void FetchTestInstance(PEQTTestcase &testcase, std::string testcase_filename)
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1); 
+    CRYPTO_Initialize(); 
 
     PrintSplitLine('-'); 
     std::cout << "DDH-based PEQT test begins >>>" << std::endl; 
@@ -112,14 +112,12 @@ int main()
         NetIO client("client", "127.0.0.1", 8080);        
         std::vector<uint8_t> vec_result = DDHPEQT::Receive(client, testcase.vec_Y, ROW_NUM, COLUMN_NUM);
     } 
-
-
     
     PrintSplitLine('-'); 
     std::cout << "DDH-based PEQT test ends >>>" << std::endl; 
     PrintSplitLine('-'); 
 
-    ECGroup_Finalize(); 
-    Global_Finalize();   
+    CRYPTO_Finalize();   
+  
     return 0; 
 }

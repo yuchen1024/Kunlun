@@ -125,8 +125,7 @@ void test_gadget2(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN, si
 
 int main()
 { 
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize(); 
 
     size_t RANGE_LEN = 32; // range size
     size_t AGG_NUM = 2; 
@@ -137,8 +136,7 @@ int main()
     test_gadget1(LEFT_BOUND, RIGHT_BOUND, RANGE_LEN, AGG_NUM); 
     test_gadget2(LEFT_BOUND, RIGHT_BOUND, RANGE_LEN, AGG_NUM); 
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

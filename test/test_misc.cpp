@@ -2,8 +2,11 @@
 #include "../crypto/ec_point.hpp"
 #include "../crypto/prg.hpp"
 #include "../crypto/hash.hpp"
-
 #include "../utility/print.hpp"
+
+#include "../include/kunlun.hpp"
+
+
 void benchmark_ecc(size_t TEST_NUM)
 {
     PrintSplitLine('-'); 
@@ -57,7 +60,7 @@ void benchmark_ecc(size_t TEST_NUM)
 
 void test_hash_to_point(size_t LEN)
 {
-    PRG::Seed seed = PRG::SetSeed(fix_key, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
     std::vector<block> vec_M = PRG::GenRandomBlocks(seed, LEN);
     
 
@@ -148,8 +151,7 @@ void test_hash_to_point(size_t LEN)
 
 int main()
 {  
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);  
+    CRYPTO_Initialize(); 
 
     //size_t TEST_NUM = 1024*1024;  
 
@@ -194,8 +196,7 @@ int main()
 
     // Block::Calc2ToTheN(23);
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
     return 0; 
 }
 

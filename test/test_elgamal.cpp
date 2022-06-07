@@ -183,8 +183,7 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
 
 int main()
 {  
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);  
+    CRYPTO_Initialize();  
     
     std::ios::sync_with_stdio(false);
 
@@ -205,8 +204,8 @@ int main()
     std::cout << "ElGamal PKE test finishes <<<<<<" << std::endl; 
     PrintSplitLine('-'); 
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
+    
     return 0; 
 }
 

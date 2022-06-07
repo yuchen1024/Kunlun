@@ -1,6 +1,7 @@
 #define DEBUG
 
 #include "../zkp/nizk/nizk_dlog_equality.hpp"
+#include "../include/kunlun.hpp"
 
 void GenRandomDDHInstanceWitness(DLOGEquality::PP &pp, DLOGEquality::Instance &instance, 
                                  DLOGEquality::Witness &witness, bool flag)
@@ -65,14 +66,12 @@ void test_nizk_dlog_equality(bool flag)
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize();  
     
     test_nizk_dlog_equality(true);
     test_nizk_dlog_equality(false); 
 
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

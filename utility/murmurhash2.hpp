@@ -17,7 +17,8 @@
 #ifndef MURMURHASH2_HPP_
 #define MURMURHASH2_HPP_
 
-#include "../crypto/global.hpp"
+
+const static uint64_t fixed_salt = 0xAAAAAAAA; // used for murmurhash
 
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros

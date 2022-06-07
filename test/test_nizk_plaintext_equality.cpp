@@ -2,6 +2,7 @@
 
 #include "../pke/twisted_elgamal.hpp"
 #include "../zkp/nizk/nizk_plaintext_equality.hpp"
+#include "../include/kunlun.hpp"
 
 void GenRandomTripleEncInstanceWitness(PlaintextEquality::PP &pp, PlaintextEquality::Instance &instance, 
                                        PlaintextEquality::Witness &witness, bool flag)
@@ -67,14 +68,12 @@ void test_nizk_plaintext_equality(bool flag)
 
 int main()
 {
-    Global_Initialize(); 
-    ECGroup_Initialize(NID_X9_62_prime256v1);   
+    CRYPTO_Initialize();   
     
     test_nizk_plaintext_equality(true);
     test_nizk_plaintext_equality(false); 
-
-    ECGroup_Finalize(); 
-    Global_Finalize(); 
+ 
+    CRYPTO_Finalize(); 
 
     return 0; 
 }

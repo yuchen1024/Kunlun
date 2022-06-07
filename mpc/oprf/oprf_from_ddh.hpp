@@ -1,13 +1,7 @@
 #ifndef KUNLUN_DDH_OPRF_HPP_
 #define KUNLUN_DDH_OPRF_HPP_
 
-#include "../../crypto/ec_point.hpp"
-#include "../../crypto/hash.hpp"
-#include "../../crypto/prg.hpp"
-#include "../../crypto/block.hpp"
-#include "../../netio/stream_channel.hpp"
-
-
+#include "../../include/kunlun.hpp"
 
 /*
 ** implement (permuted)-OPRF based on the DDH Assumption
@@ -68,7 +62,10 @@ void FetchPP(PP &pp, std::string pp_filename)
     fin.close(); 
 }
 
-// the default permutation_map should be an identity mapping
+/*
+** the default permutation_map should be an identity mapping
+** key is a random field element in Z_p
+*/
 BigInt Server(NetIO &io, PP &pp, std::vector<uint64_t> permutation_map, size_t LEN)
 {
     PrintSplitLine('-'); 
@@ -80,9 +77,9 @@ BigInt Server(NetIO &io, PP &pp, std::vector<uint64_t> permutation_map, size_t L
     io.ReceiveECPoints(vec_mask_X.data(), LEN);
 
     std::vector<ECPoint> vec_Fk_mask_X(LEN); 
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){ 
-        vec_Fk_mask_X[permutation_map[i]] = vec_mask_X[i].ThreadSafeMul(k); 
+        vec_Fk_mask_X[permutation_map[i]] = vec_mask_X[i] * k; 
     }
 
     io.SendECPoints(vec_Fk_mask_X.data(), LEN);
@@ -104,7 +101,7 @@ BigInt Server(NetIO &io, PP &pp, std::vector<uint64_t> permutation_map, size_t L
     return k; 
 }
 
-void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
+std::vector<block> Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
 {    
     PrintSplitLine('-'); 
 
@@ -113,9 +110,9 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     BigInt r = GenRandomBigIntLessThan(order); // pick a mask
 
     std::vector<ECPoint> vec_mask_X(LEN); 
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){
-        vec_mask_X[i] = Hash::ThreadSafeBlockToECPoint(vec_X[i]).ThreadSafeMul(r); // H(x_i)^r
+        vec_mask_X[i] = Hash::BlockToECPoint(vec_X[i]) * r; // H(x_i)^r
     } 
     io.SendECPoints(vec_mask_X.data(), LEN);
     
@@ -130,21 +127,20 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     std::vector<ECPoint> vec_Fk_mask_X(LEN);
     io.ReceiveECPoints(vec_Fk_mask_X.data(), LEN); // receive F_k(mask_x_i) from Server
 
-
     BigInt r_inverse = r.ModInverse(order); 
     std::vector<ECPoint> vec_Fk_X(LEN);
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){
-        vec_Fk_X[i] = vec_Fk_mask_X[i].ThreadSafeMul(r_inverse); 
+        vec_Fk_X[i] = vec_Fk_mask_X[i] * r_inverse; 
     }
 
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
     std::cout << "DDH-based (permuted)-OPRF: Client side takes time = " 
-              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-
-        
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;        
     PrintSplitLine('-'); 
+
+    return vec_Fk_X; 
 }
 
 

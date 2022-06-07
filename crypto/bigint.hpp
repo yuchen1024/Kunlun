@@ -1,7 +1,27 @@
 #ifndef CRYPTO_BIGINT_HPP_
 #define CRYPTO_BIGINT_HPP_
 
-#include "global.hpp"
+#include "../include/openssl.inc"
+#include "../include/std.inc"
+#include "../include/global.hpp"
+
+static size_t BN_BYTE_LEN;  // the byte length of bigint
+static size_t INT_BYTE_LEN; 
+//static size_t FIELD_BYTE_LEN;  // each scalar field element is 256 bit 
+static BN_CTX *bn_ctx; // define ctx for ecc operations
+
+void BN_Initialize(){
+    bn_ctx = BN_CTX_new();
+    if (bn_ctx == nullptr) std::cerr << "bn_ctx initialize fails" << std::endl;
+    
+    //BN_BIT_LEN = BN_BYTE_LEN * 8; 
+    INT_BYTE_LEN = sizeof(size_t); 
+}
+
+void BN_Finalize(){
+    BN_CTX_free(bn_ctx);
+} 
+
 
 // wrapper class for openssl BIGNUM
 

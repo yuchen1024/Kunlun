@@ -6,7 +6,6 @@
 #ifndef MURMURHASH3_HPP_
 #define MURMURHASH3_HPP_
 
-#include "../crypto/global.hpp"
 
 void MurmurHash3_x86_32  (const void * key, int len, uint32_t seed, void * out);
 

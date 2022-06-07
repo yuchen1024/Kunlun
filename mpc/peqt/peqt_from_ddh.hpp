@@ -1,13 +1,7 @@
 #ifndef KUNLUN_DDH_PEQT_HPP_
 #define KUNLUN_DDH_PEQT_HPP_
 
-#include "../../crypto/ec_point.hpp"
-#include "../../crypto/hash.hpp"
-#include "../../crypto/prg.hpp"
-#include "../../crypto/block.hpp"
-#include "../../utility/print.hpp"
-#include "../../utility/serialization.hpp"
-#include "../../netio/stream_channel.hpp"
+#include "../../include/kunlun.hpp"
 
 
 /*
