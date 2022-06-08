@@ -508,7 +508,7 @@ std::vector<std::string> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t>
 
     RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
 
-    std::vector<std::string> vec_outer_C(EXTEND_LEN); 
+    std::vector<std::string> vec_outer_C(EXTEND_LEN, std::string(ITEM_LEN, '0')); 
     io.ReceiveBytes(vec_outer_C.data(), EXTEND_LEN*ITEM_LEN);
 
     std::vector<std::string> vec_result;
