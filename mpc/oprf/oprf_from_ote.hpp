@@ -187,6 +187,9 @@ std::vector<std::string> Packing(PP &pp, std::vector<std::vector<uint8_t>> &matr
 // server obtains a matrix with dimension m*w as the OPRF key
 std::vector<std::vector<uint8_t>> Server(NetIO &io, PP &pp)
 {
+    PrintSplitLine('-'); 
+    auto start_time = std::chrono::steady_clock::now(); 
+
     /* step 1: base OT (page 10 figure 4 item1) */
     PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0);
 	
@@ -224,6 +227,13 @@ std::vector<std::vector<uint8_t>> Server(NetIO &io, PP &pp)
 		}
     }
         
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "OTE-based OPRF: Server side takes time = " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;        
+    PrintSplitLine('-'); 
+
     return matrix_C;
 }
 
@@ -297,13 +307,16 @@ std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &opr
 // client obtains OPRF values with input set
 std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_NUM)
 {
+    PrintSplitLine('-'); 
+    auto start_time = std::chrono::steady_clock::now(); 
+    
     /* step 1: base OT (page 10 figure 4 item1) */
     PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); 
     std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, pp.matrix_width);
     std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, pp.matrix_width);
 
-    std::cout << pp.matrix_width << std::endl;
-    
+    //std::cout << pp.matrix_width << std::endl;
+
 	NPOT::Send(io, pp.npot_part, vec_K0, vec_K1, pp.matrix_width);
 
     /* step2: compute F_k(x) (F: {0,1}^128 * {0,1}^* -> {0,1}^128) */
@@ -410,6 +423,13 @@ std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, si
 
     /* step4: compute \Psi = H2(A1[v[1]] || ... || Aw[v[w]]) */
     std::vector<std::string> vec_Fk_Y = Packing(pp, matrix_mapping_values);
+
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "OTE-based OPRF: Client side takes time = " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;        
+    PrintSplitLine('-'); 
 
     return vec_Fk_Y;
 }

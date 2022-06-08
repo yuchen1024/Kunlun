@@ -21,6 +21,11 @@ void CRYPTO_Initialize(){
     BN_Initialize();
     ECGroup_Initialize(); 
     AES_Initialize();
+    #ifdef PARALLEL
+    if(thread_count == 1){
+        std::cerr << "parallel parameter setting is wrong" << std::endl;
+    }
+    #endif
 }
 
 void CRYPTO_Finalize(){
