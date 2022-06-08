@@ -3,18 +3,34 @@
 
 #include "prg.hpp"
 
-inline std::vector<uint8_t> XOR(std::vector<uint8_t> &A, std::vector<uint8_t> &B)
+inline void XOR(uint8_t* A, uint8_t* B, uint8_t* C, size_t LEN)
 {
-    if(A.size()!=B.size()){
-        std::cerr << "size does not match" << std::endl; 
-    }
-    size_t LEN = A.size(); 
-    std::vector<uint8_t> result(LEN);
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){
-        result[i] = A[i]^B[i]; 
+        C[i] = A[i]^B[i]; 
+    }    
+}
+
+inline std::string XOR(std::string &str_A, std::string &str_B)
+{
+    if(str_A.size() != str_B.size()){
+        std::cerr << "size does not match" << std::endl; 
     }
-    return result; 
+    size_t LEN = str_A.size(); 
+    std::string str_C(LEN, '0');
+    XOR((uint8_t*)&str_A[0], (uint8_t*)&str_B[0], (uint8_t*)&str_C[0], LEN); 
+    return str_C; 
+}
+
+inline std::vector<uint8_t> XOR(std::vector<uint8_t> &vec_A, std::vector<uint8_t> &vec_B)
+{
+    if(vec_A.size()!=vec_B.size()){
+        std::cerr << "size does not match" << std::endl; 
+    }
+    size_t LEN = vec_A.size(); 
+    std::vector<uint8_t> vec_C(LEN);
+    XOR((uint8_t*)&vec_A[0], &vec_B[0], &vec_C[0], LEN); 
+    return vec_C; 
 }
 
 

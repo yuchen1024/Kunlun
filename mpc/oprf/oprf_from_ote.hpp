@@ -126,7 +126,7 @@ std::vector<block> Encode(std::vector<block> &vec_X, block& key)
 {
     size_t LEN = vec_X.size(); 
     std::vector<std::vector<uint8_t>> vec_H1_X(LEN, std::vector<uint8_t>(HASH_OUTPUT_LEN));
-    std::vector<block> vec_Encode_X(LEN);
+    // std::vector<block> vec_Encode_X(LEN);
 
     std::vector<block> vec_Z0(LEN);
     std::vector<block> vec_Z1(LEN); 
@@ -135,8 +135,8 @@ std::vector<block> Encode(std::vector<block> &vec_X, block& key)
     for (auto i = 0; i < LEN; i++) {
         BasicHash((uint8_t*)(vec_X.data() + i), sizeof(block), vec_H1_X[i].data());
         // H1(x) = (x_left||x_right)
-        memcpy(&vec_Z0[i], vec_H1_X.data(), sizeof(block)); 
-        memcpy(&vec_Z1[i], vec_H1_X.data()+sizeof(block), sizeof(block)); 
+        memcpy(&vec_Z0[i], vec_H1_X[i].data(), sizeof(block)); 
+        memcpy(&vec_Z1[i], vec_H1_X[i].data()+sizeof(block), sizeof(block)); 
     }
         
     AES::Key aes_enc_key = AES::GenEncKey(key);
@@ -153,7 +153,7 @@ std::vector<block> Encode(std::vector<block> &vec_X, block& key)
 }
 
 // hash each row in matrix_mapping_values to a OUTPUT_LEN string (H2:{0,1}^w -> {0,1}^{\ell2})
-std::vector<std::string> RangeExtention(PP &pp, std::vector<std::vector<uint8_t>> &matrix_mapping_values)
+std::vector<std::string> Packing(PP &pp, std::vector<std::vector<uint8_t>> &matrix_mapping_values)
 {
     size_t matrix_width_byte = (pp.matrix_width + 7) >> 3;
 
@@ -228,10 +228,9 @@ std::vector<std::vector<uint8_t>> Server(NetIO &io, PP &pp)
 }
 
 // server evaluates OPRF values with input set use its own OPRF key
-std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &oprf_key, std::vector<block> &vec_X)
+std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &oprf_key, 
+                                  std::vector<block> &vec_X, size_t ITEM_NUM)
 {
-    size_t LEN = vec_X.size();
-
     /* step 1: compute F_k(x) (F: {0,1}^128 * {0,1}^* -> {0,1}^128) */
     size_t log_height_byte = (pp.log_matrix_height + 7) >> 3;
     size_t split_bucket_size = sizeof(block) / log_height_byte;
@@ -251,7 +250,7 @@ std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &opr
     size_t max_location = (1 << pp.log_matrix_height) - 1;
 
     // the actual size is matrix_location[w][m*logm]
-	std::vector<std::vector<uint8_t>> matrix_location(split_bucket_size, std::vector<uint8_t>(LEN * log_height_byte + sizeof(uint32_t)));
+	std::vector<std::vector<uint8_t>> matrix_location(split_bucket_size, std::vector<uint8_t>(ITEM_NUM * log_height_byte + sizeof(uint32_t)));
     std::vector<std::vector<uint8_t>> matrix_mapping_values(pp.matrix_width, std::vector<uint8_t>(matrix_height_byte, 0));
     
     AES::Key aes_enc_key;
@@ -265,7 +264,7 @@ std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &opr
         aes_enc_key = AES::GenEncKey(vec_salt[left_index / split_bucket_size + 1]);
 
         #pragma omp parallel for num_threads(thread_count)
-        for (auto low_index = 0; low_index < LEN; low_index += pp.BATCH_SIZE){
+        for (auto low_index = 0; low_index < ITEM_NUM; low_index += pp.BATCH_SIZE){
             // encrypt vec_Fk_X t times, each time encrypt BATCH_SIZE blocks
             AES::FastECBEnc(aes_enc_key, vec_Encode_X.data() + low_index, pp.BATCH_SIZE);
                 
@@ -282,7 +281,7 @@ std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &opr
         // compute mapping values from the oprfkey (compute (C1[v[1]] || ... || Cw[v[w]]) in page 9 figure 3 item3-(b))
         #pragma omp parallel for num_threads(thread_count)
         for (auto i = 0; i < bucket_size; i++){
-			for (auto j = 0; j < LEN; j++){
+			for (auto j = 0; j < ITEM_NUM; j++){
                 auto location = (*(uint32_t*)(matrix_location[i].data() + j * log_height_byte)) & max_location;
 				matrix_mapping_values[left_index + i][j >> 3] |= (uint8_t)((bool)(oprf_key[left_index + i][location >> 3] & (1 << (location & 7)))) << (j & 7);
 			}
@@ -290,21 +289,21 @@ std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &opr
     }
 
     /* step3: compute \Psi = H2(C1[v[1]] || ... || Cw[v[w]]) */
-    std::vector<std::string> vec_Fk_X = RangeExtention(pp, matrix_mapping_values);
+    std::vector<std::string> vec_Fk_X = Packing(pp, matrix_mapping_values);
 
     return vec_Fk_X;
 }
 
 // client obtains OPRF values with input set
-std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y)
+std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_NUM)
 {
-    size_t LEN = vec_Y.size();
-
     /* step 1: base OT (page 10 figure 4 item1) */
     PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); 
     std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, pp.matrix_width);
     std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, pp.matrix_width);
 
+    std::cout << pp.matrix_width << std::endl;
+    
 	NPOT::Send(io, pp.npot_part, vec_K0, vec_K1, pp.matrix_width);
 
     /* step2: compute F_k(x) (F: {0,1}^128 * {0,1}^* -> {0,1}^128) */
@@ -331,7 +330,7 @@ std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     std::vector<std::vector<uint8_t>> matrix_A(split_bucket_size, std::vector<uint8_t>(matrix_height_byte));
 	std::vector<std::vector<uint8_t>> matrix_D(split_bucket_size, std::vector<uint8_t>(matrix_height_byte));
     // the actual size is matrix_location[w][m*logm]
-	std::vector<std::vector<uint8_t>> matrix_location(split_bucket_size, std::vector<uint8_t>(LEN * log_height_byte + sizeof(uint32_t)));
+	std::vector<std::vector<uint8_t>> matrix_location(split_bucket_size, std::vector<uint8_t>(ITEM_NUM * log_height_byte + sizeof(uint32_t)));
     std::vector<std::vector<uint8_t>> matrix_mapping_values(pp.matrix_width, std::vector<uint8_t>(matrix_height_byte, 0));
     AES::Key aes_enc_key;
 
@@ -344,7 +343,7 @@ std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y)
 
         /* step 3-1: compute matrix_location (computes v = F_k(H1(y)) in page 9 figure 3 item3-(c)) */
         #pragma omp parallel for num_threads(thread_count)
-        for (auto low_index = 0; low_index < LEN; low_index += pp.BATCH_SIZE){
+        for (auto low_index = 0; low_index < ITEM_NUM; low_index += pp.BATCH_SIZE){
             // encrypt vec_Fk_Y t times, each time encrypt BATCH_SIZE blocks
             AES::FastECBEnc(aes_enc_key, vec_Encode_Y.data() + low_index, pp.BATCH_SIZE);
 
@@ -367,7 +366,7 @@ std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y)
         /* step3-2: compute matrix_D (page 9 figure 3 item1-(c)) */
         #pragma omp parallel for num_threads(thread_count)
 		for (auto i = 0; i < bucket_size; i++){
-			for (auto j = 0; j < LEN; j++){
+			for (auto j = 0; j < ITEM_NUM; j++){
                 // get a location from matrix_location, and set the value of that location in matrix_D to 0
 				auto location_in_D = (*(uint32_t*)(matrix_location[i].data() + j * log_height_byte)) & max_location;
 				matrix_D[i][location_in_D >> 3] &= ~(1 << (location_in_D & 7));
@@ -398,7 +397,7 @@ std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y)
         /* step 3-4: compute mapping values from matrix A (compute (A1[v[1]] || ... || Aw[v[w]]) in page 9 figure 3 item3-(c)) */ 
         #pragma omp parallel for num_threads(thread_count)
         for (auto i = 0; i < bucket_size; i++){
-			for (auto j = 0; j < LEN; j++){
+			for (auto j = 0; j < ITEM_NUM; j++){
                 auto location_in_A = (*(uint32_t*)(matrix_location[i].data() + j * log_height_byte)) & max_location;
 				matrix_mapping_values[left_index + i][j >> 3] |= (uint8_t)((bool)(matrix_A[i][location_in_A >> 3] & (1 << (location_in_A & 7)))) << (j & 7);
 			}
@@ -410,7 +409,7 @@ std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y)
               << (double)(pp.matrix_width * matrix_height_byte)/(1 << 20) << " MB]" << std::endl;
 
     /* step4: compute \Psi = H2(A1[v[1]] || ... || Aw[v[w]]) */
-    std::vector<std::string> vec_Fk_Y = RangeExtention(pp, matrix_mapping_values);
+    std::vector<std::string> vec_Fk_Y = Packing(pp, matrix_mapping_values);
 
     return vec_Fk_Y;
 }

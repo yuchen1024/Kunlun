@@ -83,7 +83,7 @@ int main()
     }
 
 	// set instance size
-    size_t NUM = 128; 
+    size_t NUM = 621; 
     std::cout << "number of base OT = " << NUM << std::endl; 
 
     std::string testcase_filename = "npot.testcase"; 
@@ -102,7 +102,7 @@ int main()
     PrintSplitLine('-'); 
 
     std::string party; 
-    std::cout << "please select your role between sender and receiver (hint: start receiver first) ==> ";  
+    std::cout << "please select your role between sender and receiver (hint: first start receiver, then start sender) ==> ";  
     std::getline(std::cin, party); // first receiver (acts as server), then sender (acts as client)
 	if (party == "receiver")
 	{

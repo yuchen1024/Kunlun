@@ -452,40 +452,36 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_
     return vec_result; 
 }
 
-// support arbitrary message
-// LEN is the byte length of single message, EXTEND_LEN is the number of OT
-void OnesidedSend(NetIO &io, PP &pp, std::vector<std::string> &vec_m, size_t LEN, size_t EXTEND_LEN) 
+/*
+** support arbitrary message
+** LEN is the byte length of single message, EXTEND_LEN is the number of OT
+*/
+void OnesidedSend(NetIO &io, PP &pp, std::vector<std::string> &vec_m, size_t ITEM_LEN, size_t EXTEND_LEN) 
 {
     PrintSplitLine('-'); 
 	
     auto start_time = std::chrono::steady_clock::now(); 
 
-    // prepare to receive a secret shared matrix Q from receiver
-    size_t ROW_NUM = EXTEND_LEN;   // set row num as the length of long ot
-    size_t COLUMN_NUM = pp.BASE_LEN;  // set column num as the length of base ot
-
-    CheckParameters(ROW_NUM, COLUMN_NUM); 
-
-    std::vector<block> vec_K0(ROW_NUM);
-    std::vector<block> vec_K1(ROW_NUM); 
+    std::vector<block> vec_K0(EXTEND_LEN);
+    std::vector<block> vec_K1(EXTEND_LEN); 
 
     RandomSend(io, pp, vec_K0, vec_K1, EXTEND_LEN); 
 
     // begin to transmit the real message
-    std::vector<std::string> vec_outer_C(ROW_NUM);
+    std::vector<std::string> vec_outer_C(EXTEND_LEN);
 
     #pragma omp parallel for num_threads(thread_count)
-    for(auto i = 0; i < ROW_NUM; i++)
+    for(auto i = 0; i < EXTEND_LEN; i++)
     {
         vec_outer_C[i] = OTP::Enc(vec_K1[i], vec_m[i]);
     }
-    io.SendBytes(vec_outer_C.data(), ROW_NUM*LEN); 
+    io.SendBytes(vec_outer_C.data(), EXTEND_LEN*ITEM_LEN); 
 
     std::cout << "ALSZ OTE [step 3]: Sender ===> vec_C ===> Receiver" << " [" 
-              << (double)ROW_NUM*LEN/(1024*1024) << " MB]" << std::endl;
+              << (double)EXTEND_LEN*ITEM_LEN/(1024*1024) << " MB]" << std::endl;
 
     #ifdef DEBUG
-        std::cout << "ALSZ OTE: Sender sends "<< ROW_NUM << " number of ciphertexts to receiver" << std::endl; 
+        std::cout << "ALSZ OTE: Sender sends "<< EXTEND_LEN << " number of ciphertexts to receiver" << std::endl; 
         PrintSplitLine('*'); 
     #endif
 
@@ -497,32 +493,26 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<std::string> &vec_m, size_t LEN
     PrintSplitLine('-'); 
 }
 
-// support arbitrary message
-// LEN is the byte length of single message, EXTEND_LEN is the number of OT
+/*
+** support arbitrary message
+** LEN is the byte length of single message, EXTEND_LEN is the number of OT
+*/
 std::vector<std::string> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver_selection_bit, 
-                                         size_t LEN, size_t EXTEND_LEN)
+                                         size_t ITEM_LEN, size_t EXTEND_LEN)
 {
     PrintSplitLine('-'); 
-
-    std::vector<std::string> vec_result;
-    // first act as sender in base OT
     
     auto start_time = std::chrono::steady_clock::now(); 
-    // prepare a random matrix
-    size_t ROW_NUM = EXTEND_LEN; 
-    size_t COLUMN_NUM = pp.BASE_LEN; 
 
-    CheckParameters(ROW_NUM, COLUMN_NUM); 
-
-    std::vector<block> vec_K(ROW_NUM); 
+    std::vector<block> vec_K(EXTEND_LEN); 
 
     RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
 
-    std::vector<std::string> vec_outer_C(ROW_NUM); 
-    io.ReceiveBytes(vec_outer_C.data(), ROW_NUM*LEN);
+    std::vector<std::string> vec_outer_C(EXTEND_LEN); 
+    io.ReceiveBytes(vec_outer_C.data(), EXTEND_LEN*ITEM_LEN);
 
-    for(auto i = 0; i < ROW_NUM; i++)
-    {        
+    std::vector<std::string> vec_result;
+    for(auto i = 0; i < EXTEND_LEN; i++){        
         // only decrypt when selection bit is 1
         if(vec_receiver_selection_bit[i] == 1){
             vec_result.emplace_back(OTP::Dec(vec_K[i], vec_outer_C[i]));
@@ -530,7 +520,7 @@ std::vector<std::string> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t>
     }   
 
     #ifdef DEBUG
-        std::cout << "ALSZ OTE: Receiver get "<< ROW_NUM << " number of ciphertexts from Sender" << std::endl; 
+        std::cout << "ALSZ OTE: Receiver gets "<< EXTEND_LEN << " number of ciphertexts from Sender" << std::endl; 
         PrintSplitLine('*'); 
     #endif
 
