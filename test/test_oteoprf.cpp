@@ -97,13 +97,13 @@ int main()
         NetIO server_io("server", "", 8080);
 
         std::vector<std::vector<uint8_t>> oprf_key = OTEOPRF::Server(server_io, pp);
-        std::vector<std::string> vec_Fk_X = OTEOPRF::Evaluate(pp, oprf_key, testcase.vec_X, pp.LEN);        
+        std::vector<std::vector<uint8_t>> vec_Fk_X = OTEOPRF::Evaluate(pp, oprf_key, testcase.vec_X, pp.LEN);        
     }
     
     if (party == "client")
 	{
         NetIO client_io("client", "127.0.0.1", 8080);
-        std::vector<std::string> vec_Fk_X = OTEOPRF::Client(client_io, pp, testcase.vec_X, pp.LEN);
+        std::vector<std::vector<uint8_t>> vec_Fk_X = OTEOPRF::Client(client_io, pp, testcase.vec_X, pp.LEN);
 	}
 
     CRYPTO_Finalize();

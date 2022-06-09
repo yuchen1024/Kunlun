@@ -110,9 +110,11 @@ void FetchPP(PP &pp, std::string pp_filename)
     fin >> pp.matrix_width; 
     fin >> pp.OUTPUT_LEN; 
     fin >> pp.BATCH_SIZE; 
+
     fin >> pp.common_seed;
 
     fin >> pp.npot_part;
+    
     fin.close(); 
 }
 
@@ -153,7 +155,7 @@ std::vector<block> Encode(std::vector<block> &vec_X, block& key)
 }
 
 // hash each row in matrix_mapping_values to a OUTPUT_LEN string (H2:{0,1}^w -> {0,1}^{\ell2})
-std::vector<std::string> Packing(PP &pp, std::vector<std::vector<uint8_t>> &matrix_mapping_values)
+std::vector<std::vector<uint8_t>> Packing(PP &pp, std::vector<std::vector<uint8_t>> &matrix_mapping_values)
 {
     size_t matrix_width_byte = (pp.matrix_width + 7) >> 3;
 
@@ -169,16 +171,17 @@ std::vector<std::string> Packing(PP &pp, std::vector<std::vector<uint8_t>> &matr
 		}
 	}
 
-    uint8_t vec_hash_values[HASH_OUTPUT_LEN];
-    uint8_t split_hash_values[pp.OUTPUT_LEN]; 
-    std::vector<std::string> result(pp.matrix_height);
+    uint8_t buffer[HASH_OUTPUT_LEN];
+    //uint8_t split_hash_values[pp.OUTPUT_LEN]; 
+    std::vector<std::vector<uint8_t>> result;
 
 	for (auto i = 0; i < pp.matrix_height; i++){
-        BasicHash(matrix_input[i].data(), matrix_width_byte, vec_hash_values);
+        BasicHash(matrix_input[i].data(), matrix_width_byte, buffer);
+        result.emplace_back(std::vector<uint8_t>(buffer, buffer + pp.OUTPUT_LEN)); 
 
-        // convert the H1_OUTPUT_LEN uint8_t array to a OUTPUT_LEN string 
-        memcpy(split_hash_values, vec_hash_values, pp.OUTPUT_LEN);
-        result[i] = std::string((char*)(split_hash_values), pp.OUTPUT_LEN);
+        // // convert the H1_OUTPUT_LEN uint8_t array to a OUTPUT_LEN string 
+        // memcpy(split_hash_values, vec_hash_values, pp.OUTPUT_LEN);
+        // result[i] = std::string((char*)(split_hash_values), pp.OUTPUT_LEN);
 	}
 
     return result;
@@ -238,7 +241,7 @@ std::vector<std::vector<uint8_t>> Server(NetIO &io, PP &pp)
 }
 
 // server evaluates OPRF values with input set use its own OPRF key
-std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &oprf_key, 
+std::vector<std::vector<uint8_t>> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &oprf_key, 
                                   std::vector<block> &vec_X, size_t ITEM_NUM)
 {
     /* step 1: compute F_k(x) (F: {0,1}^128 * {0,1}^* -> {0,1}^128) */
@@ -299,13 +302,13 @@ std::vector<std::string> Evaluate(PP &pp, std::vector<std::vector<uint8_t>> &opr
     }
 
     /* step3: compute \Psi = H2(C1[v[1]] || ... || Cw[v[w]]) */
-    std::vector<std::string> vec_Fk_X = Packing(pp, matrix_mapping_values);
+    std::vector<std::vector<uint8_t>> vec_Fk_X = Packing(pp, matrix_mapping_values);
 
     return vec_Fk_X;
 }
 
 // client obtains OPRF values with input set
-std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_NUM)
+std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_NUM)
 {
     PrintSplitLine('-'); 
     auto start_time = std::chrono::steady_clock::now(); 
@@ -422,7 +425,7 @@ std::vector<std::string> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, si
               << (double)(pp.matrix_width * matrix_height_byte)/(1 << 20) << " MB]" << std::endl;
 
     /* step4: compute \Psi = H2(A1[v[1]] || ... || Aw[v[w]]) */
-    std::vector<std::string> vec_Fk_Y = Packing(pp, matrix_mapping_values);
+    std::vector<std::vector<uint8_t>> vec_Fk_Y = Packing(pp, matrix_mapping_values);
 
 
     auto end_time = std::chrono::steady_clock::now(); 

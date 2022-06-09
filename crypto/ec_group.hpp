@@ -1,7 +1,13 @@
 #ifndef CRYPTO_EC_GROUP_HPP_
 #define CRYPTO_EC_GROUP_HPP_
 
+// enable pre-computation for fixed point multiplication
 #define PRECOMPUTE_ENABLE
+/* 
+** enable point compression
+** will save bandwidth by half at the cost of expensive decompression 
+*/
+// #define ECPOINT_COMPRESSED
 
 #include "../include/global.hpp"
 #include "bigint.hpp"

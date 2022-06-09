@@ -67,6 +67,10 @@ public:
 	template <typename T>
 	void ReceiveInteger(T &n);
 
+	void SendBytesArray(const std::vector<std::vector<uint8_t>> &A); 
+
+	void ReceiveBytesArray(std::vector<std::vector<uint8_t>> &A); 
+
 	~NetIO() {
 		close(this->connect_socket); 
 		if(IS_SERVER == true){
@@ -356,6 +360,41 @@ void NetIO::ReceiveBlock(block &a)
 {
 	ReceiveBytes(&a, sizeof(block));
 }
+
+// NUM = length of array; LEN = length of each item
+void NetIO::SendBytesArray(const std::vector<std::vector<uint8_t>>& A) 
+{
+	size_t NUM = A.size(); 
+	size_t LEN = A[0].size(); 
+	SendInteger(NUM);
+	SendInteger(LEN);  
+
+	unsigned char* buffer = new unsigned char[LEN*NUM];
+	for(auto i = 0; i < NUM; i++) {
+    	memcpy(buffer+i*LEN, A[i].data(), LEN); 
+    }
+	SendBytes(buffer, LEN*NUM);
+	
+	delete[] buffer; 
+}
+
+void NetIO::ReceiveBytesArray(std::vector<std::vector<uint8_t>> &A) 
+{
+	size_t NUM, LEN; 
+	ReceiveInteger(NUM);
+	ReceiveInteger(LEN);  
+
+	unsigned char* buffer = new unsigned char[LEN*NUM];
+	ReceiveBytes(buffer, LEN*NUM);
+
+	A.resize(NUM); 
+	for(auto i = 0; i < NUM; i++) {
+    	A[i] = std::vector<uint8_t>(buffer+i*LEN, buffer+(i+1)*LEN); 
+    }
+	
+	delete[] buffer; 
+}
+
 
 
 

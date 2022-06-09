@@ -157,8 +157,8 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t 
     return vec_union;
 }
 
-// support arbirary item (encode as string)
-void Send(NetIO &io, PP &pp, std::vector<std::string> &vec_Y, size_t ITEM_LEN, size_t ITEM_NUM) 
+// support arbirary item (encode as uint8_t array)
+void Send(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_Y, size_t ITEM_LEN, size_t ITEM_NUM) 
 {
     auto start_time = std::chrono::steady_clock::now(); 
     PrintSplitLine('-');
@@ -167,7 +167,7 @@ void Send(NetIO &io, PP &pp, std::vector<std::string> &vec_Y, size_t ITEM_LEN, s
     std::vector<block> vec_Block_Y(ITEM_NUM); 
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < ITEM_NUM; i++){
-        vec_Block_Y[i] = Hash::StringToBlock(vec_Y[i]); 
+        vec_Block_Y[i] = Hash::BytesToBlock(vec_Y[i]); 
     }
     cwPRFmqRPMT::Client(io, pp.mqrpmt_part, vec_Block_Y, ITEM_NUM);
         
@@ -183,7 +183,8 @@ void Send(NetIO &io, PP &pp, std::vector<std::string> &vec_Y, size_t ITEM_LEN, s
     PrintSplitLine('-');
 }
 
-std::vector<std::string> Receive(NetIO &io, PP &pp, std::vector<std::string> &vec_X, size_t ITEM_LEN, size_t ITEM_NUM) 
+std::vector<std::vector<uint8_t>> 
+Receive(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_X, size_t ITEM_LEN, size_t ITEM_NUM) 
 {
     auto start_time = std::chrono::steady_clock::now(); 
         
@@ -193,7 +194,7 @@ std::vector<std::string> Receive(NetIO &io, PP &pp, std::vector<std::string> &ve
     std::vector<block> vec_Block_Y(ITEM_NUM); 
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < ITEM_NUM; i++){
-        vec_Block_Y[i] = Hash::StringToBlock(vec_X[i]); 
+        vec_Block_Y[i] = Hash::BytesToBlock(vec_X[i]); 
     }
     std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_Block_Y, ITEM_NUM);
        
@@ -205,9 +206,9 @@ std::vector<std::string> Receive(NetIO &io, PP &pp, std::vector<std::string> &ve
 
     std::cout << "Phase 2: execute one-sided OTe >>>" << std::endl;
     // get the intersection X \cup Y via one-sided OT from receiver
-    std::vector<std::string> vec_Y_diff; 
+    std::vector<std::vector<uint8_t>> vec_Y_diff; 
     vec_Y_diff = ALSZOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, ITEM_LEN, ITEM_NUM); 
-    std::vector<std::string> vec_union = vec_X; 
+    std::vector<std::vector<uint8_t>> vec_union = vec_X; 
     for(auto i = 0; i < vec_Y_diff.size(); i++){
         vec_union.emplace_back(vec_Y_diff[i]);
     }

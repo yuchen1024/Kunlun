@@ -220,7 +220,7 @@ void ECPoint::Print(std::string note) const
     this->Print(); 
 }
 
-
+// convert an EC Point to byte string
 std::string ECPoint::ToByteString() const
 {
     std::string ecp_str(POINT_COMPRESSED_BYTE_LEN, '0'); 
@@ -230,7 +230,7 @@ std::string ECPoint::ToByteString() const
     return ecp_str; 
 }
 
-/* convert an EC point to string */
+// convert an EC point to string
 std::string ECPoint::ToHexString() const
 {
     std::stringstream ss; 
@@ -238,7 +238,7 @@ std::string ECPoint::ToHexString() const
     return ss.str();  
 }
 
-
+// hash an ECPoint to uint64_4 number 
 size_t ECPoint::ToUint64() const
 {
     // standard method
@@ -252,7 +252,6 @@ size_t ECPoint::ToUint64() const
 // adhoc lossy encoding for ECPoint based on AES
 size_t ECPoint::FastToUint64() const 
 {
-
     unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
     memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, 
@@ -273,21 +272,33 @@ size_t ECPoint::FastToUint64() const
 }
 
 
-
 std::ofstream &operator<<(std::ofstream &fout, const ECPoint &A)
 { 
-    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, ec_ctx);
-    // write to outfile
-    fout.write(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
+	#ifdef ECPOINT_COMPRESSED
+		unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+		EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, ec_ctx);
+        fout.write(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
+	#else
+		unsigned char buffer[POINT_BYTE_LEN];
+		EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+        fout.write(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
+	#endif
+
     return fout;            
 }
  
 std::ifstream &operator>>(std::ifstream &fin, ECPoint &A)
 { 
-    unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
-    fin.read(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
-    EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, ec_ctx);
+    #ifdef ECPOINT_COMPRESSED
+        unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
+        fin.read(reinterpret_cast<char *>(buffer), POINT_COMPRESSED_BYTE_LEN); 
+        EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, ec_ctx);
+    #else
+        unsigned char buffer[POINT_BYTE_LEN];
+        fin.read(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
+        EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, ec_ctx);
+    #endif
+    
     return fin;            
 }
 
@@ -455,7 +466,6 @@ public:
         return std::hash<std::string>{}(A.ToByteString());
     }
 };
-
 
 auto ECPoint_Lexical_Compare = [](ECPoint A, ECPoint B){ 
     return A.ToByteString() < B.ToByteString(); 

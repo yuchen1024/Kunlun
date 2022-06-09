@@ -250,7 +250,7 @@ void RandomReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
         memcpy(T_row.data(), T_transpose.data()+i*COLUMN_NUM/128, COLUMN_NUM/8); 
 
         vec_K[i] = Hash::FastBlocksToBlock(T_row); 
-    }   
+    } 
 }
 
 void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec_m1, size_t EXTEND_LEN) 
@@ -456,7 +456,7 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_
 ** support arbitrary message
 ** LEN is the byte length of single message, EXTEND_LEN is the number of OT
 */
-void OnesidedSend(NetIO &io, PP &pp, std::vector<std::string> &vec_m, size_t ITEM_LEN, size_t EXTEND_LEN) 
+void OnesidedSend(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m, size_t ITEM_LEN, size_t EXTEND_LEN) 
 {
     PrintSplitLine('-'); 
 	
@@ -468,14 +468,14 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<std::string> &vec_m, size_t ITE
     RandomSend(io, pp, vec_K0, vec_K1, EXTEND_LEN); 
 
     // begin to transmit the real message
-    std::vector<std::string> vec_outer_C(EXTEND_LEN);
+    std::vector<std::vector<uint8_t>> vec_outer_C(EXTEND_LEN);
 
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < EXTEND_LEN; i++)
     {
         vec_outer_C[i] = OTP::Enc(vec_K1[i], vec_m[i]);
     }
-    io.SendBytes(vec_outer_C.data(), EXTEND_LEN*ITEM_LEN); 
+    io.SendBytesArray(vec_outer_C); 
 
     std::cout << "ALSZ OTE [step 3]: Sender ===> vec_C ===> Receiver" << " [" 
               << (double)EXTEND_LEN*ITEM_LEN/(1024*1024) << " MB]" << std::endl;
@@ -497,8 +497,9 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<std::string> &vec_m, size_t ITE
 ** support arbitrary message
 ** LEN is the byte length of single message, EXTEND_LEN is the number of OT
 */
-std::vector<std::string> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver_selection_bit, 
-                                         size_t ITEM_LEN, size_t EXTEND_LEN)
+std::vector<std::vector<uint8_t>> OnesidedReceive(NetIO &io, PP &pp, 
+                                  std::vector<uint8_t> &vec_receiver_selection_bit, 
+                                  size_t ITEM_LEN, size_t EXTEND_LEN)
 {
     PrintSplitLine('-'); 
     
@@ -508,10 +509,10 @@ std::vector<std::string> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t>
 
     RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
 
-    std::vector<std::string> vec_outer_C(EXTEND_LEN, std::string(ITEM_LEN, '0')); 
-    io.ReceiveBytes(vec_outer_C.data(), EXTEND_LEN*ITEM_LEN);
+    std::vector<std::vector<uint8_t>> vec_outer_C; 
+    io.ReceiveBytesArray(vec_outer_C);
 
-    std::vector<std::string> vec_result;
+    std::vector<std::vector<uint8_t>> vec_result;
     for(auto i = 0; i < EXTEND_LEN; i++){        
         // only decrypt when selection bit is 1
         if(vec_receiver_selection_bit[i] == 1){

@@ -70,6 +70,16 @@ block StringToBlock(const std::string &str_input)
     return _mm_load_si128((block*)&output[0]);
 }
 
+__attribute__((target("sse2")))
+block BytesToBlock(const std::vector<uint8_t> &vec_A) 
+{
+    unsigned char output[HASH_OUTPUT_LEN];
+    //const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());
+    //size_t HASH_INPUT_LEN = str_input.length();
+    BasicHash(vec_A.data(), vec_A.size(), output); 
+    return _mm_load_si128((block*)&output[0]);
+}
+
 BigInt StringToBigInt(const std::string& str_input){
     unsigned char output[HASH_OUTPUT_LEN]; 
     const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());

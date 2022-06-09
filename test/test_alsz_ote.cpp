@@ -6,12 +6,18 @@ struct OTETestcase{
     size_t EXTEND_LEN; 
     std::vector<block> vec_m0; 
     std::vector<block> vec_m1; 
+
+
     std::vector<uint8_t> vec_selection_bit; 
     size_t HAMMING_WEIGHT; // number of 1 in vec_selection_bit 
     std::vector<block> vec_result; 
     
     std::vector<block> vec_m; 
     std::vector<block> vec_one_sided_result; 
+    
+    // std::vector<std::vector<uint8_t>> vec_z;
+
+    // std::vector<std::vector<uint8_t>> vec_z_one_sided_result; 
 }; 
 
 OTETestcase GenTestCase(size_t EXTEND_LEN)
@@ -26,6 +32,9 @@ OTETestcase GenTestCase(size_t EXTEND_LEN)
 	testcase.vec_m1 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
 	testcase.vec_selection_bit = PRG::GenRandomBits(seed, EXTEND_LEN);
     testcase.vec_m  = PRG::GenRandomBlocks(seed, EXTEND_LEN);
+    // for(i = 0; i < EXTEND_LEN; i++){
+    //     vec_z.emplace_back(std::vector<uint8_t>(vec_m[i].data(), vec_m[i].data()+16));
+    // }
 
 
 	for (auto i = 0; i < EXTEND_LEN; i++){
@@ -36,6 +45,7 @@ OTETestcase GenTestCase(size_t EXTEND_LEN)
             testcase.vec_result.emplace_back(testcase.vec_m1[i]);
             testcase.HAMMING_WEIGHT++; 
             testcase.vec_one_sided_result.emplace_back(testcase.vec_m[i]);
+            // testcase.vec_z_one_sided_result.emplace_back(testcase.vec_z[i]);
         } 
 	}
     return testcase;
@@ -60,6 +70,9 @@ void SaveTestCase(OTETestcase &testcase, std::string testcase_filename)
     fout << testcase.vec_m; 
     fout << testcase.vec_one_sided_result;  
 
+    // fout << testcase.vec_z; 
+    // fout << testcase.vec_z_one_sided_result; 
+
     fout.close(); 
 }
 
@@ -82,12 +95,18 @@ void FetchTestCase(OTETestcase &testcase, std::string testcase_filename)
     testcase.vec_m.resize(testcase.EXTEND_LEN); 
     testcase.vec_one_sided_result.resize(testcase.HAMMING_WEIGHT); 
 
+    // testcase.vec_z.resize(testcase.EXTEND_LEN); 
+    // testcase.vec_z_one_sided_result.resize(testcase.HAMMING_WEIGHT); 
+
     fin >> testcase.vec_m0; 
     fin >> testcase.vec_m1; 
     fin >> testcase.vec_selection_bit; 
 	fin >> testcase.vec_result; 
     fin >> testcase.vec_m; 
     fin >> testcase.vec_one_sided_result; 
+
+    // fin >> testcase.vec_z; 
+    // fin >> testcase.vec_z_one_sided_result; 
 
     fin.close(); 
 }
@@ -168,6 +187,32 @@ int main()
         }
     }
 	
+    std::vector<std::vector<uint8_t>> vec_z; 
+    for(auto i = 0; i < EXTEND_LEN; i++){
+        // vec_z.emplace_back(std::vector<uint8_t>((uint8_t*)testcase.vec_m[i].data(), 
+        //                    (uint8_t*)testcase.vec_m[i].data()+16);
+        vec_z.emplace_back(std::vector<uint8_t>(16, '0'));
+    }
+    
+    if(party == "z-one-sided-sender"){
+        NetIO server_io("server", "", 8080); 
+	    ALSZOTE::OnesidedSend(server_io, pp, vec_z, 16, EXTEND_LEN);
+    }
+
+    if(party == "z-one-sided-receiver"){
+        NetIO client_io("client", "127.0.0.1", 8080); 
+	    std::vector<std::vector<uint8_t>> vec_z_one_sided_result_prime = 
+        ALSZOTE::OnesidedReceive(client_io, pp, testcase.vec_selection_bit, 16, EXTEND_LEN);
+       
+        // if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_prime) == true){
+		// 	std::cout << "one-sided ALSZ OTE test succeeds" << std::endl; 
+		// } 
+        // else{
+        //     std::cout << "one-sided ALSZ OTE test fails" << std::endl;  
+        // }
+    }
+
+
     PrintSplitLine('-'); 
     std::cout << "ALSZ OTE test ends >>>" << std::endl; 
     PrintSplitLine('-'); 
