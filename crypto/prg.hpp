@@ -23,6 +23,23 @@ struct Seed{
     AES::Key aes_key;
 };
 
+// serialize pp to stream
+std::ofstream &operator<<(std::ofstream &fout, const Seed &seed)
+{
+    fout << seed.counter;
+    fout << seed.aes_key; 
+    return fout;
+}
+
+
+// deserialize pp from stream
+std::ifstream &operator>>(std::ifstream &fin, Seed &seed)
+{
+    fin >> seed.counter;
+    fin >> seed.aes_key; 
+    return fin; 
+}
+
 void ReSeed(Seed &seed, const block* salt, uint64_t id = 0) 
 {
     block key = _mm_loadu_si128(salt);

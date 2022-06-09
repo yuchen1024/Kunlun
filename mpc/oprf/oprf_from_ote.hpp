@@ -70,16 +70,9 @@ PP Setup(size_t LOG_LEN, size_t statistical_security_parameter = 40)
 	return pp; 
 }
 
-// save pp to file
-void SavePP(PP &pp, std::string pp_filename)
+// serialize pp to stream
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 {
-    std::ofstream fout; 
-    fout.open(pp_filename, std::ios::binary); 
-    if(!fout){
-        std::cerr << pp_filename << " open error" << std::endl;
-        exit(1); 
-    }
-
     fout << pp.LEN; 
     fout << pp.matrix_height; 
     fout << pp.log_matrix_height; 
@@ -90,6 +83,39 @@ void SavePP(PP &pp, std::string pp_filename)
     fout << pp.common_seed; 
 
     fout << pp.npot_part;
+
+	return fout; 
+}
+
+// deserialize pp from stream
+std::ifstream &operator>>(std::ifstream &fin, PP &pp)
+{
+    fin >> pp.LEN; 
+    fin >> pp.matrix_height; 
+    fin >> pp.log_matrix_height; 
+    fin >> pp.matrix_width; 
+    fin >> pp.OUTPUT_LEN; 
+    fin >> pp.BATCH_SIZE; 
+
+    fin >> pp.common_seed;
+
+    fin >> pp.npot_part;
+
+	return fin; 
+}
+
+
+// save pp to file
+void SavePP(PP &pp, std::string pp_filename)
+{
+    std::ofstream fout; 
+    fout.open(pp_filename, std::ios::binary); 
+    if(!fout){
+        std::cerr << pp_filename << " open error" << std::endl;
+        exit(1); 
+    }
+
+    fout << pp; 
 
     fout.close(); 
 }
@@ -104,17 +130,8 @@ void FetchPP(PP &pp, std::string pp_filename)
         exit(1); 
     }
 
-    fin >> pp.LEN; 
-    fin >> pp.matrix_height; 
-    fin >> pp.log_matrix_height; 
-    fin >> pp.matrix_width; 
-    fin >> pp.OUTPUT_LEN; 
-    fin >> pp.BATCH_SIZE; 
+    fin >> pp;
 
-    fin >> pp.common_seed;
-
-    fin >> pp.npot_part;
-    
     fin.close(); 
 }
 

@@ -20,6 +20,27 @@ struct Key{
     size_t ROUND_NUM; 
 };
 
+// serialize pp to stream
+std::ofstream &operator<<(std::ofstream &fout, const Key &key)
+{
+    for(auto i = 0; i < 11; i++){
+        fout << key.roundkey[i]; 
+    }
+    fout << key.ROUND_NUM; 
+    return fout;
+}
+
+
+// deserialize pp from stream
+std::ifstream &operator>>(std::ifstream &fin, Key &key)
+{
+    for(auto i = 0; i < 11; i++){
+        fin >> key.roundkey[i]; 
+    }
+    fin >> key.ROUND_NUM; 
+    return fin; 
+}
+
 static Key fixed_enc_key; // global aes enc key
 static Key fixed_dec_key; // global aes dec key
 
