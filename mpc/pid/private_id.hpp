@@ -1,8 +1,8 @@
 #ifndef KUNLUN_PID_HPP_
 #define KUNLUN_PID_HPP_
 
-#include "../pso/pso_from_mqrpmt.hpp"
-#include "../oprf/oprf_from_ote.hpp"
+#include "../pso/mqrpmt_pso.hpp"
+#include "../oprf/ote_oprf.hpp"
 #include "../pid/private_id.hpp"
 
 
@@ -119,8 +119,7 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN, size_t IT
 
     std::cout << "Phase 1: compute receiver's ID using OPRF >>>" << std::endl;
 
-
-    OTEOPRF::PrintPP(pp.oprf_part);
+    //OTEOPRF::PrintPP(pp.oprf_part);
 
     // first act as client: compute F_k1(Y)
     std::vector<std::vector<uint8_t>> vec_Fk1_Y = OTEOPRF::Client(io, pp.oprf_part, vec_Y, ITEM_NUM); 

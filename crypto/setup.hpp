@@ -17,7 +17,8 @@ this hpp file define and initialize misc global variables
 #include "block.hpp"
 #include "aes.hpp"
 
-void CRYPTO_Initialize(){
+void CRYPTO_Initialize()
+{
     BN_Initialize();
     ECGroup_Initialize(); 
     AES_Initialize();
@@ -28,7 +29,8 @@ void CRYPTO_Initialize(){
     #endif
 }
 
-void CRYPTO_Finalize(){
+void CRYPTO_Finalize()
+{
     BN_Finalize();
     ECGroup_Finalize();
 } 

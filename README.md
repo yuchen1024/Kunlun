@@ -64,6 +64,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
 - /include
   * std.inc: standard header files
   * openssl.inc: openssl header files
+  * global.hpp: define global variables for kunlun lib as well as error information
   * kunlun.hpp: include all necessary files to write a cryptographic program
 
 - /utility: dependent files
@@ -75,12 +76,12 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * serialization.hpp: overload serialization for uint and string type data
 
 - /crypto: C++ wrapper for OpenSSL
-  * global.hpp: define global constants and initialize openssl environment
-  * ec_group.hpp: initialize ec group environment
-  * bigint.hpp: class for BIGNUM
+  * setup.hpp: initialize crypto environments, including big number, elliptive curves, and aes
+  * ec_group.hpp: initialize ec group environment, define compressed-point on-off, precomputation on-off 
   * ec_point.hpp: class for EC_POINT
-  * hash.hpp: all kinds of cryptographic hash function
-  * aes.hpp: implement AES using SSE
+  * bigint.hpp: class for BIGNUM, also include initialization of big num
+  * hash.hpp: all kinds of cryptographic hash functions
+  * aes.hpp: implement AES using SSE, as well as initialization of aes
   * prg.hpp: implement PRG associated algorithms
   * prp.hpp: implement PRP using AES
   * block.hpp: __m128i related algorithms (necessary for exploiting SSE)
@@ -111,11 +112,18 @@ If the above two issues get solved, the performance of Kunlun will be better.
     * naor_pinkas_ot.hpp: one base OT
     * iknp_ote.hpp: IKNP OT extension
 
+  - /oprf
+    * ote_oprf: OTE-based OPRF
+    * ddh_oprf: DDH-based (permuted)-OPRF
+
   - /rpmt
     * cwprf_mqrpmt.hpp: mq-RPMT from commutative weak PRF
 
   - /pso
     * pso.hpp: support private set intersection, cardinality, sum, union
+
+  - /pid
+    * private_id.hpp: private-id protocol based on OTE-based OPRF and cwPRF-based mqRPMT
 
 - zkp
   - /nizk: associated sigma protocol for twisted elgamal; obtained via Fiat-Shamir transform  
@@ -155,8 +163,8 @@ I slightly hack the code to work around using the following facts about bn_ctx:
 * one can set bn_ctx = nullptr for thread safety when dealing with ECC operations
 * one could still use the original bn_ctx in single thread setting    
 
-- The global setting for multi-thread support lies at "global.hpp" line 21-22, 
-and the bn_ctx setting lies at line 58-69. 
+- The global setting for multi-thread support lies at "include/global.hpp" line 21-22
+algorithms in ec_point.hpp will be complied according to this setting
 
 - For multi-thread
 ```

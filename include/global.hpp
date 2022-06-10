@@ -1,5 +1,6 @@
 /****************************************************************************
-this hpp file define and initialize misc global variables 
+this hpp file define global variables for the Kunlun lib 
+thread_count indicates the maximum number of threads that openmp works
 *****************************************************************************
 * @author     developed by Yu Chen
 * @copyright  MIT license (see LICENSE file)
@@ -16,7 +17,8 @@ const static size_t thread_count = 8; // maximum thread count
 const static size_t CHECK_BUFFER_SIZE = 1024*8;
 
 // return the error message reported by OpenSSL
-void CRYPTO_CHECK(bool condition){
+void CRYPTO_CHECK(bool condition)
+{
     if (condition == false){
         char buffer[256];
         ERR_error_string_n(ERR_get_error(), buffer, sizeof(buffer));
@@ -24,7 +26,8 @@ void CRYPTO_CHECK(bool condition){
     }
 } 
 
-void LoadErrorStrings(){
+void LoadErrorStrings()
+{
     ERR_load_BN_strings();
     ERR_load_BUF_strings();
     ERR_load_CRYPTO_strings();

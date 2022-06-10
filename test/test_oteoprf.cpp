@@ -1,4 +1,4 @@
-#include "../mpc/oprf/oprf_from_ote.hpp"
+#include "../mpc/oprf/ote_oprf.hpp"
 
 struct OTEOPRFTestCase{
     std::vector<block> vec_X; // server set

@@ -100,7 +100,7 @@ int main()
         PID::FetchPP(pp, pp_filename); 
     }
 
-    OTEOPRF::PrintPP(pp.oprf_part); 
+    //OTEOPRF::PrintPP(pp.oprf_part); 
 
     std::cout << "number of elements = " << ITEM_NUM << std::endl; 
 
