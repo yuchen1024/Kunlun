@@ -117,6 +117,7 @@ void RandomSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<block
     // generate Phase 1 selection bit vector
     std::vector<uint8_t> vec_sender_selection_bit = PRG::GenRandomBits(seed, COLUMN_NUM); 
 
+    // std::cout << "still clean here [0]" << std::endl;
     // first receive 1-out-2 two keys from the receiver 
     std::vector<block> vec_Q_seed = NPOT::Receive(io, pp.baseOT, vec_sender_selection_bit, COLUMN_NUM);
 
@@ -169,6 +170,8 @@ void RandomSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<block
     std::vector<block> vec_outer_C0(ROW_NUM); 
     std::vector<block> vec_outer_C1(ROW_NUM); 
 
+    // std::cout << "still clean here [1]" << std::endl;
+
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < ROW_NUM; i++)
     {
@@ -196,9 +199,12 @@ void RandomReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
     std::vector<block> vec_T_seed = PRG::GenRandomBlocks(seed, COLUMN_NUM);
     std::vector<block> vec_U_seed = PRG::GenRandomBlocks(seed, COLUMN_NUM);
 
+    //std::cout << "still clean here [0]" << std::endl;
 
     // Phase 1: first transmit 1-out-2 key to sender    
     NPOT::Send(io, pp.baseOT, vec_T_seed, vec_U_seed, COLUMN_NUM); 
+
+    //std::cout << "still clean here [1]" << std::endl;
 
     std::cout << "ALSZ OTE [step 1]: Receiver transmits "<< COLUMN_NUM << " number of seeds to Sender via base OT" 
               << std::endl; 
@@ -242,6 +248,8 @@ void RandomReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
     #ifdef DEBUG
         std::cout << "ALSZ OTE: Receiver transposes matrix T" << std::endl; 
     #endif
+
+    //std::cout << "still clean here [2]" << std::endl;
 
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < ROW_NUM; i++)
@@ -460,6 +468,8 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m, s
 {
     PrintSplitLine('-'); 
 	
+    std::cout << "one-sided OTe: sender side" << std::endl; 
+
     auto start_time = std::chrono::steady_clock::now(); 
 
     std::vector<block> vec_K0(EXTEND_LEN);
@@ -502,15 +512,21 @@ std::vector<std::vector<uint8_t>> OnesidedReceive(NetIO &io, PP &pp,
                                   size_t ITEM_LEN, size_t EXTEND_LEN)
 {
     PrintSplitLine('-'); 
+
+    std::cout << "one-sided OTe: receiver side" << std::endl; 
     
     auto start_time = std::chrono::steady_clock::now(); 
 
     std::vector<block> vec_K(EXTEND_LEN); 
 
+    std::cout << "begin ot random receive part" << std::endl; 
+
     RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
 
     std::vector<std::vector<uint8_t>> vec_outer_C; 
     io.ReceiveBytesArray(vec_outer_C);
+
+    std::cout << "finish ot random receive part" << std::endl; 
 
     std::vector<std::vector<uint8_t>> vec_result;
     for(auto i = 0; i < EXTEND_LEN; i++){        
@@ -519,6 +535,8 @@ std::vector<std::vector<uint8_t>> OnesidedReceive(NetIO &io, PP &pp,
             vec_result.emplace_back(OTP::Dec(vec_K[i], vec_outer_C[i]));
         }
     }   
+
+    std::cout << "obtain the final result" << std::endl; 
 
     #ifdef DEBUG
         std::cout << "ALSZ OTE: Receiver gets "<< EXTEND_LEN << " number of ciphertexts from Sender" << std::endl; 

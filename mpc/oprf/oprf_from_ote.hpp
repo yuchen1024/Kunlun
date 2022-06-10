@@ -29,6 +29,9 @@
 
 namespace OTEOPRF{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 struct PP
 {
     size_t LEN; // the length of the client's input vector
@@ -133,6 +136,25 @@ void FetchPP(PP &pp, std::string pp_filename)
     fin >> pp;
 
     fin.close(); 
+}
+
+// print pp
+void PrintPP(const PP &pp)
+{
+    PrintSplitLine('-'); 
+    std::cout << "PP of OTE-based OPRF >>>" << std::endl;
+    std::cout << "input vector length = " << pp.LEN << std::endl; 
+    std::cout << "matrix height = " << pp.matrix_height << std::endl; 
+    std::cout << "log matrix height = " << pp.log_matrix_height << std::endl; 
+    std::cout << "matrix width = " << pp.matrix_width << std::endl; 
+    std::cout << "OUTPUT_LEN = " << pp.OUTPUT_LEN << std::endl; 
+    std::cout << "BATCH_SIZE = " << pp.BATCH_SIZE << std::endl; 
+
+    PRG::PrintSeed(pp.common_seed); 
+
+    NPOT::PrintPP(pp.npot_part);
+
+    PrintSplitLine('-'); 
 }
 
 /* 

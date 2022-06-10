@@ -22,8 +22,11 @@ struct PP
 	ECPoint g;
 };
 
+
+// print pp
 void PrintPP(const PP &pp)
 {
+	std::cout << "PP of Naor-Pinkas OT is >>>" << std::endl;
 	pp.g.Print("g"); 
 }
 
@@ -61,7 +64,6 @@ void SavePP(PP &pp, std::string pp_filename)
     fout << pp; 
     fout.close(); 
 }
-
 
 // fetch pp from file
 void FetchPP(PP &pp, std::string pp_filename)

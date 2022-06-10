@@ -119,10 +119,11 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN, size_t IT
 
     std::cout << "Phase 1: compute receiver's ID using OPRF >>>" << std::endl;
 
+
+    OTEOPRF::PrintPP(pp.oprf_part);
+
     // first act as client: compute F_k1(Y)
     std::vector<std::vector<uint8_t>> vec_Fk1_Y = OTEOPRF::Client(io, pp.oprf_part, vec_Y, ITEM_NUM); 
-
-    std::cout << "here" << std::endl;
 
     // then act as server: compute F_k2(Y)
     std::vector<std::vector<uint8_t>> k2; 

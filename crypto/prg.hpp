@@ -16,12 +16,22 @@
 
 namespace PRG{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 const char fixed_salt[] = "\x61\x7e\x8d\xa2\xa0\x51\x1e\x96\x5e\x41\xc2\x9b\x15\x3f\xc7\x7a";
 
 struct Seed{ 
     size_t counter = 0; 
     AES::Key aes_key;
 };
+
+void PrintSeed(const Seed& seed)
+{
+    std::cout << "PRG seed >>>" << std::endl;
+    std::cout << "counter = " << seed.counter << std::endl;
+    AES::PrintKey(seed.aes_key); 
+}
 
 // serialize pp to stream
 std::ofstream &operator<<(std::ofstream &fout, const Seed &seed)

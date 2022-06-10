@@ -7,10 +7,14 @@
 #define KUNLUN_CRYPTO_BLOCK_HPP_
 
 #include "../include/std.inc"
+#include "../utility/serialization.hpp"
 
 typedef __m128i block;
 
 namespace Block{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 // generate a block from two uint64_t values
 __attribute__((target("sse2")))
@@ -172,7 +176,7 @@ void PrintBlocks(block* var, size_t LEN)
 {
     for(auto i = 0; i< LEN; i++){
         PrintBlock(var[i]); 
-        std::cout << std::endl; 
+        //std::cout << std::endl; 
     }
 }
 
@@ -221,6 +225,8 @@ std::ifstream &operator>>(std::ifstream &fin, std::vector<block> &vec_a)
 }
 
 }
+
+
 
 // custom hash
 class BlockHash{

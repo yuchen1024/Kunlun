@@ -12,6 +12,9 @@
 
 namespace AES{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 static const block IV = Block::zero_block; 
 const static size_t BATCH_SIZE = 8;
 
@@ -19,6 +22,14 @@ struct Key{
     block roundkey[11]; 
     size_t ROUND_NUM; 
 };
+
+// print pp
+void PrintKey(const Key &key)
+{
+    std::cout << "AES key >>>" << std::endl;
+    std::cout << "ROUND NUM = " << key.ROUND_NUM << std::endl; 
+    Block::PrintBlocks((block*)key.roundkey, 11);  
+}
 
 // serialize pp to stream
 std::ofstream &operator<<(std::ofstream &fout, const Key &key)
