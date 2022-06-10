@@ -361,6 +361,8 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
 
 	NPOT::Send(io, pp.npot_part, vec_K0, vec_K1, pp.matrix_width);
 
+    std::cout << "OPRF client fine here [0]" << std::endl;
+
     /* step2: compute F_k(x) (F: {0,1}^128 * {0,1}^* -> {0,1}^128) */
     size_t log_height_byte = (pp.log_matrix_height + 7) >> 3; 
     size_t split_bucket_size = sizeof(block) / log_height_byte;
@@ -370,6 +372,8 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
     std::vector<block> vec_keysalt = PRG::GenRandomBlocks(pp.common_seed, aes_key_num); // AES keys used
 
     std::vector<block> vec_Encode_Y = Encode(vec_Y, vec_keysalt[0]);
+
+    std::cout << "OPRF client fine here [1]" << std::endl;
 
     /* 
     ** (page 10 figure 4 item2)
@@ -412,6 +416,8 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
 			}
 		}
 
+        std::cout << "OPRF client fine here [2]" << std::endl;
+        
         // initialize a all one matrix_D
         #pragma omp parallel for num_threads(thread_count)
         for (auto i = 0; i < split_bucket_size; i++){
@@ -433,6 +439,8 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
         std::vector<uint8_t> send_matrix_B(bucket_size * matrix_height_byte);
         std::vector<PRG::Seed> vec_seed(bucket_size);
 
+        std::cout << "OPRF client fine here [3]" << std::endl;
+
         #pragma omp parallel for num_threads(thread_count)
 		for (auto i = 0; i < bucket_size; i++){
             PRG::ReSeed(vec_seed[i], &vec_K0[left_index + i], 0);
@@ -447,7 +455,10 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
                 send_matrix_B[i * matrix_height_byte + j] = matrix_B[i][j];
 			}
 		}
+
+        std::cout << "OPRF client fine here [4]" << std::endl;
         io.SendBytes(send_matrix_B.data(), bucket_size * matrix_height_byte);
+        std::cout << "OPRF client fine here [5]" << std::endl;
             
         /* step 3-4: compute mapping values from matrix A (compute (A1[v[1]] || ... || Aw[v[w]]) in page 9 figure 3 item3-(c)) */ 
         #pragma omp parallel for num_threads(thread_count)
@@ -457,16 +468,22 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
 				matrix_mapping_values[left_index + i][j >> 3] |= (uint8_t)((bool)(matrix_A[i][location_in_A >> 3] & (1 << (location_in_A & 7)))) << (j & 7);
 			}
 		}
+        std::cout << "OPRF client fine here [5.5]" << std::endl;
     }
-
+    std::cout << "OPRF client fine here [6]" << std::endl;
+    
     PrintSplitLine('-');
     std::cout << "OTE-based OPRF: Receiver ===> matrix_B ===> Sender [" 
               << (double)(pp.matrix_width * matrix_height_byte)/(1 << 20) << " MB]" << std::endl;
 
+    
+    std::cout << "OPRF client fine here [7]" << std::endl;
+
     /* step4: compute \Psi = H2(A1[v[1]] || ... || Aw[v[w]]) */
     std::vector<std::vector<uint8_t>> vec_Fk_Y = Packing(pp, matrix_mapping_values);
 
-
+    std::cout << "OPRF client fine here [8]" << std::endl;
+    
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
     std::cout << "OTE-based OPRF: Client side takes time = " 

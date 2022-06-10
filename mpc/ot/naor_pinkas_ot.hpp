@@ -96,7 +96,11 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 
 	// offline process
 	BigInt d = GenRandomBigIntLessThan(order);
+
+	d.Print("d"); 
+	pp.g.Print("g"); 
 	ECPoint C = pp.g * d;  // compute C = g^d
+	C.Print("C"); 
 
 	//  compute g^r[i] and C^r[i]
 	#pragma omp parallel for num_threads(thread_count)

@@ -484,6 +484,7 @@ bool BigInt::IsSafePrime(double prime_error_probability = 1e-40) const {
 BigInt GenRandomBigIntLessThan(const BIGNUM* max) {
     BigInt result;
     CRYPTO_CHECK(1 == BN_rand_range(result.bn_ptr, max));
+    // BN_rand_range(result.bn_ptr, max);
     // BN_priv_rand_range(result.bn_ptr, max.bn_ptr);
     return result;
 }

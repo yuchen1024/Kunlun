@@ -124,10 +124,16 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN, size_t IT
     // first act as client: compute F_k1(Y)
     std::vector<std::vector<uint8_t>> vec_Fk1_Y = OTEOPRF::Client(io, pp.oprf_part, vec_Y, ITEM_NUM); 
 
+    std::cout << "still fine here [after playing client]" << std::endl;
+
     // then act as server: compute F_k2(Y)
     std::vector<std::vector<uint8_t>> k2; 
     k2 = OTEOPRF::Server(io, pp.oprf_part); 
+    std::cout << "still fine here [after playing server]" << std::endl;
+    
     std::vector<std::vector<uint8_t>> vec_Fk2_Y = OTEOPRF::Evaluate(pp.oprf_part, k2, vec_Y, ITEM_NUM);  
+    std::cout << "still fine here [after evaluating]" << std::endl;
+
     // compute F_k(Y) = F_k1(Y) xor F_k2(Y)
     std::vector<std::vector<uint8_t>> vec_Y_id(ITEM_NUM);
     #pragma omp parallel for num_threads(thread_count)
