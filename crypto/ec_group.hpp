@@ -7,7 +7,7 @@
 ** enable point compression
 ** will save bandwidth by half at the cost of expensive decompression 
 */
-// #define ECPOINT_COMPRESSED
+#define ECPOINT_COMPRESSED
 
 #include "../include/global.hpp"
 #include "bigint.hpp"

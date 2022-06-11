@@ -68,7 +68,7 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN, size_t ITEM_
         
     PrintSplitLine('-');
 
-    std::cout << "Phase 1: compute sender's ID using OPRF >>>" << std::endl;
+    std::cout << "[Private-ID from OPRF+PSU] Phase 1: compute sender's ID using OPRF >>>" << std::endl;
 
     // first act as server: compute F_k1(X)
     std::vector<std::vector<uint8_t>> k1; 
@@ -83,20 +83,8 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN, size_t ITEM_
         vec_X_id[i] = XOR(vec_Fk1_X[i], vec_Fk2_X[i]); 
     }     
 
-    std::cout << "Phase 2: execute PSU >>>" << std::endl;
+    std::cout << "[Private-ID from OPRF+PSU] Phase 2: execute PSU >>>" << std::endl;
     PSO::PSU::Send(io, pp.pso_part, vec_X_id, ITEM_LEN, ITEM_NUM);
-
-    // size_t UNION_SIZE; 
-    // io.ReceiveInteger(UNION_SIZE); 
-    // std::cout << "UNION_SIZE = " << UNION_SIZE << std::endl; 
-
-    // std::vector<std::vector<uint8_t>> vec_union_id(UNION_SIZE, std::vector<uint8_t>(ITEM_LEN, '0'));  
-    
-    // io.ReceiveBytes(vec_union_id.data(), ITEM_LEN*UNION_SIZE); 
-
-    //     size_t UNION_SIZE; 
-    // io.ReceiveInteger(UNION_SIZE); 
-    // std::cout << "UNION_SIZE = " << UNION_SIZE << std::endl; 
 
     std::vector<std::vector<uint8_t>> vec_union_id; 
     io.ReceiveBytesArray(vec_union_id); 
@@ -117,22 +105,19 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN, size_t IT
         
     PrintSplitLine('-');
 
-    std::cout << "Phase 1: compute receiver's ID using OPRF >>>" << std::endl;
+    std::cout << "[Private-ID from OPRF+PSU] Phase 1: compute receiver's ID using OPRF >>>" << std::endl;
 
     //OTEOPRF::PrintPP(pp.oprf_part);
 
     // first act as client: compute F_k1(Y)
     std::vector<std::vector<uint8_t>> vec_Fk1_Y = OTEOPRF::Client(io, pp.oprf_part, vec_Y, ITEM_NUM); 
 
-    std::cout << "still fine here [after playing client]" << std::endl;
 
     // then act as server: compute F_k2(Y)
     std::vector<std::vector<uint8_t>> k2; 
     k2 = OTEOPRF::Server(io, pp.oprf_part); 
-    std::cout << "still fine here [after playing server]" << std::endl;
     
     std::vector<std::vector<uint8_t>> vec_Fk2_Y = OTEOPRF::Evaluate(pp.oprf_part, k2, vec_Y, ITEM_NUM);  
-    std::cout << "still fine here [after evaluating]" << std::endl;
 
     // compute F_k(Y) = F_k1(Y) xor F_k2(Y)
     std::vector<std::vector<uint8_t>> vec_Y_id(ITEM_NUM);
@@ -142,16 +127,17 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN, size_t IT
     }     
 
     PrintSplitLine('-');
-    std::cout << "Phase 2: execute PSU >>>" << std::endl;
+    std::cout << "[Private-ID from OPRF+PSU] Phase 2: execute PSU >>>" << std::endl;
 
     std::vector<std::vector<uint8_t>> vec_union_id; 
     
     vec_union_id = PSO::PSU::Receive(io, pp.pso_part, vec_Y_id, ITEM_LEN, ITEM_NUM); 
 
     size_t UNION_SIZE = vec_union_id.size(); 
-    std::cout << "UNION_SIZE = " << UNION_SIZE << std::endl; 
-
-    //io.SendInteger(UNION_SIZE); 
+    
+    PrintSplitLine('-');
+    std::cout << "[Private-ID from OPRF+PSU] Phase 3: Receiver ===> vec_union_id >>> Sender";
+    std::cout << " [" << (double)ITEM_LEN*UNION_SIZE/(1024*1024) << " MB]" << std::endl;
 
     io.SendBytesArray(vec_union_id); 
 

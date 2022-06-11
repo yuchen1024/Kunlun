@@ -85,7 +85,7 @@ BigInt Server(NetIO &io, PP &pp, std::vector<uint64_t> permutation_map, size_t L
     io.SendECPoints(vec_Fk_mask_X.data(), LEN);
 
     std::cout <<"DDH-based (permuted)-OPRF [step 2]: Server ===> F_k(mask_x_i) ===> Client";
-    #ifdef POINT_COMPRESSED
+    #ifdef ECPOINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
@@ -117,7 +117,7 @@ std::vector<block> Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t L
     io.SendECPoints(vec_mask_X.data(), LEN);
     
     std::cout <<"DDH-based (permuted)-OPRF [step 1]: Client ===> mask_x_i ===> Server"; 
-    #ifdef POINT_COMPRESSED
+    #ifdef ECPOINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
@@ -142,8 +142,6 @@ std::vector<block> Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t L
 
     return vec_Fk_X; 
 }
-
-
 
 }
 #endif

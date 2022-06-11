@@ -89,7 +89,7 @@ int main()
     std::string pp_filename = "PID.pp"; 
     PID::PP pp; 
 
-    size_t LOG_ITEM_NUM = 8; 
+    size_t LOG_ITEM_NUM = 20; 
     size_t ITEM_NUM = size_t(pow(2, LOG_ITEM_NUM)); 
 
     if(!FileExist(pp_filename)){

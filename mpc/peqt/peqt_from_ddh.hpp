@@ -48,7 +48,7 @@ std::vector<uint64_t> Send(NetIO &io, std::vector<block> &vec_Y, size_t ROW_NUM,
     
     io.SendECPoints(vec_Fk_permuted_Y.data(), LEN); 
     std::cout <<"DDH-based PEQT [step 2]: Sender ===> Permutation[F_k(y_i)] ===> Receiver";
-    #ifdef POINT_COMPRESSED
+    #ifdef ECPOINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
@@ -63,7 +63,7 @@ std::vector<uint64_t> Send(NetIO &io, std::vector<block> &vec_Y, size_t ROW_NUM,
     
     io.SendECPoints(vec_Fk_permuted_mask_X.data(), LEN); 
     std::cout <<"DDH-based PEQT [step 2]: Sender ===> Permutation[F_k(mask_x_i)] ===> Receiver";
-    #ifdef POINT_COMPRESSED
+    #ifdef ECPOINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
@@ -101,7 +101,7 @@ std::vector<uint8_t> Receive(NetIO &io, std::vector<block> &vec_X, size_t ROW_NU
     io.SendECPoints(vec_mask_X.data(), LEN);
 
     std::cout <<"DDH-based PEQT [step 1]: Receiver ===> mask_x_i ===> Sender"; 
-    #ifdef POINT_COMPRESSED
+    #ifdef ECPOINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;

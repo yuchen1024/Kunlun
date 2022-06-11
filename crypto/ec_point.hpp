@@ -13,10 +13,6 @@
 #include "../utility/routines.hpp"
 
 
-// enable compressed representation of EC Point
-//#define ECPOINT_COMPRESSED 
-
-
 class BigInt;
 
 // C++ Wrapper class for openssl EC_POINT.

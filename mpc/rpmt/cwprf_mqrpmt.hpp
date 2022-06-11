@@ -1,6 +1,7 @@
 #ifndef KUNLUN_CWPRF_MQRPMT_HPP_
 #define KUNLUN_CWPRF_MQRPMT_HPP_
 
+#include "../../crypto/ec_group.hpp"
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"
 #include "../../crypto/prg.hpp"
@@ -16,6 +17,9 @@
 */
 
 namespace cwPRFmqRPMT{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 struct PP
 {
@@ -88,7 +92,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t
     io.SendECPoints(vec_Fk1_Y.data(), LEN); 
     
     std::cout <<"cwPRF-based mqRPMT [step 1]: Server ===> F_k1(y_i) ===> Client";
-    #ifdef POINT_COMPRESSED
+    #ifdef ECPOINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
@@ -167,7 +171,7 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     io.SendECPoints(vec_Fk2_X.data(), LEN);
 
     std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> F_k2(x_i) ===> Server"; 
-    #ifdef POINT_COMPRESSED
+    #ifdef ECPOINT_COMPRESSED
         std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
@@ -184,7 +188,7 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
         std::random_shuffle(vec_Fk2k1_Y.begin(), vec_Fk2k1_Y.end());
         io.SendECPoints(vec_Fk2k1_Y.data(), LEN); 
         std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> Permutation(F_k2k1(y_i)) ===> Server"; 
-        #ifdef POINT_COMPRESSED
+        #ifdef ECPOINT_COMPRESSED
             std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
         #else
             std::cout << " [" << (double)POINT_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;

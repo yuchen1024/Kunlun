@@ -512,21 +512,15 @@ std::vector<std::vector<uint8_t>> OnesidedReceive(NetIO &io, PP &pp,
                                   size_t ITEM_LEN, size_t EXTEND_LEN)
 {
     PrintSplitLine('-'); 
-
-    std::cout << "one-sided OTe: receiver side" << std::endl; 
     
     auto start_time = std::chrono::steady_clock::now(); 
 
     std::vector<block> vec_K(EXTEND_LEN); 
 
-    std::cout << "begin ot random receive part" << std::endl; 
-
     RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
 
     std::vector<std::vector<uint8_t>> vec_outer_C; 
     io.ReceiveBytesArray(vec_outer_C);
-
-    std::cout << "finish ot random receive part" << std::endl; 
 
     std::vector<std::vector<uint8_t>> vec_result;
     for(auto i = 0; i < EXTEND_LEN; i++){        
@@ -535,8 +529,6 @@ std::vector<std::vector<uint8_t>> OnesidedReceive(NetIO &io, PP &pp,
             vec_result.emplace_back(OTP::Dec(vec_K[i], vec_outer_C[i]));
         }
     }   
-
-    std::cout << "obtain the final result" << std::endl; 
 
     #ifdef DEBUG
         std::cout << "ALSZ OTE: Receiver gets "<< EXTEND_LEN << " number of ciphertexts from Sender" << std::endl; 
