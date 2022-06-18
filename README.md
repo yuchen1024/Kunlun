@@ -18,40 +18,45 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 ## To do list (impossible missions for me)
 
-1. PRF  
-2. PRG (done)
-2. oblivious transfer (done)
-3. garbled circuit
-4. secret sharing
-5. zk-SNARK
-6. add class for Zn and ECPoint/BigInt vector
-7. add unified interface for serialization and deserailization
-8. wrap _m128i as class?
-9. test AES-based hash
-10. add multi-point OPRF
-11. silient OT
-12. change the interfaces of hash: string => char[]?
-13. speed serialization of ECPoint
-14. overload << >> for serialization
+* PRF  
+* garbled circuit
+* secret sharing
+* zk-SNARK
+* add class for Zn and ECPoint/BigInt vector
+* wrap _m128i as class?
+* silient OT
+* overload << >> for serialization
 
 
 ## Specifications
 
 - OS: MAC OS x64, Linux x64
 - Language: C++
-- Requires: OpenSSL
+- Requires: OpenSSL, OpenMP
 
-## Install OpenSSL 3.0 (On MAC OS after Mojave)
+## Install Depedent Libaraies
+### On MACOS
+* install OpenSSL 3.0
 ```
   $ git clone https://github.com/openssl/openssl.git
   $ ./config 
   $ sudo make install
 ```
+* install OpenMP
+```
+  $ brew install libomp 
+```
 
-## Install OpenMP (On MAC OS)
+### On Linux
+* install OpenSSL 3.0
 ```
-  $ brew install libomp
+  https://wiki.openssl.org/index.php/Compilation_and_Installation#Linux
 ```
+* install OpenMP
+```
+  $ sudo apt install libomp-dev 
+```
+
 
 ## Code Structure
 
