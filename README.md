@@ -38,9 +38,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
 ### On MACOS
 * install OpenSSL 3.0
 ```
-  $ git clone https://github.com/openssl/openssl.git
-  $ ./config 
-  $ sudo make install
+  $ brew install openssl
 ```
 * install OpenMP
 ```
