@@ -9,7 +9,7 @@ FIND_PACKAGE(OpenSSL REQUIRED)
 
 FIND_PACKAGE(OpenMP REQUIRED)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fno-pic -Wno-deprecated-declarations -Xpreprocessor -O3")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fpic -Wno-deprecated-declarations -Xpreprocessor -O3")
 
 INCLUDE_DIRECTORIES(
     ${OPENSSL_INCLUDE_DIR}
