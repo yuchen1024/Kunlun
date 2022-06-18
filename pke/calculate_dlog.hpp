@@ -239,6 +239,7 @@ void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM
         #pragma omp section
         {
             size_t hashkey; 
+            encoding2index_map.reserve(BABYSTEP_NUM); 
             /* point_to_index_map[ECn_to_String(babystep)] = i */
             for(auto i = 0; i < BABYSTEP_NUM; i++)
             {

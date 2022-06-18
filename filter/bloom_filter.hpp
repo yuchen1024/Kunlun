@@ -132,7 +132,10 @@ inline void Insert(const ElementType& element)
    ParallelPlainInsert(&element, sizeof(ElementType));
 }
 
-template <> // specialize for string
+// specialize for string
+#ifdef IS_MACOS
+template <> 
+#endif
 inline void Insert(const std::string& str)
 {
    PlainInsert(str.data(), str.size());
@@ -141,7 +144,10 @@ inline void Insert(const std::string& str)
 /*
 ** You can insert any custom-type data you like as below
 */
-template <> // specialize for ECPoint
+// specialize for ECPoint
+#ifdef IS_MACOS
+template <> 
+#endif
 inline void Insert(const ECPoint &A)
 {
    #ifdef ECPOINT_COMPRESSED
@@ -176,7 +182,10 @@ inline void Insert(const Container<T, Allocator>& container)
    }
 }
 
-template <> // specialize for vector<ECPoint>
+// specialize for vector<ECPoint>
+#ifdef IS_MACOS
+template <> 
+#endif
 inline void Insert(const std::vector<ECPoint> &vec_A)
 {   
    //sequential implementation
@@ -219,7 +228,10 @@ inline bool Contain(const std::string& str) const
    return PlainContain(str.data(), str.size());
 }
 
-template <> // specialize for ECPoint
+// specialize for ECPoint
+#ifdef IS_MACOS
+template <> 
+#endif
 inline bool Contain(const ECPoint& A) const
 {
    #ifdef ECPOINT_COMPRESSED
@@ -249,7 +261,10 @@ inline std::vector<uint8_t> Contain(const Container<T, Allocator>& container)
 }
 
 
-template <> // specialize for vector<ECPoint>
+// specialize for vector<ECPoint>
+#ifdef IS_MACOS
+template <> 
+#endif
 inline std::vector<uint8_t> Contain(const std::vector<ECPoint> &vec_A)
 {
    size_t LEN = vec_A.size();

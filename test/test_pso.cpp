@@ -119,7 +119,7 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    PSO_type current = PSI_sum; 
+    PSO_type current = PSU; 
 
     switch(current) {
         case PSI: std::cout << "PSI"; break; 

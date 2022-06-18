@@ -12,6 +12,7 @@ this file includes commonly used head files
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <cmath>
 #include <vector>
 #include <set>
