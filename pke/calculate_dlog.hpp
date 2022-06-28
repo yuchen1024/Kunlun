@@ -31,7 +31,7 @@ public:
 const static size_t BUILD_TASK_NUM  = pow(2, 6);  // number of parallel task for building pre-computable table 
 const static size_t SEARCH_TASK_NUM = pow(2, 6);  // number of parallel task for search  
 
-const static size_t KEY_LEN = 8;
+const static size_t KEY_LEN = 8; // the key length for hashtable
 
 
 ECPoint giantstep; 
@@ -84,7 +84,7 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
     {
         hashkey = startpoint.ToUint64(); 
         std::memcpy(buffer+(startindex+i)*KEY_LEN, &hashkey, KEY_LEN);
-        startpoint = startpoint +g; 
+        startpoint = startpoint + g; 
     } 
 }
 
@@ -210,9 +210,13 @@ void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM
     fin.seekg(0, fin.end);
 
     size_t FILE_BYTE_LEN = fin.tellg(); // get the size of hash table file 
+    size_t BABYSTEP_KEY_SIZE = BABYSTEP_NUM * KEY_LEN; 
 
-    size_t BABYSTEP_KEY_SIZE = BABYSTEP_NUM * KEY_LEN;  
-    size_t GIANTSTEP_AUX_SIZE = (SEARCH_TASK_NUM+1) * POINT_COMPRESSED_BYTE_LEN; 
+    #ifdef ECPOINT_COMPRESSED
+        size_t GIANTSTEP_AUX_SIZE = (SEARCH_TASK_NUM+1) * POINT_COMPRESSED_BYTE_LEN; 
+    #else
+        size_t GIANTSTEP_AUX_SIZE = (SEARCH_TASK_NUM+1) * POINT_BYTE_LEN;
+    #endif
 
     if (FILE_BYTE_LEN != (BABYSTEP_KEY_SIZE+GIANTSTEP_AUX_SIZE))
     {
