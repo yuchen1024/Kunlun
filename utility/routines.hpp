@@ -42,7 +42,8 @@ bool IsPowerOfTwo(size_t x)
     return (x != 0) && ((x & (x - 1)) == 0);
 }
 
-std::vector<int64_t> GenRandomIntegerVectorLessThan(size_t LEN, int64_t MAX)
+// 0 <= r_i < MAX
+std::vector<int64_t> GenRandomNaturalIntegerVectorLessThan(size_t LEN, int64_t MAX)
 {
     std::vector<int64_t> vec_result(LEN); 
     srand(time(0));
@@ -52,6 +53,17 @@ std::vector<int64_t> GenRandomIntegerVectorLessThan(size_t LEN, int64_t MAX)
     }
     return vec_result; 
 }
- 
+
+// -MAX < r_i < MAX 
+std::vector<int64_t> GenRandomIntegerVectorAbsoluteLessThan(size_t LEN, int64_t MAX)
+{
+    std::vector<int64_t> vec_result = GenRandomNaturalIntegerVectorLessThan(LEN, 2*MAX); 
+    for(auto i = 0; i < LEN; i++)
+    {
+        vec_result[i] = vec_result[i] - MAX;
+    }
+    return vec_result; 
+}
+
 #endif
 

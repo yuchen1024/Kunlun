@@ -52,6 +52,9 @@ public:
 	void SendECPoint(const ECPoint &A);
 	void ReceiveECPoint(ECPoint &A);
 
+	void SendBigInt(const BigInt &a);
+	void ReceiveBigInt(BigInt &a);
+
 	void SendBits(uint8_t *data, size_t LEN);
 	void ReceiveBits(uint8_t *data, size_t LEN); 
 
@@ -336,6 +339,21 @@ void NetIO::ReceiveECPoint(ECPoint &A)
 		ReceiveBytes(buffer, POINT_BYTE_LEN); 
 		EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
 	#endif
+}
+
+void NetIO::SendBigInt(const BigInt &a) 
+{
+	unsigned char buffer[BN_BYTE_LEN];
+	memset(buffer, 0, BN_BYTE_LEN); 
+	BN_bn2binpad(a.bn_ptr, buffer, BN_BYTE_LEN);
+	SendBytes(buffer, BN_BYTE_LEN);	
+}
+
+void NetIO::ReceiveBigInt(BigInt &a) 
+{
+	unsigned char buffer[BN_BYTE_LEN];
+	ReceiveBytes(buffer, BN_BYTE_LEN); 
+	BN_bin2bn(buffer, BN_BYTE_LEN, a.bn_ptr);         
 }
 
 // T could be any built-in data type, such as block or int

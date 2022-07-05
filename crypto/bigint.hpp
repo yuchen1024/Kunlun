@@ -175,6 +175,9 @@ public:
     std::string ToByteString() const; 
     std::string ToHexString() const;
 
+    void FromByteVector(const std::vector<uint8_t>& vec_A);
+    std::vector<uint8_t> ToByteVector() const; 
+
     friend std::ofstream &operator<<(std::ofstream &fout, const BigInt &A); 
     friend std::ifstream &operator>>(std::ifstream &fin, BigInt &A); 
 
@@ -295,6 +298,19 @@ std::string BigInt::ToHexString() const
     ss << BN_bn2hex(this->bn_ptr);
     return ss.str();  
 }
+
+void BigInt::FromByteVector(const std::vector<uint8_t>& vec_A)
+{ 
+    BN_bin2bn(reinterpret_cast<const unsigned char *>(vec_A.data()), BN_BYTE_LEN, this->bn_ptr);         
+}
+
+std::vector<uint8_t> BigInt::ToByteVector() const
+{ 
+    std::vector<uint8_t> vec_A(BN_BYTE_LEN, '0');
+    BN_bn2binpad(this->bn_ptr, vec_A.data(), BN_BYTE_LEN);
+    return vec_A;            
+}
+
 
 
 // Returns a BigInt whose value is (- *this).

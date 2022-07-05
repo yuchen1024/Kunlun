@@ -20,46 +20,60 @@ std::set<block, BlockCompare> ComputeSetDifference(std::vector<block> &vec_A, st
 struct PSOTestCase{
     std::vector<block> vec_X; // server set
     std::vector<block> vec_Y; // client set
-    std::vector<int64_t> vec_label; // vec_Y's label
+    std::vector<BigInt> vec_value; // vec_Y's value
     std::vector<uint8_t> vec_indication_bit; // X[i] = Y[i] iff b[i] = 1 
     std::vector<block> vec_intersection; // for PSI 
     std::vector<block> vec_union; // for PSU
-    int64_t SUM;  // for PSI-sum: the sum of intersection labels
-    size_t CARDINALITY; // for cardinality
+    BigInt SUM;  // for PSI-sum: the sum of intersection labels
+    size_t UNION_CARDINALITY; 
+    size_t INTERSECTION_CARDINALITY; // for cardinality
     size_t LEN; // size of set 
+    BigInt MAX; // the maximum value of each value
 };
 
+// LEN is the cardinality of two sets
 PSOTestCase GenTestCase(size_t LEN)
 {
     PSOTestCase testcase;
     testcase.LEN = LEN; 
 
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    //PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_indication_bit = PRG::GenRandomBits(seed, LEN); 
 
-    testcase.vec_label = GenRandomIntegerVectorLessThan(LEN, 100);     
-  
-    testcase.CARDINALITY = 0; 
-    testcase.SUM = 0;
+    testcase.MAX = size_t(pow(2, 10)); 
+    testcase.vec_value = GenRandomBigIntVectorLessThan(LEN, testcase.MAX); 
+    testcase.INTERSECTION_CARDINALITY = 0; 
+    testcase.SUM = bn_0;
     testcase.vec_union = testcase.vec_X; 
     
     for(auto i = 0; i < LEN; i++){
         if(testcase.vec_indication_bit[i] == 1){
             testcase.vec_Y[i] = testcase.vec_X[i];
-            testcase.CARDINALITY++; 
-            testcase.SUM += testcase.vec_label[i];  
+            testcase.INTERSECTION_CARDINALITY++; 
+            testcase.SUM += testcase.vec_value[i];  
             testcase.vec_intersection.emplace_back(testcase.vec_Y[i]); 
         }
         else{
             testcase.vec_union.emplace_back(testcase.vec_Y[i]); 
         }
-    } 
-    std::cout << "intersection cardinality = " << testcase.CARDINALITY << std::endl; 
-    std::cout << "intersection sum = " << testcase.SUM << std::endl;
+    }
+    testcase.UNION_CARDINALITY = 2*LEN - testcase.INTERSECTION_CARDINALITY;  
 
     return testcase; 
+}
+
+void PrintTestCase(PSOTestCase testcase)
+{
+    PrintSplitLine('-'); 
+    std::cout << "TESTCASE INFO >>>" << std::endl;
+    std::cout << "ELEMENT NUM = " << testcase.LEN << std::endl;
+    std::cout << "UNION CARDINALITY = " << testcase.UNION_CARDINALITY << std::endl; 
+    std::cout << "INTERSECTION CARDINALITY = " << testcase.INTERSECTION_CARDINALITY << std::endl; 
+    testcase.SUM.PrintInDec("INTERSECTION SUM"); 
+    PrintSplitLine('-'); 
 }
 
 void SaveTestCase(PSOTestCase &testcase, std::string testcase_filename)
@@ -72,15 +86,18 @@ void SaveTestCase(PSOTestCase &testcase, std::string testcase_filename)
         exit(1); 
     }
     fout << testcase.LEN; 
-    fout << testcase.CARDINALITY; 
+    fout << testcase.UNION_CARDINALITY;
+    fout << testcase.INTERSECTION_CARDINALITY; 
     fout << testcase.SUM; 
      
     fout << testcase.vec_X; 
     fout << testcase.vec_Y; 
-    fout << testcase.vec_label;
+    fout << testcase.vec_value;
     fout << testcase.vec_indication_bit;
     fout << testcase.vec_intersection; 
     fout << testcase.vec_union; 
+
+    fout << testcase.MAX; 
 
     fout.close(); 
 }
@@ -95,22 +112,25 @@ void FetchTestCase(PSOTestCase &testcase, std::string testcase_filename)
         exit(1); 
     }
     fin >> testcase.LEN; 
-    fin >> testcase.CARDINALITY; 
+    fin >> testcase.UNION_CARDINALITY;
+    fin >> testcase.INTERSECTION_CARDINALITY; 
     fin >> testcase.SUM; 
 
     testcase.vec_X.resize(testcase.LEN); 
     testcase.vec_Y.resize(testcase.LEN); 
-    testcase.vec_label.resize(testcase.LEN);
+    testcase.vec_value.resize(testcase.LEN);
     testcase.vec_indication_bit.resize(testcase.LEN); 
-    testcase.vec_intersection.resize(testcase.CARDINALITY); 
-    testcase.vec_union.resize(2*testcase.LEN - testcase.CARDINALITY);  
+    testcase.vec_intersection.resize(testcase.INTERSECTION_CARDINALITY); 
+    testcase.vec_union.resize(testcase.UNION_CARDINALITY);  
 
     fin >> testcase.vec_X; 
     fin >> testcase.vec_Y; 
-    fin >> testcase.vec_label;
+    fin >> testcase.vec_value;
     fin >> testcase.vec_indication_bit;
     fin >> testcase.vec_intersection; 
     fin >> testcase.vec_union; 
+
+    fin >> testcase.MAX;
 
     fin.close(); 
 }
@@ -119,13 +139,13 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    PSO_type current = PSU; 
+    PSO_type current = PSI_card_sum; 
 
     switch(current) {
         case PSI: std::cout << "PSI"; break; 
         case PSU: std::cout << "PSU"; break; 
         case PSI_card: std::cout << "PSI-card"; break; 
-        case PSI_sum: std::cout << "PSI-sum"; break; 
+        case PSI_card_sum: std::cout << "PSI-card-sum"; break; 
     }
     std::cout << " test begins >>>" << std::endl; 
 
@@ -143,28 +163,31 @@ int main()
         PSO::FetchPP(pp, pp_filename); 
     }
 
-    size_t LEN = size_t(pow(2, 20)); 
-    std::cout << "number of elements = " << LEN << std::endl; 
+    //std::cout << "number of elements = " << LEN << std::endl; 
 
     std::string testcase_filename = "PSO.testcase"; 
     
     // generate test instance (must be same for server and client)
     PSOTestCase testcase; 
     if(!FileExist(testcase_filename)){
+        size_t LEN = size_t(pow(2, 20)); 
         testcase = GenTestCase(LEN); 
         SaveTestCase(testcase, testcase_filename); 
     }
     else{
         FetchTestCase(testcase, testcase_filename);
     }
-    PrintSplitLine('-'); 
+    PrintTestCase(testcase); 
 
     std::string party;
-    std::cout << "please select your role between sender and receiver (hint: first start receiver, then start sender) ==> ";  
-    std::getline(std::cin, party); // first the server, then the client
-    PrintSplitLine('-'); 
+    std::cout << "please select your role between sender and receiver ";  
 
     if(current == PSI){
+        std::cout << "(hint: first start receiver, then start sender) ==> "; 
+
+        std::getline(std::cin, party);
+        PrintSplitLine('-'); 
+        
         if(party == "receiver"){
             NetIO server("server", "", 8080);
             std::vector<block> vec_intersection_prime = PSO::PSI::Receive(server, pp, testcase.vec_X, testcase.LEN);
@@ -186,6 +209,10 @@ int main()
 
 
     if(current == PSU){
+        std::getline(std::cin, party);
+        PrintSplitLine('-'); 
+
+        std::cout << "(hint: first start receiver, then start sender) ==> ";  
         if(party == "receiver"){
             NetIO server("server", "", 8080);
             std::vector<block> vec_union_prime = PSO::PSU::Receive(server, pp, testcase.vec_X, testcase.LEN);
@@ -205,12 +232,21 @@ int main()
     }
 
     if(current == PSI_card){
+        std::cout << "(hint: first start receiver, then start sender) ==> ";  
+        
+        std::getline(std::cin, party);
+        PrintSplitLine('-'); 
+
         if(party == "receiver"){
             NetIO server("server", "", 8080);
             size_t CARDINALITY = PSO::PSIcard::Receive(server, pp, testcase.vec_X, testcase.LEN);
  
-            if(CARDINALITY == testcase.CARDINALITY) std::cout << "PSI-card test succeeds" << std::endl; 
-            else std::cout << "PSI-card test fails" << std::endl; 
+            if(CARDINALITY == testcase.INTERSECTION_CARDINALITY){
+                std::cout << "PSI-card test succeeds" << std::endl; 
+            }
+            else{
+                std::cout << "PSI-card test fails" << std::endl; 
+            }
         }
     
         if(party == "sender"){
@@ -219,21 +255,44 @@ int main()
         } 
     }
 
-    if(current == PSI_sum){
-        if(party == "receiver"){
-            NetIO server("server", "", 8080);
-            int64_t SUM = PSO::PSIsum::Receive(server, pp, testcase.vec_X, testcase.LEN);
- 
-            if(SUM == testcase.SUM) std::cout << "PSI-sum test succeeds" << std::endl; 
-            else std::cout << "PSI-sum test fails" << std::endl; 
+    if(current == PSI_card_sum){
+        std::cout << "(hint: first start sender, then start receiver) ==> ";  
 
-            std::cout << testcase.SUM << std::endl;
-            std::cout << SUM << std::endl;
+        std::getline(std::cin, party);
+        PrintSplitLine('-'); 
+
+        if(party == "sender"){
+            NetIO server("server", "", 8080);
+
+            size_t CARDINALITY = PSO::PSIcardsum::Send(server, pp, testcase.vec_X, testcase.LEN); 
+
+            std::cout << "INTERSECTION CARDINALITY = " << CARDINALITY << std::endl;
+
+            if(CARDINALITY == testcase.INTERSECTION_CARDINALITY){
+                std::cout << "PSI-card-sum test succeeds" << std::endl; 
+            }
+            else{
+                std::cout << "PSI-card-sum test fails" << std::endl; 
+            }
+
         }
     
-        if(party == "sender"){
+        if(party == "receiver"){
             NetIO client("client", "127.0.0.1", 8080);        
-            PSO::PSIsum::Send(client, pp, testcase.vec_Y, testcase.vec_label, testcase.LEN);
+
+            size_t CARDINALITY; 
+            BigInt SUM; 
+            std::tie(CARDINALITY, SUM) = PSO::PSIcardsum::Receive(client, pp, testcase.vec_Y, testcase.vec_value, testcase.LEN);
+
+            std::cout << "INTERSECTION CARDINALITY = " << CARDINALITY << std::endl;
+            SUM.PrintInDec("INTERSECTION SUM");
+ 
+            if(CARDINALITY == testcase.INTERSECTION_CARDINALITY && SUM == testcase.SUM){
+                std::cout << "PSI-card-sum test succeeds" << std::endl; 
+            }
+            else{
+                std::cout << "PSI-card-sum test fails" << std::endl; 
+            }
         } 
     }
 

@@ -8,7 +8,7 @@
  * ALSZ OT Extension
  * [REF] With optimization of "More Efficient Oblivious Transfer and Extensions for Faster Secure Computation"
  * https://eprint.iacr.org/2013/552.pdf
- */
+*/
 
 const static size_t BASE_LEN = 128; // the default length of base OT
 
@@ -59,6 +59,7 @@ std::ifstream &operator>>(std::ifstream &fin, PP &pp)
     return fin; 
 }
 
+// the default value is 128
 PP Setup(size_t BASE_LEN)
 {
     PP pp; 
@@ -460,11 +461,15 @@ std::vector<block> OnesidedReceive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_
     return vec_result; 
 }
 
-/*
-** support arbitrary message
-** LEN is the byte length of single message, EXTEND_LEN is the number of OT
+
+// arbitrary message support
+
+/* 
+** ITEM_LEN is the byte length of single message, EXTEND_LEN is the number of OT
 */
-void OnesidedSend(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m, size_t ITEM_LEN, size_t EXTEND_LEN) 
+
+// one-sided version
+void OnesidedSendByteVector(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m, size_t EXTEND_LEN) 
 {
     PrintSplitLine('-'); 
 	
@@ -487,6 +492,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m, s
     }
     io.SendBytesArray(vec_outer_C); 
 
+    size_t ITEM_LEN = vec_outer_C[0].size();
     std::cout << "ALSZ OTE [step 3]: Sender ===> vec_C ===> Receiver" << " [" 
               << (double)EXTEND_LEN*ITEM_LEN/(1024*1024) << " MB]" << std::endl;
 
@@ -503,13 +509,8 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m, s
     PrintSplitLine('-'); 
 }
 
-/*
-** support arbitrary message
-** LEN is the byte length of single message, EXTEND_LEN is the number of OT
-*/
-std::vector<std::vector<uint8_t>> OnesidedReceive(NetIO &io, PP &pp, 
-                                  std::vector<uint8_t> &vec_receiver_selection_bit, 
-                                  size_t ITEM_LEN, size_t EXTEND_LEN)
+std::vector<std::vector<uint8_t>> OnesidedReceiveByteVector(NetIO &io, PP &pp, 
+                                  std::vector<uint8_t> &vec_receiver_selection_bit, size_t EXTEND_LEN)
 {
     PrintSplitLine('-'); 
     
@@ -527,6 +528,94 @@ std::vector<std::vector<uint8_t>> OnesidedReceive(NetIO &io, PP &pp,
         // only decrypt when selection bit is 1
         if(vec_receiver_selection_bit[i] == 1){
             vec_result.emplace_back(OTP::Dec(vec_K[i], vec_outer_C[i]));
+        }
+    }   
+
+    #ifdef DEBUG
+        std::cout << "ALSZ OTE: Receiver gets "<< EXTEND_LEN << " number of ciphertexts from Sender" << std::endl; 
+        PrintSplitLine('*'); 
+    #endif
+
+    std::cout << "ALSZ OTE [step 4]: Receiver obtains vec_m" << std::endl; 
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "ALSZ OTE: Receiver side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
+
+    return vec_result; 
+}
+
+// standard version
+void SendByteVector(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m0, std::vector<std::vector<uint8_t>> &vec_m1, size_t EXTEND_LEN) 
+{
+    PrintSplitLine('-'); 
+	
+    std::cout << "OTe: sender side" << std::endl; 
+
+    auto start_time = std::chrono::steady_clock::now(); 
+
+    std::vector<block> vec_K0(EXTEND_LEN);
+    std::vector<block> vec_K1(EXTEND_LEN); 
+
+    RandomSend(io, pp, vec_K0, vec_K1, EXTEND_LEN); 
+
+    // begin to transmit the real message
+    std::vector<std::vector<uint8_t>> vec_outer_C0(EXTEND_LEN);
+    std::vector<std::vector<uint8_t>> vec_outer_C1(EXTEND_LEN);
+
+
+    #pragma omp parallel for num_threads(thread_count)
+    for(auto i = 0; i < EXTEND_LEN; i++)
+    {
+        vec_outer_C0[i] = OTP::Enc(vec_K0[i], vec_m0[i]);
+        vec_outer_C1[i] = OTP::Enc(vec_K1[i], vec_m1[i]);
+    }
+    io.SendBytesArray(vec_outer_C0);
+    io.SendBytesArray(vec_outer_C1);
+
+    size_t ITEM_LEN = vec_outer_C0[0].size();
+    std::cout << "ALSZ OTE [step 3]: Sender ===> (vec_C0, vec_C1） ===> Receiver" << " [" 
+              << (double)EXTEND_LEN*ITEM_LEN*2/(1024*1024) << " MB]" << std::endl;
+
+    #ifdef DEBUG
+        std::cout << "ALSZ OTE: Sender sends "<< EXTEND_LEN << " number of ciphertexts to receiver" << std::endl; 
+        PrintSplitLine('*'); 
+    #endif
+
+    auto end_time = std::chrono::steady_clock::now(); 
+    auto running_time = end_time - start_time;
+    std::cout << "ALSZ OTE: Sender side takes time " 
+              << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
+
+    PrintSplitLine('-'); 
+}
+
+std::vector<std::vector<uint8_t>> ReceiveByteVector(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver_selection_bit, size_t EXTEND_LEN)
+{
+    PrintSplitLine('-'); 
+    
+    auto start_time = std::chrono::steady_clock::now(); 
+
+    std::vector<block> vec_K(EXTEND_LEN); 
+
+    RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
+
+    std::vector<std::vector<uint8_t>> vec_outer_C0; 
+    std::vector<std::vector<uint8_t>> vec_outer_C1; 
+    io.ReceiveBytesArray(vec_outer_C0);
+    io.ReceiveBytesArray(vec_outer_C1);
+
+    std::vector<std::vector<uint8_t>> vec_result;
+    for(auto i = 0; i < EXTEND_LEN; i++){        
+        // only decrypt when selection bit is 1
+        if(vec_receiver_selection_bit[i] == 1){
+            vec_result.emplace_back(OTP::Dec(vec_K[i], vec_outer_C1[i]));
+        }
+        else{
+            vec_result.emplace_back(OTP::Dec(vec_K[i], vec_outer_C0[i]));
         }
     }   
 

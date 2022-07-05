@@ -14,7 +14,7 @@ enum PSO_type{
     PSI = 1, 
     PSU = 2, 
     PSI_card = 3, 
-    PSI_sum = 4
+    PSI_card_sum = 4
 };
 
 namespace PSO{
@@ -193,7 +193,7 @@ void Send(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_Y, size_t IT
         
     std::cout << "[mqRPMT-based PSU] Phase 2: execute one-sided OTe >>>" << std::endl;
     // get the intersection X \cup Y via one-sided OT from receiver
-    ALSZOTE::OnesidedSend(io, pp.ote_part, vec_Y, ITEM_LEN, ITEM_NUM); 
+    ALSZOTE::OnesidedSendByteVector(io, pp.ote_part, vec_Y, ITEM_NUM); 
     
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -203,8 +203,8 @@ void Send(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_Y, size_t IT
     PrintSplitLine('-');
 }
 
-std::vector<std::vector<uint8_t>> 
-Receive(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_X, size_t ITEM_LEN, size_t ITEM_NUM) 
+std::vector<std::vector<uint8_t>> Receive(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_X, 
+                                          size_t ITEM_LEN, size_t ITEM_NUM) 
 {
     auto start_time = std::chrono::steady_clock::now(); 
         
@@ -227,7 +227,7 @@ Receive(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_X, size_t ITEM
     std::cout << "[mqRPMT-based PSU] Phase 2: execute one-sided OTe >>>" << std::endl;
     // get the intersection X \cup Y via one-sided OT from receiver
     std::vector<std::vector<uint8_t>> vec_Y_diff; 
-    vec_Y_diff = ALSZOTE::OnesidedReceive(io, pp.ote_part, vec_indication_bit, ITEM_LEN, ITEM_NUM); 
+    vec_Y_diff = ALSZOTE::OnesidedReceiveByteVector(io, pp.ote_part, vec_indication_bit, ITEM_NUM); 
     std::vector<std::vector<uint8_t>> vec_union = vec_X; 
     for(auto i = 0; i < vec_Y_diff.size(); i++){
         vec_union.emplace_back(vec_Y_diff[i]);
@@ -255,9 +255,7 @@ size_t Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
     std::cout << "[mqRPMT-based PSI-card] Phase 1: execute mqRPMT >>>" << std::endl;
     std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_X, LEN);
         
-    //auto start_time_1 = std::chrono::steady_clock::now(); 
-     size_t CARDINALITY = 0; 
-    // flip the indication bit to get elements in Y\X
+    size_t CARDINALITY = 0; 
     for(auto i = 0; i < LEN; i++){
         CARDINALITY += vec_indication_bit[i]; 
     } 
@@ -289,75 +287,94 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
 }
 }
 
-namespace PSIsum{
-int64_t Receive(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
+namespace PSIcardsum{
+size_t Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
 {
     auto start_time = std::chrono::steady_clock::now(); 
         
     PrintSplitLine('-');
-    std::cout << "[mqRPMT-based PSI-sum] Phase 1: execute mqRPMT >>>" << std::endl;
+    std::cout << "[mqRPMT-based PSI-card-sum] Phase 1: execute mqRPMT >>>" << std::endl;
     std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_X, LEN);
 
-    std::cout << "[mqRPMT-based PSI-sum] Phase 2: execute OTe >>>" << std::endl;
-    std::vector<block> vec_result = ALSZOTE::Receive(io, pp.ote_part, vec_indication_bit, LEN); 
-    std::vector<int64_t> vec_v(LEN); 
-    int64_t SUM = 0; 
+    std::cout << "[mqRPMT-based PSI-card-sum] Phase 2: execute OTe >>>" << std::endl;
+    std::vector<std::vector<uint8_t>> vec_result = ALSZOTE::ReceiveByteVector(io, pp.ote_part, vec_indication_bit, LEN); 
+    std::vector<BigInt> vec_v(LEN); 
+
+    size_t CARDINALITY = 0; 
     for(auto i = 0; i < LEN; i++){
-        vec_v[i] = Block::BlockToInt64(vec_result[i]); 
-        SUM += vec_v[i]; 
+        CARDINALITY += vec_indication_bit[i]; 
     }
+
+    BigInt masked_SUM = bn_0; 
+    for(auto i = 0; i < LEN; i++){
+        vec_v[i].FromByteVector(vec_result[i]); 
+        masked_SUM = (masked_SUM + vec_v[i]) % order; 
+    }
+
+    io.SendInteger(CARDINALITY);
+    io.SendBigInt(masked_SUM);  
+    std::cout << "[mqRPMT-based PSI-card-sum] Phase 3: Sender  ===> (CARDINALITY, masked_SUM) ===> Receiver";
+    std::cout << " [" << (sizeof(CARDINALITY) + BN_BYTE_LEN)/(1024*1024) << " MB]" << std::endl;
 
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
-    std::cout << "[mqRPMT-based PSI-sum]: Receiver side takes time = " 
+    std::cout << "[mqRPMT-based PSI-card-sum]: Sender side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
         
     PrintSplitLine('-');
 
-    return SUM;
+    return CARDINALITY;
 }
 
-void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y, std::vector<int64_t> &vec_label, size_t LEN) 
+std::tuple<size_t, BigInt> Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, 
+                                    std::vector<BigInt> &vec_v, size_t LEN) 
 {
+    std::vector<BigInt> vec_r = GenRandomBigIntVectorLessThan(LEN, order);
+    BigInt mask = bn_0;
+    for(auto i = 0; i < LEN; i++){
+        mask = (mask + vec_r[i]) % order;   
+    }
+
     auto start_time = std::chrono::steady_clock::now(); 
         
     PrintSplitLine('-');
-    std::cout << "[mqRPMT-based PSI-sum] Phase 1: execute mqRPMT >>>" << std::endl;
+    std::cout << "[mqRPMT-based PSI-card-sum] Phase 1: execute mqRPMT >>>" << std::endl;
     
     cwPRFmqRPMT::Client(io, pp.mqrpmt_part, vec_Y, LEN);
-    // get the intersection X \cup Y via one-sided OT from receiver
 
-    std::vector<int64_t> vec_r = GenRandomIntegerVectorLessThan(LEN, 100);
-    
-    std::vector<int64_t> vec_v = vec_label; 
-    vec_r[LEN-1] = 0; 
-    for(auto i = 0; i < LEN-1; i++){
-        vec_r[LEN-1] += vec_r[i];  
-    } 
-    vec_r[LEN-1] = -vec_r[LEN-1];    // generate r_i such that the sum is zero 
-    
     for(auto i = 0; i < LEN; i++){
-        vec_v[i] += vec_r[i];   // r_i + v_i  
+        vec_v[i] =  (vec_v[i] + vec_r[i]) % order;   // v_i = r_i + v_i  
     } 
 
-    std::vector<block> vec_m0(LEN); 
-    std::vector<block> vec_m1(LEN); 
+    std::vector<std::vector<uint8_t>> vec_m0(LEN); 
+    std::vector<std::vector<uint8_t>> vec_m1(LEN); 
     
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < LEN; i++){
-        vec_m0[i] = Block::MakeBlock(0, vec_r[i]); 
-        vec_m1[i] = Block::MakeBlock(0, vec_v[i]);
+        vec_m0[i] = vec_r[i].ToByteVector(); 
+        vec_m1[i] = vec_v[i].ToByteVector();
     }
 
-    std::cout << "[mqRPMT-based PSI-sum] Phase 2: execute OTe >>>" << std::endl;
-    ALSZOTE::Send(io, pp.ote_part, vec_m0, vec_m1, LEN); 
+    std::cout << "[mqRPMT-based PSI-card-sum] Phase 2: execute OTe >>>" << std::endl;
+    ALSZOTE::SendByteVector(io, pp.ote_part, vec_m0, vec_m1, LEN); 
+
+
+    size_t CARDINALITY; 
+    io.ReceiveInteger(CARDINALITY);
+    BigInt SUM; 
+    io.ReceiveBigInt(SUM);  
+    std::cout << "[mqRPMT-based PSI-card-sum] Phase 3: Receiver obtains (CARDINALITY, masked_SUM) from Sender" << std::endl;
     
+    SUM = (SUM - mask) % order; 
+
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
-    std::cout << "[mqRPMT-based PSI-sum]: Sender side takes time = " 
+    std::cout << "[mqRPMT-based PSI-card-sum]: Receiver side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
     PrintSplitLine('-');
+
+    return {CARDINALITY, SUM}; 
 }
 }
 

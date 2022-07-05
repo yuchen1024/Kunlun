@@ -9,6 +9,7 @@ this hpp file define and initialize misc global variables
 
 #include "../include/std.inc"
 #include "../include/openssl.inc"
+#include "../utility/print.hpp"
 
 #include "bigint.hpp"
 #include "ec_group.hpp"
@@ -27,6 +28,18 @@ void CRYPTO_Initialize()
         std::cerr << "parallel parameter setting is wrong" << std::endl;
     }
     #endif
+
+    PrintSplitLine('-'); 
+    std::cout << "ENVIROMENT INFO >>>" << std::endl;
+    std::cout << "THREAD NUM = " << thread_count << std::endl;
+    std::cout << "ECPoint COMPRESSION = "; 
+    #ifdef ECPOINT_COMPRESSED
+        std::cout << "ON" << std::endl;
+    #else
+        std::cout << "OFF" << std::endl;
+    #endif
+    PrintSplitLine('-');  
+
 }
 
 void CRYPTO_Finalize()

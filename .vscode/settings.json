@@ -79,6 +79,10 @@
         "unordered_set": "cpp",
         "utility": "cpp",
         "variant": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "__bits": "cpp",
+        "clocale": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp"
     }
 }

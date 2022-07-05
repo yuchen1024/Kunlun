@@ -1,9 +1,11 @@
-# Private Set Operation From Multi-Point RPMT
-`PSO` implements private set intersection (PSI), private set union (PSU), private set intersection cardinality (PSI-CA) and private set intersection sum (PSI-Sum) based on [`cwPRFmqRPMT`](../rpmt/cwprf_mqrpmt.md) and [`IKNPOTE`](../ot/iknp_ote.md).
+# Private Set Operation From mqRPMT
+`PSO` implements private set intersection (PSI), private set union (PSU), private set intersection cardinality (PSI-card) and private set intersection cardinality and sum (PSI-card-sum) based on [`cwPRFmqRPMT`](../rpmt/cwprf_mqrpmt.md) 
+and [`ALSZOTE`](../ot/iknp_ote.md).
 
 * PSI allows two parties, the sender and the receiver, to compute the intersection of their private sets without revealing extra information to each other.
-    - In the PSI-CA setting, instead of getting the contents of the intersection, the receiver will get the cardinality.
-    - In the PSI-Sum setting, the sender additionally holds a label per each item in its set, in the end, the receiver obtains the labels from the items in the intersection and outputs the sum of the labels. 
+    - In the PSI-card setting, instead of getting the contents of the intersection, the receiver will get the cardinality.
+    - In the PSI-card-sum setting, the receiver additionally holds a value per each item in its set, in the end, 
+    the receiver obtains intersection cardinality and sum, and the sender obtains the intersection cardinality. 
 * PSU allows two parties, the sender and the receiver, to compute the union of their private sets without revealing extra information to each other.
 
 
@@ -18,7 +20,7 @@ struct PP
     cwPRFmqRPMT::PP mqrpmt_part; 
 };
 ```
-* `IKNPOTE::PP ote_part`: a struct at namespace [`IKNPOTE`](../ot/iknp_ote.md), which depicts the public parameters of IKNP OT extension protocol.
+* `ALSZOTE::PP ote_part`: a struct at namespace [`ALSZOTE`](../ot/iknp_ote.md), which depicts the public parameters of ALSZ OT extension protocol.
 * `cwPRFmqRPMT::PP mqrpmt_part`: a struct at namespace [`cwPRFmqRPMT`](../rpmt/cwprf_mqrpmt.md), which depicts the public parameters of multi-point RPMT protocol.
 
 `PP` can be initialized by `Setup`. The input `lambda` is statistical security parameter.
@@ -57,7 +59,7 @@ void PSIClient(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN);
 * `std::vector<block> &vec_Y`: a vector of items in client's set.
 * `size_t LEN`: the length of vector `vec_Y`, which should be the same as `vec_X`'s length.
 
-### PSI-CA
+### PSI-card
 ```
 size_t PSIcardServer(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
 ```
@@ -76,9 +78,9 @@ void PSIcardClient(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN)
 * `std::vector<block> &vec_Y`: a vector of items in client's set.
 * `size_t LEN`: the length of vector `vec_Y`, which should be the same as `vec_X`'s length.
 
-### PSI-SUM
+### PSI-card-sum
 ```
-int64_t PSIsumServer(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
+int64_t PSIcardsumSend(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
 ```
 * `NetIO &io`: a class object handling communication through socket.
 * `PP &pp`: a public parameter struct of `PSO`.
@@ -88,7 +90,7 @@ int64_t PSIsumServer(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN)
 The the sum of the labels in the intersection is returned from `PSIsumServer`.
 
 ```
-void PSIsumClient(NetIO &io, PP &pp, std::vector<block> &vec_Y, std::vector<int64_t> &vec_label, size_t LEN) 
+void PSIcardsum::Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, std::vector<int64_t> &vec_label, size_t LEN) 
 ```
 * `NetIO &io`: a class object handling communication through socket.
 * `PP &pp`: a public parameter struct of `PSO`.
@@ -98,7 +100,7 @@ void PSIsumClient(NetIO &io, PP &pp, std::vector<block> &vec_Y, std::vector<int6
 
 ### PSU
 ```
-std::vector<block> PSUServer(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
+std::vector<block> PSU::Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t LEN) 
 ```
 * `NetIO &io`: a class object handling communication through socket.
 * `PP &pp`: a public parameter struct of `PSO`.
@@ -108,7 +110,7 @@ std::vector<block> PSUServer(NetIO &io, PP &pp, std::vector<block> &vec_X, size_
 The union of `vec_X` and `vec_Y` is returned from `PSUServer` in `std::vector<block>` proto.
 
 ```
-void PSUClient(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN) 
+void PSU::Receiver(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t LEN) 
 ```
 * `NetIO &io`: a class object handling communication through socket.
 * `PP &pp`: a public parameter struct of `PSO`.

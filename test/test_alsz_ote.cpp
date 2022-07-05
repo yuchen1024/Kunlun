@@ -196,13 +196,13 @@ int main()
     
     if(party == "z-one-sided-sender"){
         NetIO server_io("server", "", 8080); 
-	    ALSZOTE::OnesidedSend(server_io, pp, vec_z, 16, EXTEND_LEN);
+	    ALSZOTE::OnesidedSendByteVector(server_io, pp, vec_z, EXTEND_LEN);
     }
 
     if(party == "z-one-sided-receiver"){
         NetIO client_io("client", "127.0.0.1", 8080); 
 	    std::vector<std::vector<uint8_t>> vec_z_one_sided_result_prime = 
-        ALSZOTE::OnesidedReceive(client_io, pp, testcase.vec_selection_bit, 16, EXTEND_LEN);
+        ALSZOTE::OnesidedReceiveByteVector(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
        
         // if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_prime) == true){
 		// 	std::cout << "one-sided ALSZ OTE test succeeds" << std::endl; 
