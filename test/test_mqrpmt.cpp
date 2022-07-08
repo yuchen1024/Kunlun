@@ -127,8 +127,8 @@ int main()
         for(auto i = 0; i < LEN; i++){
             if(vec_indication_bit_prime[i] == 1) CARDINALITY++; 
         } 
-        std::cout << testcase.HAMMING_WEIGHT << std::endl;
-        std::cout << CARDINALITY << std::endl;
+        std::cout << "correct Hamming weight = " << testcase.HAMMING_WEIGHT << std::endl;
+        std::cout << "real Hamming weight = " << CARDINALITY << std::endl;
     }
 
     if(party == "client")

@@ -139,7 +139,7 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    PSO_type current = PSI_card_sum; 
+    PSO_type current = PSI_card; 
 
     switch(current) {
         case PSI: std::cout << "PSI"; break; 
@@ -209,10 +209,11 @@ int main()
 
 
     if(current == PSU){
+        std::cout << "(hint: first start receiver, then start sender) ==> "; 
+
         std::getline(std::cin, party);
         PrintSplitLine('-'); 
 
-        std::cout << "(hint: first start receiver, then start sender) ==> ";  
         if(party == "receiver"){
             NetIO server("server", "", 8080);
             std::vector<block> vec_union_prime = PSO::PSU::Receive(server, pp, testcase.vec_X, testcase.LEN);

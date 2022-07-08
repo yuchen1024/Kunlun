@@ -165,6 +165,7 @@ NetIO::NetIO(std::string party, std::string address, int port)
 	}
 	
 	SetNodelay(); 
+
 	// very impprotant: bind the socket to a file stream
 	stream = fdopen(this->connect_socket, "wb+"); 
 	buffer = new char[NETWORK_BUFFER_SIZE];
@@ -314,6 +315,7 @@ void NetIO::ReceiveECPoints(ECPoint* A, size_t LEN)
 
 	delete[] buffer; 
 }
+
 
 void NetIO::SendECPoint(const ECPoint &A) 
 {

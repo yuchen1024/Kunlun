@@ -7,10 +7,13 @@
 ** enable point compression
 ** will save bandwidth by half at the cost of expensive decompression 
 */
-//#define ECPOINT_COMPRESSED
+
+#define ECPOINT_COMPRESSED
 
 #include "../include/global.hpp"
+#include "../utility/print.hpp"
 #include "bigint.hpp"
+
 
 static EC_GROUP *group;
 const static EC_POINT *generator; 
@@ -51,6 +54,7 @@ void ECGroup_Initialize(){
     curve_params_p = BN_new(); 
     curve_params_a = BN_new();
     curve_params_b = BN_new(); 
+
     CRYPTO_CHECK(EC_GROUP_get_curve_GFp(group, curve_params_p, curve_params_a, curve_params_b, bn_ctx) == 1); 
 
     size_t rounds = 100; 
@@ -58,6 +62,15 @@ void ECGroup_Initialize(){
 
     curve_params_q = BN_new(); 
     BN_rshift(curve_params_q, curve_params_p, 1); // p_minus_one_over_two = (p-1)/2
+
+    PrintSplitLine('-'); 
+    std::cout << "EC group info >>> " << std::endl;
+
+    std::cout << "a = " << BN_bn2hex(curve_params_a) << std::endl;  
+    std::cout << "b = " << BN_bn2hex(curve_params_b) << std::endl;  
+    std::cout << "p = " << BN_bn2hex(curve_params_p) << std::endl;  
+    std::cout << "q = " << BN_bn2hex(curve_params_q) << std::endl;  
+    PrintSplitLine('-'); 
 
     BN_BYTE_LEN = BN_num_bits(curve_params_p)/8 + BN_num_bits(curve_params_p)%8;
     POINT_BYTE_LEN = BN_BYTE_LEN * 2 + 1; 
