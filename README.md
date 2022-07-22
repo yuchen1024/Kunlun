@@ -123,10 +123,11 @@ If the above two issues get solved, the performance of Kunlun will be better.
     * cwprf_mqrpmt.hpp: mq-RPMT from commutative weak PRF
 
   - /pso
-    * pso.hpp: support private set intersection, cardinality, sum, union
-
-  - /pid
-    * private_id.hpp: private-id protocol based on OTE-based OPRF and cwPRF-based mqRPMT
+    * mqrpmt_psi.hpp: set intersection
+    * mqrpmt_psi_card.hpp: intersection cardinality
+    * mqrpmt_psi_card_sum.hpp: intersection sum and cardinality 
+    * mqrpmt_psu.hpp: union
+    * mqrpmt_private_id.hpp: private-id protocol based on OTE-based OPRF and cwPRF-based mqRPMT
 
 - zkp
   - /nizk: associated sigma protocol for twisted elgamal; obtained via Fiat-Shamir transform  

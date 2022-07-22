@@ -28,28 +28,32 @@ struct PSOTestCase{
     size_t UNION_CARDINALITY; 
     size_t INTERSECTION_CARDINALITY; // for cardinality
     size_t LEN; // size of set 
-    BigInt MAX; // the maximum value of each value
+    size_t LOG_SUM_BOUND; // binary length of SUM_BOUND
+    BigInt SUM_BOUND; // the maximum value of sum
+    BigInt VALUE_BOUND; // the maximum value of each value
 };
 
 // LEN is the cardinality of two sets
-PSOTestCase GenTestCase(size_t LEN)
+PSOTestCase GenTestCase(size_t LOG_LEN, size_t LOG_SUM_BOUND)
 {
     PSOTestCase testcase;
-    testcase.LEN = LEN; 
+    testcase.LEN = size_t(pow(2, LOG_LEN)); 
+    testcase.LOG_SUM_BOUND = LOG_SUM_BOUND;
 
     //PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
     PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG
-    testcase.vec_X = PRG::GenRandomBlocks(seed, LEN);
-    testcase.vec_Y = PRG::GenRandomBlocks(seed, LEN);
-    testcase.vec_indication_bit = PRG::GenRandomBits(seed, LEN); 
+    testcase.vec_X = PRG::GenRandomBlocks(seed, testcase.LEN);
+    testcase.vec_Y = PRG::GenRandomBlocks(seed, testcase.LEN);
+    testcase.vec_indication_bit = PRG::GenRandomBits(seed, testcase.LEN); 
 
-    testcase.MAX = size_t(pow(2, 10)); 
-    testcase.vec_value = GenRandomBigIntVectorLessThan(LEN, testcase.MAX); 
+    testcase.SUM_BOUND = size_t(pow(2, testcase.LOG_SUM_BOUND)); 
+    testcase.VALUE_BOUND = testcase.SUM_BOUND/BigInt(testcase.LEN); 
+    testcase.vec_value = GenRandomBigIntVectorLessThan(testcase.LEN, testcase.VALUE_BOUND); 
     testcase.INTERSECTION_CARDINALITY = 0; 
     testcase.SUM = bn_0;
     testcase.vec_union = testcase.vec_X; 
     
-    for(auto i = 0; i < LEN; i++){
+    for(auto i = 0; i < testcase.LEN; i++){
         if(testcase.vec_indication_bit[i] == 1){
             testcase.vec_Y[i] = testcase.vec_X[i];
             testcase.INTERSECTION_CARDINALITY++; 
@@ -60,7 +64,7 @@ PSOTestCase GenTestCase(size_t LEN)
             testcase.vec_union.emplace_back(testcase.vec_Y[i]); 
         }
     }
-    testcase.UNION_CARDINALITY = 2*LEN - testcase.INTERSECTION_CARDINALITY;  
+    testcase.UNION_CARDINALITY = 2*testcase.LEN - testcase.INTERSECTION_CARDINALITY;  
 
     return testcase; 
 }
@@ -97,7 +101,9 @@ void SaveTestCase(PSOTestCase &testcase, std::string testcase_filename)
     fout << testcase.vec_intersection; 
     fout << testcase.vec_union; 
 
-    fout << testcase.MAX; 
+    fout << testcase.LOG_SUM_BOUND; 
+    fout << testcase.SUM_BOUND;  
+    fout << testcase.VALUE_BOUND;
 
     fout.close(); 
 }
@@ -130,7 +136,9 @@ void FetchTestCase(PSOTestCase &testcase, std::string testcase_filename)
     fin >> testcase.vec_intersection; 
     fin >> testcase.vec_union; 
 
-    fin >> testcase.MAX;
+    fin >> testcase.LOG_SUM_BOUND; 
+    fin >> testcase.SUM_BOUND; 
+    fin >> testcase.VALUE_BOUND;
 
     fin.close(); 
 }
@@ -139,7 +147,7 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    PSO_type current = PSI_card; 
+    PSO_type current = PSI_card_sum; 
 
     switch(current) {
         case PSI: std::cout << "PSI"; break; 
@@ -170,8 +178,9 @@ int main()
     // generate test instance (must be same for server and client)
     PSOTestCase testcase; 
     if(!FileExist(testcase_filename)){
-        size_t LEN = size_t(pow(2, 20)); 
-        testcase = GenTestCase(LEN); 
+        size_t LOG_LEN = 20;
+        size_t LOG_SUM_BOUND = 32;  
+        testcase = GenTestCase(LOG_LEN, LOG_SUM_BOUND); 
         SaveTestCase(testcase, testcase_filename); 
     }
     else{

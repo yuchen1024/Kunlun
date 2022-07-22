@@ -32,6 +32,7 @@ static BN_CTX *ec_ctx; // define ctx for ecc operations
 
 static int curve_id = NID_X9_62_prime256v1; 
 
+
 void ECGroup_Initialize(){
     #ifdef PARALLEL
         ec_ctx = nullptr;
@@ -63,14 +64,14 @@ void ECGroup_Initialize(){
     curve_params_q = BN_new(); 
     BN_rshift(curve_params_q, curve_params_p, 1); // p_minus_one_over_two = (p-1)/2
 
-    PrintSplitLine('-'); 
-    std::cout << "EC group info >>> " << std::endl;
+    // PrintSplitLine('-'); 
+    // std::cout << "EC group info >>> " << std::endl;
 
-    std::cout << "a = " << BN_bn2hex(curve_params_a) << std::endl;  
-    std::cout << "b = " << BN_bn2hex(curve_params_b) << std::endl;  
-    std::cout << "p = " << BN_bn2hex(curve_params_p) << std::endl;  
-    std::cout << "q = " << BN_bn2hex(curve_params_q) << std::endl;  
-    PrintSplitLine('-'); 
+    // std::cout << "a = " << BN_bn2hex(curve_params_a) << std::endl;  
+    // std::cout << "b = " << BN_bn2hex(curve_params_b) << std::endl;  
+    // std::cout << "p = " << BN_bn2hex(curve_params_p) << std::endl;  
+    // std::cout << "q = " << BN_bn2hex(curve_params_q) << std::endl;  
+    // PrintSplitLine('-'); 
 
     BN_BYTE_LEN = BN_num_bits(curve_params_p)/8 + BN_num_bits(curve_params_p)%8;
     POINT_BYTE_LEN = BN_BYTE_LEN * 2 + 1; 

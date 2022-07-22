@@ -55,6 +55,9 @@ public:
 	void SendBigInt(const BigInt &a);
 	void ReceiveBigInt(BigInt &a);
 
+	void SendBigInt(const BigInt &a, size_t LEN);
+	void ReceiveBigInt(BigInt &a, size_t LEN);
+
 	void SendBits(uint8_t *data, size_t LEN);
 	void ReceiveBits(uint8_t *data, size_t LEN); 
 
@@ -358,6 +361,20 @@ void NetIO::ReceiveBigInt(BigInt &a)
 	BN_bin2bn(buffer, BN_BYTE_LEN, a.bn_ptr);         
 }
 
+void NetIO::SendBigInt(const BigInt &a, size_t LEN)
+{
+	unsigned char buffer[LEN];
+	memset(buffer, 0, LEN); 
+	BN_bn2binpad(a.bn_ptr, buffer, LEN);
+	SendBytes(buffer, LEN);	
+}
+
+void NetIO::ReceiveBigInt(BigInt &a, size_t LEN) 
+{
+	unsigned char buffer[LEN];
+	ReceiveBytes(buffer, LEN); 
+	BN_bin2bn(buffer, LEN, a.bn_ptr);         
+}
 // T could be any built-in data type, such as block or int
 template <typename T>
 void NetIO::SendInteger(const T &n)

@@ -246,6 +246,24 @@ public:
     }
 };
 
+std::set<block, BlockCompare> ComputeSetDifference(std::vector<block> &vec_A, std::vector<block> &vec_B)
+{ 
+    std::set<block, BlockCompare> set_A;
+    for(auto var: vec_A) set_A.insert(var); 
+
+    std::set<block, BlockCompare> set_B;
+    for(auto var: vec_B) set_B.insert(var); 
+
+    BlockCompare blockcmp; 
+    std::set<block, BlockCompare> set_diff_result;  
+    std::set_difference(set_A.begin(), set_A.end(), set_B.begin(), set_B.end(), 
+                        std::inserter<std::set<block, BlockCompare>>(set_diff_result, set_diff_result.end()), 
+                        blockcmp);
+    
+    return set_diff_result; 
+}
+
+
 
 // Modified from
 // https://mischasan.wordpress.com/2011/10/03/the-full-sse2-bit-matrix-transpose-routine/

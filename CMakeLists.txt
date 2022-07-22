@@ -81,16 +81,24 @@ TARGET_LINK_LIBRARIES(test_aes ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 ADD_EXECUTABLE(test_mqrpmt test/test_mqrpmt.cpp)
 TARGET_LINK_LIBRARIES(test_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
-ADD_EXECUTABLE(test_pso test/test_pso.cpp)
-TARGET_LINK_LIBRARIES(test_pso ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+ADD_EXECUTABLE(test_mqrpmt_psi test/test_mqrpmt_psi.cpp)
+TARGET_LINK_LIBRARIES(test_mqrpmt_psi ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_mqrpmt_psi_card test/test_mqrpmt_psi_card.cpp)
+TARGET_LINK_LIBRARIES(test_mqrpmt_psi_card ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_mqrpmt_psi_card_sum test/test_mqrpmt_psi_card_sum.cpp)
+TARGET_LINK_LIBRARIES(test_mqrpmt_psi_card_sum ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_mqrpmt_psu test/test_mqrpmt_psu.cpp)
+TARGET_LINK_LIBRARIES(test_mqrpmt_psu ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_mqrpmt_private_id test/test_mqrpmt_private_id.cpp)
+TARGET_LINK_LIBRARIES(test_mqrpmt_private_id ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # oprf
 ADD_EXECUTABLE(test_oteoprf test/test_oteoprf.cpp)
 TARGET_LINK_LIBRARIES(test_oteoprf ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
-
-# private-id
-ADD_EXECUTABLE(test_pid test/test_pid.cpp)
-TARGET_LINK_LIBRARIES(test_pid ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # peqt
 ADD_EXECUTABLE(test_peqt test/test_peqt.cpp)
