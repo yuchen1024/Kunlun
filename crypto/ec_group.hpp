@@ -77,10 +77,14 @@ void ECGroup_Initialize(){
     POINT_BYTE_LEN = BN_BYTE_LEN * 2 + 1; 
     POINT_COMPRESSED_BYTE_LEN = BN_BYTE_LEN + 1; 
 
-    EC_GROUP_precompute_mult((EC_GROUP*) group, bn_ctx); // pre-compute the table of g     
+     
     
     #ifdef PRECOMPUTE_ENABLE
-    EC_GROUP_have_precompute_mult((EC_GROUP*) group); 
+        EC_GROUP_precompute_mult((EC_GROUP*) group, bn_ctx); // pre-compute the table of g    
+        // check if precomputation have been done properly
+        if(EC_GROUP_have_precompute_mult((EC_GROUP*) group) == 0){
+            std::cerr << "precomputation is not done properly" << std::endl;
+        }; 
     #endif
 }
 

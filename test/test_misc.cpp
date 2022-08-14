@@ -14,6 +14,7 @@ void benchmark_ecc(size_t TEST_NUM)
     PrintSplitLine('-'); 
 
     ECPoint A[TEST_NUM];                 // decrypted messages
+    ECPoint B[TEST_NUM]; 
     BigInt k[TEST_NUM];                  // scalars
 
     ECPoint g = ECPoint(generator); 
@@ -25,13 +26,10 @@ void benchmark_ecc(size_t TEST_NUM)
     }
 
     auto start_time = std::chrono::steady_clock::now(); 
-    #ifdef THREAD_SAFE
-        #pragma omp parallel for
-    #endif
+    
     for(auto i = 0; i < TEST_NUM; i++)
     {
         A[i] = g * k[i]; 
-        //EC_POINT_mul(group, A[i].point_ptr, k[i].bn_ptr, nullptr, nullptr, bn_ctx);
     }
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -39,17 +37,23 @@ void benchmark_ecc(size_t TEST_NUM)
     << std::chrono::duration <double, std::milli> (running_time).count()/TEST_NUM << " ms" << std::endl;
 
     start_time = std::chrono::steady_clock::now(); 
-    #ifdef THREAD_SAFE
-        #pragma omp parallel for
-    #endif
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        A[i] = pk * k[i];
-        //A[i] = pk.ThreadSafeMul(k[i]); 
+        B[i] = pk * k[i];
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
     std::cout << "fixed point mul without precomputation takes time = " 
+    << std::chrono::duration <double, std::milli> (running_time).count()/TEST_NUM << " ms" << std::endl;
+
+    start_time = std::chrono::steady_clock::now(); 
+    for(auto i = 0; i < TEST_NUM; i++)
+    {
+        A[i] = A[i] + B[i];
+    }
+    end_time = std::chrono::steady_clock::now(); 
+    running_time = end_time - start_time;
+    std::cout << "point add takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count()/TEST_NUM << " ms" << std::endl;
 
 
@@ -153,9 +157,9 @@ int main()
 {  
     CRYPTO_Initialize(); 
 
-    //size_t TEST_NUM = 1024*1024;  
+    size_t TEST_NUM = 10000;  
 
-    //benchmark_ecc(TEST_NUM); 
+    benchmark_ecc(TEST_NUM); 
 
     // test_hash_to_point(TEST_NUM);
 
