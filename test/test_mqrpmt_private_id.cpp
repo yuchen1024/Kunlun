@@ -142,7 +142,6 @@ int main()
         mqRPMTPrivateID::FetchPP(pp, pp_filename); 
     }
 
-
     std::string testcase_filename = "PrivateID.testcase"; 
     
     // generate test instance (must be same for server and client)
@@ -155,6 +154,9 @@ int main()
     else{
         std::cout << testcase_filename << " already exists" << std::endl;
         FetchTestCase(testcase, testcase_filename);
+        if((testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN) || (testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN)){
+            std::cerr << "testcasse and public parameter do not match" << std::endl; 
+        }
     }
     PrintTestCase(testcase); 
 
@@ -164,7 +166,7 @@ int main()
     PrintSplitLine('-'); 
 
     size_t ITEM_LEN = pp.oprf_part.OUTPUT_LEN; // byte length of each item
-    std::cout << "ITEM_LEN = " << ITEM_LEN << std::endl; 
+    // std::cout << "ITEM_LEN = " << ITEM_LEN << std::endl; 
     
     if(party == "sender"){
         NetIO server_io("server", "", 8080);

@@ -156,3 +156,7 @@ TARGET_LINK_LIBRARIES(test_range_proof ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 ADD_EXECUTABLE(test_adcp test/test_adcp.cpp)
 TARGET_LINK_LIBRARIES(test_adcp ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
+# mcl
+add_executable(test_mcl test/test_mcl.cpp)
+target_link_libraries(test_mcl libmcl.a libgmp.a)
+

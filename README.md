@@ -79,7 +79,7 @@ If the above two issues get solved, the performance of Kunlun will be better.
   * serialization.hpp: overload serialization for uint and string type data
 
 - /crypto: C++ wrapper for OpenSSL
-  * setup.hpp: initialize crypto environments, including big number, elliptive curves, and aes
+  * setup.hpp: initialize crypto environments, including big number, elliptic curves, and aes
   * ec_group.hpp: initialize ec group environment, define compressed-point on-off, precomputation on-off 
   * ec_point.hpp: class for EC_POINT
   * bigint.hpp: class for BIGNUM, also include initialization of big num
@@ -187,7 +187,7 @@ const static size_t thread_count = 1; // maximum thread count
 
    * 20210827: post the initial version, mainly consists of wrapper class for BIGNUM* and EC_Point*
    * 20210925: shift twisted elgamal, sigma protocols, bulletproofs, and adcp to Kunlun
-   * 20211011: feed my first grammer sugar "namespace" to Kunlun, add OT primitive
+   * 20211011: feed my first grammar sugar "namespace" to Kunlun, add OT primitive
    * 20220319: add private set operation and re-org many places 
    * 20220329: speeding Shanks DLOG algorithm and add ElGamal PKE and Schnorr SIG
    * 20220605: greatly improve the multi-thread support (simplify the code and unify the interface)
@@ -199,6 +199,10 @@ const static size_t thread_count = 1; // maximum thread count
 This library is licensed under the [MIT License](LICENSE).
 
 ---
+
+## Acknowledgement
+
+We deeply thank [Weiran Liu](https://www.zhihu.com/people/liu-wei-ran-8-34) for many helpful discussions on the development of this library. Here we strongly recommend the efficient and easy-to-use [MPC library for Java](https://github.com/alibaba-edu/mpc4j) developed by his team.
 
 ## Tips
 

@@ -17,8 +17,6 @@ const static size_t HASH_OUTPUT_LEN = 32;  // hash output = 256-bit string
 //#define BasicHash(input, HASH_INPUT_LEN, output) SM3(input, HASH_INPUT_LEN, output)
 #define BasicHash(input, HASH_INPUT_LEN, output) SHA256(input, HASH_INPUT_LEN, output)
 
-
-
 namespace Hash{
 
 // adaptor for SM3: default output length is 256 bit
