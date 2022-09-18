@@ -467,5 +467,9 @@ auto ECPoint_Lexical_Compare = [](ECPoint A, ECPoint B){
     return A.ToByteString() < B.ToByteString(); 
 };
 
+// define ECPoint on curve 25519
+struct EC25519Point{
+    unsigned char px[32];
+};
 
 #endif  // KUNLUN_EC_POINT_HPP_

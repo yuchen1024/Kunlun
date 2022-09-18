@@ -247,6 +247,8 @@ inline bool Contain(const ECPoint& A) const
    #endif
 }
 
+
+
 template <class T, class Allocator, template <class,class> class Container>
 inline std::vector<uint8_t> Contain(const Container<T, Allocator>& container)
 {
@@ -278,6 +280,59 @@ inline std::vector<uint8_t> Contain(const std::vector<ECPoint> &vec_A)
    return vec_indication_bit; 
 }
 
+
+/////////////////////////////////////////////////////////////////
+/* specialize for curve 25519*/
+
+// specialize for EC25519Point
+#ifdef IS_MACOS
+template <> 
+#endif
+inline void Insert(const EC25519Point &A)
+{
+   PlainInsert(A.px, POINT_COMPRESSED_BYTE_LEN);
+}
+
+
+// specialize for vector<EC25519Point>
+#ifdef IS_MACOS
+template <> 
+#endif
+inline void Insert(const std::vector<EC25519Point> &vec_A)
+{   
+   #pragma omp parallel for num_threads(thread_count)
+   for(auto i = 0; i < vec_A.size(); i++){
+      Insert(vec_A[i]); 
+   }
+}
+
+// specialize for EC25519Point
+#ifdef IS_MACOS
+template <> 
+#endif
+inline bool Contain(const EC25519Point& A) const
+{
+   return PlainContain(A.px, 32);
+}
+
+// specialize for vector<ECPoint>
+#ifdef IS_MACOS
+template <> 
+#endif
+inline std::vector<uint8_t> Contain(const std::vector<EC25519Point> &vec_A)
+{
+   size_t LEN = vec_A.size();
+   std::vector<uint8_t> vec_indication_bit(LEN); 
+
+   #pragma omp parallel for num_threads(thread_count)
+   for(auto i = 0; i < vec_A.size(); i++){
+      if(Contain(vec_A[i]) == true) vec_indication_bit[i] = 1;
+      else vec_indication_bit[i] = 0; 
+   }
+   return vec_indication_bit; 
+}
+
+///////////////////////////////////////////////////////////////////////////
 
 inline void Clear()
 {

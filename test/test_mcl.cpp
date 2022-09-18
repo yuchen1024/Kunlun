@@ -17,8 +17,8 @@ void benchmark_mcl_ecc(size_t TEST_NUM)
     PrintSplitLine('-'); 
 
     Ec g; 
-    //mcl::initCurve<Ec, Zn>(MCL_SECP256K1, &g); MCL_NIST_P256
-    mcl::initCurve<Ec, Zn>(MCL_NIST_P256, &g);
+    mcl::initCurve<Ec, Zn>(MCL_SECP256K1, &g); 
+    //mcl::initCurve<Ec, Zn>(MCL_NIST_P256, &g);
     
     Ec A[TEST_NUM]; 
     Ec B[TEST_NUM]; 

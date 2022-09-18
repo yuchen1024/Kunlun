@@ -49,6 +49,10 @@ public:
 	void SendECPoints(const ECPoint* vec_A, size_t LEN); 
 	void ReceiveECPoints(ECPoint* vec_A, size_t LEN); 
 
+	// specialization for ECPOints on curve 25519
+	void SendEC25519Points(const EC25519Point* vec_A, size_t LEN); 
+	void ReceiveEC25519Points(EC25519Point* vec_A, size_t LEN); 
+
 	void SendECPoint(const ECPoint &A);
 	void ReceiveECPoint(ECPoint &A);
 
@@ -320,6 +324,27 @@ void NetIO::ReceiveECPoints(ECPoint* A, size_t LEN)
 }
 
 
+void NetIO::SendEC25519Points(const EC25519Point* A, size_t LEN) 
+{
+	unsigned char* buffer = new unsigned char[32*LEN];
+	for(auto i = 0; i < LEN; i++) {
+    	memcpy(buffer+i*32, A[i].px, 32);  
+    }
+	SendBytes(buffer, 32*LEN);
+	delete[] buffer; 
+}
+
+void NetIO::ReceiveEC25519Points(EC25519Point* A, size_t LEN) 
+{
+	unsigned char* buffer = new unsigned char[32*LEN];
+	ReceiveBytes(buffer, 32*LEN); 
+	for(auto i = 0; i < LEN; i++){
+		memcpy(A[i].px, buffer+i*32, 32);  
+	}
+	delete[] buffer; 
+}
+
+
 void NetIO::SendECPoint(const ECPoint &A) 
 {
 	#ifdef ECPOINT_COMPRESSED
@@ -398,6 +423,7 @@ void NetIO::ReceiveBlock(block &a)
 	ReceiveBytes(&a, sizeof(block));
 }
 
+
 // NUM = length of array; LEN = length of each item
 void NetIO::SendBytesArray(const std::vector<std::vector<uint8_t>>& A) 
 {
@@ -431,7 +457,6 @@ void NetIO::ReceiveBytesArray(std::vector<std::vector<uint8_t>> &A)
 	
 	delete[] buffer; 
 }
-
 
 
 

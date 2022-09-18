@@ -161,6 +161,24 @@ block FastBlocksToBlock(const std::vector<block> input_block)
     return vec_B[BLOCK_NUM-1];
 }
 
+// convert block to unsigned char
+int BlockToBytes(const block &var, unsigned char* output, size_t LEN)
+{
+    if(HASH_OUTPUT_LEN < LEN){
+        std::cerr << "digest is too short for desired length" << std::endl;
+        return 0;     
+    }
+
+    unsigned char buffer[32];
+    memset(buffer, 0, 32);
+    memcpy(buffer, &var, 16);
+
+    unsigned char digest[HASH_OUTPUT_LEN];   
+    BasicHash(buffer, 32, digest);
+    memcpy(output, digest, LEN);  
+
+    return 1; 
+}
 
 // fast and threadsafe block to ecpoint hash using low level openssl code
 inline ECPoint BlockToECPoint(const block &var)

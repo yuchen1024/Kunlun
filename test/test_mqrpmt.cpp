@@ -1,3 +1,4 @@
+#include <sodium.h>
 #include "../mpc/rpmt/cwprf_mqrpmt.hpp"
 #include "../include/kunlun.hpp"
 
@@ -105,6 +106,12 @@ int main()
 {
     CRYPTO_Initialize(); 
 
+    if (sodium_init() < 0) {
+        /* panic! the library couldn't be initialized; it is not safe to use */
+    }
+
+    std::string curve_id = "25519"; 
+
     PrintSplitLine('-'); 
     std::cout << "mqRPMT test begins >>>" << std::endl; 
     PrintSplitLine('-'); 
@@ -150,7 +157,13 @@ int main()
   
     if(party == "server"){
         NetIO server("server", "", 8080);
-        std::vector<uint8_t> vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y);
+        std::vector<uint8_t> vec_indication_bit_prime;
+        if(curve_id == "25519"){
+            vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y, curve_id);
+        }
+        else{
+            vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y);
+        }
 
         if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_prime))
         {
@@ -170,8 +183,13 @@ int main()
 
     if(party == "client")
     {
-        NetIO client("client", "127.0.0.1", 8080);        
-        cwPRFmqRPMT::Client(client, pp, testcase.vec_X);
+        NetIO client("client", "127.0.0.1", 8080);  
+        if(curve_id == "25519"){     
+            cwPRFmqRPMT::Client(client, pp, testcase.vec_X, curve_id);
+        }
+        else{
+            cwPRFmqRPMT::Client(client, pp, testcase.vec_X);
+        }
     } 
 
     PrintSplitLine('-'); 
