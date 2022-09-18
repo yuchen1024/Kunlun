@@ -1,4 +1,3 @@
-#include <sodium.h>
 #include "../mpc/rpmt/cwprf_mqrpmt.hpp"
 #include "../include/kunlun.hpp"
 
@@ -106,10 +105,7 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    if (sodium_init() < 0) {
-        /* panic! the library couldn't be initialized; it is not safe to use */
-    }
-
+    //std::string curve_id = "256"; 
     std::string curve_id = "25519"; 
 
     PrintSplitLine('-'); 
@@ -118,7 +114,7 @@ int main()
     std::cout << "generate or load public parameters and test case" << std::endl;
 
     size_t SERVER_LOG_LEN = 20;
-    size_t CLIENT_LOG_LEN = 12; 
+    size_t CLIENT_LOG_LEN = 20; 
     size_t statistical_parameter = 40; 
     // generate pp (must be same for both server and client)
     std::string pp_filename = "mqRPMT.pp"; 

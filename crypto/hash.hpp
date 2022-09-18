@@ -162,7 +162,7 @@ block FastBlocksToBlock(const std::vector<block> input_block)
 }
 
 // convert block to unsigned char
-int BlockToBytes(const block &var, unsigned char* output, size_t LEN)
+int BlockToBytes(const block &var, uint8_t* output, size_t LEN)
 {
     if(HASH_OUTPUT_LEN < LEN){
         std::cerr << "digest is too short for desired length" << std::endl;

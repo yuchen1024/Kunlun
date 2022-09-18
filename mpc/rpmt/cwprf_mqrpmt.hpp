@@ -1,7 +1,7 @@
 #ifndef KUNLUN_CWPRF_MQRPMT_HPP_
 #define KUNLUN_CWPRF_MQRPMT_HPP_
 
-#include <sodium.h>
+#include "../../crypto/curve25519.h"
 #include "../../crypto/ec_group.hpp"
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"
@@ -273,14 +273,17 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y, std::s
     PrintSplitLine('-'); 
     auto start_time = std::chrono::steady_clock::now(); 
 
-    unsigned char k1[32];
-    randombytes_buf(k1, sizeof k1);  // pick a key k1
+    uint8_t k1[32];
+    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    GenRandomBytes(seed, k1, 32);  // pick a key k1
 
+    std::vector<EC25519Point> vec_Hash_Y(pp.SERVER_LEN);
     std::vector<EC25519Point> vec_Fk1_Y(pp.SERVER_LEN);
+
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < pp.SERVER_LEN; i++){
-        Hash::BlockToBytes(vec_Y[i], vec_Fk1_Y[i].px, 32); 
-        crypto_scalarmult_curve25519(vec_Fk1_Y[i].px, k1, vec_Fk1_Y[i].px); // H(y_i)^k1
+        Hash::BlockToBytes(vec_Y[i], vec_Hash_Y[i].px, 32); 
+        x25519_scalar_mulx(vec_Fk1_Y[i].px, k1, vec_Hash_Y[i].px); 
     }
 
     io.SendEC25519Points(vec_Fk1_Y.data(), pp.SERVER_LEN); 
@@ -295,7 +298,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y, std::s
     std::vector<EC25519Point> vec_Fk1k2_X(pp.CLIENT_LEN); 
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < pp.CLIENT_LEN; i++){ 
-        crypto_scalarmult_curve25519(vec_Fk1k2_X[i].px, k1, vec_Fk2_X[i].px); // (H(x_i)^k2)^k1
+        x25519_scalar_mulx(vec_Fk1k2_X[i].px, k1, vec_Fk2_X[i].px); // (H(x_i)^k2)^k1
     }
 
     // compute the indication bit vector
@@ -345,15 +348,16 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, std::string curve_id)
     PrintSplitLine('-'); 
     auto start_time = std::chrono::steady_clock::now(); 
 
+    uint8_t k2[32];
+    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    GenRandomBytes(seed, k2, 32);  // pick a key k1
 
-    unsigned char k2[32];
-    randombytes_buf(k2, sizeof k2);  // pick a key k2
-
+    std::vector<EC25519Point> vec_Hash_X(pp.CLIENT_LEN); 
     std::vector<EC25519Point> vec_Fk2_X(pp.CLIENT_LEN); 
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < pp.CLIENT_LEN; i++){
-        Hash::BlockToBytes(vec_X[i], vec_Fk2_X[i].px, 32); 
-        crypto_scalarmult_curve25519(vec_Fk2_X[i].px, k2, vec_Fk2_X[i].px); // H(y_i)^k1
+        Hash::BlockToBytes(vec_X[i], vec_Hash_X[i].px, 32); 
+        x25519_scalar_mulx(vec_Fk2_X[i].px, k2, vec_Hash_X[i].px); 
     } 
 
     // first receive incoming data
@@ -371,7 +375,7 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X, std::string curve_id)
     std::vector<EC25519Point> vec_Fk2k1_Y(pp.SERVER_LEN);
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < pp.SERVER_LEN; i++){
-        crypto_scalarmult_curve25519(vec_Fk2k1_Y[i].px, k2, vec_Fk1_Y[i].px); // (H(x_i)^k2)^k1
+        x25519_scalar_mulx(vec_Fk2k1_Y[i].px, k2, vec_Fk1_Y[i].px); // (H(x_i)^k2)^k1
     }
 
     // permutation

@@ -12,7 +12,6 @@
 #include "../utility/murmurhash2.hpp"
 #include "../utility/routines.hpp"
 
-
 class BigInt;
 
 // C++ Wrapper class for openssl EC_POINT.
@@ -469,7 +468,7 @@ auto ECPoint_Lexical_Compare = [](ECPoint A, ECPoint B){
 
 // define ECPoint on curve 25519
 struct EC25519Point{
-    unsigned char px[32];
+    uint8_t px[32];
 };
 
 #endif  // KUNLUN_EC_POINT_HPP_

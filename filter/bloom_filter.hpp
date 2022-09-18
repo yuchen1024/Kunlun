@@ -290,7 +290,7 @@ template <>
 #endif
 inline void Insert(const EC25519Point &A)
 {
-   PlainInsert(A.px, POINT_COMPRESSED_BYTE_LEN);
+   PlainInsert(A.px, 32);
 }
 
 

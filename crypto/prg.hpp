@@ -124,6 +124,14 @@ std::vector<uint8_t> GenRandomBytes(Seed &seed, size_t LEN){
     return vec_b; 
 }
 
+// generate a random byte vector
+void GenRandomBytes(Seed &seed, uint8_t *output, size_t LEN){
+    size_t BLOCK_LEN = size_t(ceil(double(LEN)/16)); 
+    std::vector<block> vec_a(BLOCK_LEN); 
+    vec_a = GenRandomBlocks(seed, BLOCK_LEN);
+    memcpy(output, vec_a.data(), LEN); 
+}
+
 // generate a random bool vector: each byte represent a bit in a sparse way
 std::vector<uint8_t> GenRandomBits(Seed &seed, size_t LEN) 
 {
