@@ -17,9 +17,17 @@
 * extract from openssl: modify line 5493 [remove const]
 */
 
-#include "curve25519.h"
+#include "stdint.h"
+#include "string.h"
+#include "stdlib.h"
+#include <openssl/evp.h>
+#include <openssl/sha.h>
 
-# define X25519_ASM
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define X25519_ASM
 
 #if defined(X25519_ASM) && (defined(__x86_64) || defined(__x86_64__) || \
                             defined(_M_AMD64) || defined(_M_X64))
@@ -52,7 +60,7 @@ void x25519_fe64_tobytes(uint8_t *s, const fe64 f);
 # define fe64_sub x25519_fe64_sub
 # define fe64_tobytes x25519_fe64_tobytes
 
-static uint64_t load_8(const uint8_t *in)
+uint64_t load_8(const uint8_t *in)
 {
     uint64_t result;
 
@@ -68,7 +76,7 @@ static uint64_t load_8(const uint8_t *in)
     return result;
 }
 
-static void fe64_frombytes(fe64 h, const uint8_t *s)
+void fe64_frombytes(fe64 h, const uint8_t *s)
 {
     h[0] = load_8(s);
     h[1] = load_8(s + 8);
@@ -76,7 +84,7 @@ static void fe64_frombytes(fe64 h, const uint8_t *s)
     h[3] = load_8(s + 24) & 0x7fffffffffffffff;
 }
 
-static void fe64_0(fe64 h)
+void fe64_0(fe64 h)
 {
     h[0] = 0;
     h[1] = 0;
@@ -84,7 +92,7 @@ static void fe64_0(fe64 h)
     h[3] = 0;
 }
 
-static void fe64_1(fe64 h)
+void fe64_1(fe64 h)
 {
     h[0] = 1;
     h[1] = 0;
@@ -92,7 +100,7 @@ static void fe64_1(fe64 h)
     h[3] = 0;
 }
 
-static void fe64_copy(fe64 h, const fe64 f)
+void fe64_copy(fe64 h, const fe64 f)
 {
     h[0] = f[0];
     h[1] = f[1];
@@ -100,7 +108,7 @@ static void fe64_copy(fe64 h, const fe64 f)
     h[3] = f[3];
 }
 
-static void fe64_cswap(fe64 f, fe64 g, unsigned int b)
+void fe64_cswap(fe64 f, fe64 g, unsigned int b)
 {
     int i;
     uint64_t mask = 0 - (uint64_t)b;
@@ -113,7 +121,7 @@ static void fe64_cswap(fe64 f, fe64 g, unsigned int b)
     }
 }
 
-static void fe64_invert(fe64 out, const fe64 z)
+void fe64_invert(fe64 out, const fe64 z)
 {
     fe64 t0;
     fe64 t1;
@@ -208,6 +216,7 @@ static void fe64_invert(fe64 out, const fe64 z)
  * Duplicate of original x25519_scalar_mult_generic, but using
  * fe64_* subroutines.
  */
+
 void x25519_scalar_mulx(uint8_t out[32], const uint8_t scalar[32],
                                const uint8_t point[32])
 {
@@ -278,7 +287,7 @@ typedef uint64_t fe51[5];
 
 static const uint64_t MASK51 = 0x7ffffffffffff;
 
-static uint64_t load_7(const uint8_t *in)
+uint64_t load_7(const uint8_t *in)
 {
     uint64_t result;
 
@@ -293,7 +302,7 @@ static uint64_t load_7(const uint8_t *in)
     return result;
 }
 
-static uint64_t load_6(const uint8_t *in)
+uint64_t load_6(const uint8_t *in)
 {
     uint64_t result;
 
@@ -307,7 +316,7 @@ static uint64_t load_6(const uint8_t *in)
     return result;
 }
 
-static void fe51_frombytes(fe51 h, const uint8_t *s)
+void fe51_frombytes(fe51 h, const uint8_t *s)
 {
     uint64_t h0 = load_7(s);                                /* 56 bits */
     uint64_t h1 = load_6(s + 7) << 5;                       /* 53 bits */
@@ -327,7 +336,7 @@ static void fe51_frombytes(fe51 h, const uint8_t *s)
     h[4] = h4;
 }
 
-static void fe51_tobytes(uint8_t *s, const fe51 h)
+void fe51_tobytes(uint8_t *s, const fe51 h)
 {
     uint64_t h0 = h[0];
     uint64_t h1 = h[1];
@@ -397,7 +406,7 @@ void x25519_fe51_mul121666(fe51 h, fe51 f);
 
 typedef uint128_t u128;
 
-static void fe51_mul(fe51 h, const fe51 f, const fe51 g)
+void fe51_mul(fe51 h, const fe51 f, const fe51 g)
 {
     u128 h0, h1, h2, h3, h4;
     uint64_t f_i, g0, g1, g2, g3, g4;
@@ -455,7 +464,7 @@ static void fe51_mul(fe51 h, const fe51 f, const fe51 g)
     h[4] = g4;
 }
 
-static void fe51_sq(fe51 h, const fe51 f)
+void fe51_sq(fe51 h, const fe51 f)
 {
 #  if defined(OPENSSL_SMALL_FOOTPRINT)
     fe51_mul(h, f, f);
@@ -509,7 +518,7 @@ static void fe51_sq(fe51 h, const fe51 f)
 #  endif
 }
 
-static void fe51_mul121666(fe51 h, fe51 f)
+void fe51_mul121666(fe51 h, fe51 f)
 {
     u128 h0 = f[0] * (u128)121666;
     u128 h1 = f[1] * (u128)121666;
@@ -536,7 +545,7 @@ static void fe51_mul121666(fe51 h, fe51 f)
 }
 # endif
 
-static void fe51_add(fe51 h, const fe51 f, const fe51 g)
+void fe51_add(fe51 h, const fe51 f, const fe51 g)
 {
     h[0] = f[0] + g[0];
     h[1] = f[1] + g[1];
@@ -545,7 +554,7 @@ static void fe51_add(fe51 h, const fe51 f, const fe51 g)
     h[4] = f[4] + g[4];
 }
 
-static void fe51_sub(fe51 h, const fe51 f, const fe51 g)
+void fe51_sub(fe51 h, const fe51 f, const fe51 g)
 {
     /*
      * Add 2*modulus to ensure that result remains positive
@@ -558,7 +567,7 @@ static void fe51_sub(fe51 h, const fe51 f, const fe51 g)
     h[4] = (f[4] + 0xffffffffffffe) - g[4];
 }
 
-static void fe51_0(fe51 h)
+void fe51_0(fe51 h)
 {
     h[0] = 0;
     h[1] = 0;
@@ -567,7 +576,7 @@ static void fe51_0(fe51 h)
     h[4] = 0;
 }
 
-static void fe51_1(fe51 h)
+void fe51_1(fe51 h)
 {
     h[0] = 1;
     h[1] = 0;
@@ -576,7 +585,7 @@ static void fe51_1(fe51 h)
     h[4] = 0;
 }
 
-static void fe51_copy(fe51 h, const fe51 f)
+void fe51_copy(fe51 h, const fe51 f)
 {
     h[0] = f[0];
     h[1] = f[1];
@@ -585,7 +594,7 @@ static void fe51_copy(fe51 h, const fe51 f)
     h[4] = f[4];
 }
 
-static void fe51_cswap(fe51 f, fe51 g, unsigned int b)
+void fe51_cswap(fe51 f, fe51 g, unsigned int b)
 {
     int i;
     uint64_t mask = 0 - (uint64_t)b;
@@ -598,7 +607,7 @@ static void fe51_cswap(fe51 f, fe51 g, unsigned int b)
     }
 }
 
-static void fe51_invert(fe51 out, const fe51 z)
+void fe51_invert(fe51 out, const fe51 z)
 {
     fe51 t0;
     fe51 t1;
@@ -693,7 +702,7 @@ static void fe51_invert(fe51 out, const fe51 z)
  * Duplicate of original x25519_scalar_mult_generic, but using
  * fe51_* subroutines.
  */
-static void x25519_scalar_mult(uint8_t out[32], const uint8_t scalar[32],
+void x25519_scalar_mult(uint8_t out[32], const uint8_t scalar[32],
                                const uint8_t point[32])
 {
     fe51 x1, x2, z2, x3, z3, tmp0, tmp1;
@@ -776,7 +785,7 @@ static const int64_t kBottom26Bits = 0x3ffffffLL;
 static const int64_t kTop39Bits = 0xfffffffffe000000LL;
 static const int64_t kTop38Bits = 0xfffffffffc000000LL;
 
-static uint64_t load_3(const uint8_t *in)
+uint64_t load_3(const uint8_t *in)
 {
     uint64_t result;
 
@@ -786,7 +795,7 @@ static uint64_t load_3(const uint8_t *in)
     return result;
 }
 
-static uint64_t load_4(const uint8_t *in)
+uint64_t load_4(const uint8_t *in)
 {
     uint64_t result;
 
@@ -797,7 +806,7 @@ static uint64_t load_4(const uint8_t *in)
     return result;
 }
 
-static void fe_frombytes(fe h, const uint8_t *s)
+void fe_frombytes(fe h, const uint8_t *s)
 {
     /* Ignores top bit of h. */
     int64_t h0 =  load_4(s);
@@ -869,7 +878,7 @@ static void fe_frombytes(fe h, const uint8_t *s)
  *   Have q+2^(-255)x = 2^(-255)(h + 19 2^(-25) h9 + 2^(-1))
  *   so floor(2^(-255)(h + 19 2^(-25) h9 + 2^(-1))) = q.
  */
-static void fe_tobytes(uint8_t *s, const fe h)
+void fe_tobytes(uint8_t *s, const fe h)
 {
     int32_t h0 = h[0];
     int32_t h1 = h[1];
@@ -952,19 +961,19 @@ static void fe_tobytes(uint8_t *s, const fe h)
 }
 
 /* h = f */
-static void fe_copy(fe h, const fe f)
+void fe_copy(fe h, const fe f)
 {
     memmove(h, f, sizeof(int32_t) * 10);
 }
 
 /* h = 0 */
-static void fe_0(fe h)
+void fe_0(fe h)
 {
     memset(h, 0, sizeof(int32_t) * 10);
 }
 
 /* h = 1 */
-static void fe_1(fe h)
+void fe_1(fe h)
 {
     memset(h, 0, sizeof(int32_t) * 10);
     h[0] = 1;
@@ -982,7 +991,7 @@ static void fe_1(fe h)
  * Postconditions:
  *    |h| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
  */
-static void fe_add(fe h, const fe f, const fe g)
+void fe_add(fe h, const fe f, const fe g)
 {
     unsigned i;
 
@@ -1003,7 +1012,7 @@ static void fe_add(fe h, const fe f, const fe g)
  * Postconditions:
  *    |h| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
  */
-static void fe_sub(fe h, const fe f, const fe g)
+void fe_sub(fe h, const fe f, const fe g)
 {
     unsigned i;
 
@@ -1042,7 +1051,7 @@ static void fe_sub(fe h, const fe f, const fe g)
  *
  * With tighter constraints on inputs can squeeze carries into int32.
  */
-static void fe_mul(fe h, const fe f, const fe g)
+void fe_mul(fe h, const fe f, const fe g)
 {
     int32_t f0 = f[0];
     int32_t f1 = f[1];
@@ -1272,7 +1281,7 @@ static void fe_mul(fe h, const fe f, const fe g)
  *
  * See fe_mul.c for discussion of implementation strategy.
  */
-static void fe_sq(fe h, const fe f)
+void fe_sq(fe h, const fe f)
 {
     int32_t f0 = f[0];
     int32_t f1 = f[1];
@@ -1404,7 +1413,7 @@ static void fe_sq(fe h, const fe f)
     h[9] = (int32_t)h9;
 }
 
-static void fe_invert(fe out, const fe z)
+void fe_invert(fe out, const fe z)
 {
     fe t0;
     fe t1;
@@ -1509,7 +1518,7 @@ static void fe_invert(fe out, const fe z)
  * Postconditions:
  *    |h| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
  */
-static void fe_neg(fe h, const fe f)
+void fe_neg(fe h, const fe f)
 {
     unsigned i;
 
@@ -1524,7 +1533,7 @@ static void fe_neg(fe h, const fe f)
  *
  * Preconditions: b in {0,1}.
  */
-static void fe_cmov(fe f, const fe g, unsigned b)
+void fe_cmov(fe f, const fe g, unsigned b)
 {
     size_t i;
 
@@ -1543,7 +1552,7 @@ static void fe_cmov(fe f, const fe g, unsigned b)
  * Preconditions:
  *    |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
  */
-static int fe_isnonzero(const fe f)
+int fe_isnonzero(const fe f)
 {
     uint8_t s[32];
     static const uint8_t zero[32] = {0};
@@ -1724,7 +1733,7 @@ static void fe_sq2(fe h, const fe f)
     h[9] = (int32_t)h9;
 }
 
-static void fe_pow22523(fe out, const fe z)
+void fe_pow22523(fe out, const fe z)
 {
     fe t0;
     fe t1;
@@ -1864,7 +1873,7 @@ static const fe sqrtm1 = {
     -272473,   -25146209, -2005654, 326686,  11406482
 };
 
-static int ge_frombytes_vartime(ge_p3 *h, const uint8_t *s)
+int ge_frombytes_vartime(ge_p3 *h, const uint8_t *s)
 {
     fe u;
     fe v;
@@ -1908,14 +1917,14 @@ static int ge_frombytes_vartime(ge_p3 *h, const uint8_t *s)
     return 0;
 }
 
-static void ge_p2_0(ge_p2 *h)
+void ge_p2_0(ge_p2 *h)
 {
     fe_0(h->X);
     fe_1(h->Y);
     fe_1(h->Z);
 }
 
-static void ge_p3_0(ge_p3 *h)
+void ge_p3_0(ge_p3 *h)
 {
     fe_0(h->X);
     fe_1(h->Y);
@@ -1923,7 +1932,7 @@ static void ge_p3_0(ge_p3 *h)
     fe_0(h->T);
 }
 
-static void ge_precomp_0(ge_precomp *h)
+void ge_precomp_0(ge_precomp *h)
 {
     fe_1(h->yplusx);
     fe_1(h->yminusx);
@@ -1931,7 +1940,7 @@ static void ge_precomp_0(ge_precomp *h)
 }
 
 /* r = p */
-static void ge_p3_to_p2(ge_p2 *r, const ge_p3 *p)
+void ge_p3_to_p2(ge_p2 *r, const ge_p3 *p)
 {
     fe_copy(r->X, p->X);
     fe_copy(r->Y, p->Y);
@@ -2011,7 +2020,7 @@ static void ge_madd(ge_p1p1 *r, const ge_p3 *p, const ge_precomp *q)
 }
 
 /* r = p - q */
-static void ge_msub(ge_p1p1 *r, const ge_p3 *p, const ge_precomp *q)
+void ge_msub(ge_p1p1 *r, const ge_p3 *p, const ge_precomp *q)
 {
     fe t0;
 
@@ -2028,7 +2037,7 @@ static void ge_msub(ge_p1p1 *r, const ge_p3 *p, const ge_precomp *q)
 }
 
 /* r = p + q */
-static void ge_add(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q)
+void ge_add(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q)
 {
     fe t0;
 
@@ -2046,7 +2055,7 @@ static void ge_add(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q)
 }
 
 /* r = p - q */
-static void ge_sub(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q)
+void ge_sub(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q)
 {
     fe t0;
 
@@ -2074,7 +2083,7 @@ static uint8_t equal(signed char b, signed char c)
     return y;
 }
 
-static void cmov(ge_precomp *t, const ge_precomp *u, uint8_t b)
+void cmov(ge_precomp *t, const ge_precomp *u, uint8_t b)
 {
     fe_cmov(t->yplusx, u->yplusx, b);
     fe_cmov(t->yminusx, u->yminusx, b);
@@ -4197,7 +4206,7 @@ static const ge_precomp k25519Precomp[32][8] = {
     },
 };
 
-static uint8_t negative(signed char b)
+uint8_t negative(signed char b)
 {
     uint32_t x = b;
 
@@ -4205,7 +4214,7 @@ static uint8_t negative(signed char b)
     return x;
 }
 
-static void table_select(ge_precomp *t, int pos, signed char b)
+void table_select(ge_precomp *t, int pos, signed char b)
 {
     ge_precomp minust;
     uint8_t bnegative = negative(b);
@@ -4235,7 +4244,7 @@ static void table_select(ge_precomp *t, int pos, signed char b)
  * Preconditions:
  *   a[31] <= 127
  */
-static void ge_scalarmult_base(ge_p3 *h, const uint8_t *a)
+void ge_scalarmult_base(ge_p3 *h, const uint8_t *a)
 {
     signed char e[64];
     signed char carry;
@@ -4293,7 +4302,7 @@ static void ge_scalarmult_base(ge_p3 *h, const uint8_t *a)
  *
  * Preconditions: b in {0,1}.
  */
-static void fe_cswap(fe f, fe g, unsigned int b)
+void fe_cswap(fe f, fe g, unsigned int b)
 {
     size_t i;
 
@@ -4317,7 +4326,7 @@ static void fe_cswap(fe f, fe g, unsigned int b)
  * Postconditions:
  *    |h| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
  */
-static void fe_mul121666(fe h, fe f)
+void fe_mul121666(fe h, fe f)
 {
     int32_t f0 = f[0];
     int32_t f1 = f[1];
@@ -4374,7 +4383,7 @@ static void fe_mul121666(fe h, fe f)
     h[9] = (int32_t)h9;
 }
 
-static void x25519_scalar_mult_generic(uint8_t out[32],
+void x25519_scalar_mult_generic(uint8_t out[32],
                                        const uint8_t scalar[32],
                                        const uint8_t point[32]) {
     fe x1, x2, z2, x3, z3, tmp0, tmp1;
@@ -4425,13 +4434,13 @@ static void x25519_scalar_mult_generic(uint8_t out[32],
     OPENSSL_cleanse(e, sizeof(e));
 }
 
-static void x25519_scalar_mult(uint8_t out[32], const uint8_t scalar[32],
+void x25519_scalar_mult(uint8_t out[32], const uint8_t scalar[32],
                                const uint8_t point[32]) {
     x25519_scalar_mult_generic(out, scalar, point);
 }
 #endif
 
-static void slide(signed char *r, const uint8_t *a)
+void slide(signed char *r, const uint8_t *a)
 {
     int i;
     int b;
@@ -4622,7 +4631,7 @@ static void ge_double_scalarmult_vartime(ge_p2 *r, const uint8_t *a,
  *   where l = 2^252 + 27742317777372353535851937790883648493.
  *   Overwrites s in place.
 */
-static void x25519_sc_reduce(uint8_t *s)
+void x25519_sc_reduce(uint8_t *s)
 {
     int64_t s0  = kBottom21Bits &  load_3(s);
     int64_t s1  = kBottom21Bits & (load_4(s +  2) >> 5);
@@ -4966,7 +4975,7 @@ static void x25519_sc_reduce(uint8_t *s)
  *   s[0]+256*s[1]+...+256^31*s[31] = (ab+c) mod l
  *   where l = 2^252 + 27742317777372353535851937790883648493.
  */
-static void sc_muladd(uint8_t *s, const uint8_t *a, const uint8_t *b,
+void sc_muladd(uint8_t *s, const uint8_t *a, const uint8_t *b,
                       const uint8_t *c)
 {
     int64_t a0  = kBottom21Bits &  load_3(a);

@@ -1,6 +1,7 @@
 #include "../mpc/rpmt/cwprf_mqrpmt.hpp"
 #include "../include/kunlun.hpp"
 
+#define USE_CURVE_25519
 
 struct RPMTTestcase{
     size_t SERVER_LOG_LEN; 
@@ -105,8 +106,15 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    //std::string curve_id = "256"; 
-    std::string curve_id = "25519"; 
+    #ifdef USE_CURVE_25519
+        if (sodium_init() < 0) {
+            std::cerr << "panic! the library couldn't be initialized; it is not safe to use" << std::endl;
+            exit(0); 
+        }
+        else{
+            std::cerr << "Using Curve 25519" << std::endl;
+        }
+    #endif
 
     PrintSplitLine('-'); 
     std::cout << "mqRPMT test begins >>>" << std::endl; 
@@ -154,12 +162,12 @@ int main()
     if(party == "server"){
         NetIO server("server", "", 8080);
         std::vector<uint8_t> vec_indication_bit_prime;
-        if(curve_id == "25519"){
-            vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y, curve_id);
-        }
-        else{
+        #ifdef USE_CURVE_25519
+            vec_indication_bit_prime = cwPRFmqRPMT::Server25519(server, pp, testcase.vec_Y);
+        
+        #else
             vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y);
-        }
+        #endif
 
         if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_prime))
         {
@@ -180,12 +188,12 @@ int main()
     if(party == "client")
     {
         NetIO client("client", "127.0.0.1", 8080);  
-        if(curve_id == "25519"){     
-            cwPRFmqRPMT::Client(client, pp, testcase.vec_X, curve_id);
-        }
-        else{
+
+        #ifdef USE_CURVE_25519     
+            cwPRFmqRPMT::Client25519(client, pp, testcase.vec_X);
+        #else
             cwPRFmqRPMT::Client(client, pp, testcase.vec_X);
-        }
+        #endif
     } 
 
     PrintSplitLine('-'); 

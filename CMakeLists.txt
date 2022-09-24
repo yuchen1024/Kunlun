@@ -4,6 +4,15 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 # Project's name 
 PROJECT(Kunlun)
 
+# add libsodium
+set(LIBSODIUM_ROOT_DIR "/usr/local")
+message(STATUS "LIBSODIUM_ROOT_DIR set to default: ${LIBSODIUM_ROOT_DIR}")
+set(LIBSODIUM_INCLUDE_DIR "${LIBSODIUM_ROOT_DIR}/include/")
+find_library(LIBSODIUM_LIBRARY NAMES sodium)
+message(STATUS "LIBSODIUM_INCLUDE_DIR:  ${LIBSODIUM_INCLUDE_DIR}")
+message(STATUS "LIBSODIUM_LIBRARY:  ${LIBSODIUM_LIBRARY}")
+include_directories(${LIBSODIUM_INCLUDE_DIR})
+
 
 FIND_PACKAGE(OpenSSL REQUIRED)
 FIND_PACKAGE(OpenMP REQUIRED)
@@ -77,8 +86,8 @@ ADD_EXECUTABLE(test_aes test/test_aes.cpp)
 TARGET_LINK_LIBRARIES(test_aes ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # pso
-ADD_EXECUTABLE(test_mqrpmt  ../crypto/x25519-x86_64.s ../crypto/curve25519.c test/test_mqrpmt.cpp)
-TARGET_LINK_LIBRARIES(test_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+ADD_EXECUTABLE(test_mqrpmt test/test_mqrpmt.cpp)
+TARGET_LINK_LIBRARIES(test_mqrpmt ${OPENSSL_LIBRARIES} ${LIBSODIUM_LIBRARY} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_mqrpmt_psi test/test_mqrpmt_psi.cpp)
 TARGET_LINK_LIBRARIES(test_mqrpmt_psi ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
