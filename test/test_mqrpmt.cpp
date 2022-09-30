@@ -1,8 +1,6 @@
 #include "../mpc/rpmt/cwprf_mqrpmt.hpp"
 #include "../include/kunlun.hpp"
 
-#define USE_CURVE_25519
-
 struct RPMTTestcase{
     size_t SERVER_LOG_LEN; 
     size_t SERVER_LEN;
@@ -162,12 +160,8 @@ int main()
     if(party == "server"){
         NetIO server("server", "", 8080);
         std::vector<uint8_t> vec_indication_bit_prime;
-        #ifdef USE_CURVE_25519
-            vec_indication_bit_prime = cwPRFmqRPMT::Server25519(server, pp, testcase.vec_Y);
         
-        #else
-            vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y);
-        #endif
+        vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y);
 
         if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_prime))
         {
@@ -188,12 +182,7 @@ int main()
     if(party == "client")
     {
         NetIO client("client", "127.0.0.1", 8080);  
-
-        #ifdef USE_CURVE_25519     
-            cwPRFmqRPMT::Client25519(client, pp, testcase.vec_X);
-        #else
-            cwPRFmqRPMT::Client(client, pp, testcase.vec_X);
-        #endif
+        cwPRFmqRPMT::Client(client, pp, testcase.vec_X);
     } 
 
     PrintSplitLine('-'); 

@@ -32,6 +32,7 @@ static size_t POINT_COMPRESSED_BYTE_LEN; // the byte length of ec point in compr
 static BN_CTX *ec_ctx; // define ctx for ecc operations
 
 static int curve_id = NID_X9_62_prime256v1; 
+// static int curve_id = NID_secp256k1; 
 
 
 void ECGroup_Initialize(){

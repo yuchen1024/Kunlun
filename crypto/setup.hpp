@@ -30,8 +30,9 @@ void CRYPTO_Initialize()
     #endif
 
     PrintSplitLine('-'); 
-    std::cout << "ENVIROMENT INFO >>>" << std::endl;
+    std::cout << "GLOBAL ENVIROMENT INFO >>>" << std::endl;
     std::cout << "THREAD NUM = " << thread_count << std::endl;
+    std::cout << "EC Curve ID = " << curve_id << std::endl;
     std::cout << "ECPoint COMPRESSION = "; 
     #ifdef ECPOINT_COMPRESSED
         std::cout << "ON" << std::endl;

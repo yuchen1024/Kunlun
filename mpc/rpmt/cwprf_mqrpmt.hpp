@@ -11,7 +11,7 @@
 #include "../../netio/stream_channel.hpp"
 #include "../../filter/bloom_filter.hpp"
 
-
+#define USE_CURVE_25519
 
 /*
 ** implement multi-query RPMT based on weak commutative PRF
@@ -103,6 +103,7 @@ void FetchPP(PP &pp, std::string pp_filename)
     fin.close(); 
 }
 
+#ifndef USE_CURVE_25519
 std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
 {
     if(pp.SERVER_LEN != vec_Y.size()){
@@ -259,8 +260,10 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
     PrintSplitLine('-'); 
 }
 
+#else
 
-std::vector<uint8_t> Server25519(NetIO &io, PP &pp, std::vector<block> &vec_Y)
+
+std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
 {
     if(pp.SERVER_LEN != vec_Y.size()){
         std::cerr << "input size of vec_Y does not match public parameters" << std::endl;
@@ -271,9 +274,8 @@ std::vector<uint8_t> Server25519(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     auto start_time = std::chrono::steady_clock::now(); 
 
     uint8_t k1[32];
-    randombytes_buf(k1, sizeof k1);
-    //PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
-    //GenRandomBytes(seed, k1, 32);  // pick a key k1
+    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    GenRandomBytes(seed, k1, 32);  // pick a key k1
 
     std::vector<EC25519Point> vec_Hash_Y(pp.SERVER_LEN);
     std::vector<EC25519Point> vec_Fk1_Y(pp.SERVER_LEN);
@@ -281,8 +283,7 @@ std::vector<uint8_t> Server25519(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < pp.SERVER_LEN; i++){
         Hash::BlockToBytes(vec_Y[i], vec_Hash_Y[i].px, 32); 
-        crypto_scalarmult_curve25519(vec_Fk1_Y[i].px, k1, vec_Hash_Y[i].px); 
-        //x25519_scalar_mulx(vec_Fk1_Y[i].px, k1, vec_Hash_Y[i].px); 
+        x25519_scalar_mulx(vec_Fk1_Y[i].px, k1, vec_Hash_Y[i].px); 
     }
 
     io.SendEC25519Points(vec_Fk1_Y.data(), pp.SERVER_LEN); 
@@ -297,8 +298,7 @@ std::vector<uint8_t> Server25519(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     std::vector<EC25519Point> vec_Fk1k2_X(pp.CLIENT_LEN); 
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < pp.CLIENT_LEN; i++){ 
-        crypto_scalarmult_curve25519(vec_Fk1k2_X[i].px, k1, vec_Fk2_X[i].px);
-        //x25519_scalar_mulx(vec_Fk1k2_X[i].px, k1, vec_Fk2_X[i].px); // (H(x_i)^k2)^k1
+        x25519_scalar_mulx(vec_Fk1k2_X[i].px, k1, vec_Fk2_X[i].px); // (H(x_i)^k2)^k1
     }
 
     // compute the indication bit vector
@@ -334,12 +334,8 @@ std::vector<uint8_t> Server25519(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     return vec_indication_bit; 
 }
 
-void Client25519(NetIO &io, PP &pp, std::vector<block> &vec_X) 
+void Client(NetIO &io, PP &pp, std::vector<block> &vec_X) 
 {    
-    // if (curve_id != "25519"){
-    //     std::cerr << "curve id is not 25519" << std::endl; 
-    // }
-
     if(pp.CLIENT_LEN != vec_X.size()){
         std::cerr << "input size of vec_Y does not match public parameters" << std::endl;
         exit(1);  
@@ -349,17 +345,15 @@ void Client25519(NetIO &io, PP &pp, std::vector<block> &vec_X)
     auto start_time = std::chrono::steady_clock::now(); 
 
     uint8_t k2[32];
-    randombytes_buf(k2, sizeof k2);
-    // PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
-    // GenRandomBytes(seed, k2, 32);  // pick a key k1
+    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    GenRandomBytes(seed, k2, 32);  // pick a key k2
 
     std::vector<EC25519Point> vec_Hash_X(pp.CLIENT_LEN); 
     std::vector<EC25519Point> vec_Fk2_X(pp.CLIENT_LEN); 
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < pp.CLIENT_LEN; i++){
         Hash::BlockToBytes(vec_X[i], vec_Hash_X[i].px, 32); 
-        crypto_scalarmult_curve25519(vec_Fk2_X[i].px, k2, vec_Hash_X[i].px); 
-        // x25519_scalar_mulx(vec_Fk2_X[i].px, k2, vec_Hash_X[i].px); 
+        x25519_scalar_mulx(vec_Fk2_X[i].px, k2, vec_Hash_X[i].px); 
     } 
 
     // first receive incoming data
@@ -377,8 +371,7 @@ void Client25519(NetIO &io, PP &pp, std::vector<block> &vec_X)
     std::vector<EC25519Point> vec_Fk2k1_Y(pp.SERVER_LEN);
     #pragma omp parallel for num_threads(thread_count)
     for(auto i = 0; i < pp.SERVER_LEN; i++){
-        crypto_scalarmult_curve25519(vec_Fk2k1_Y[i].px, k2, vec_Fk1_Y[i].px); 
-        //x25519_scalar_mulx(vec_Fk2k1_Y[i].px, k2, vec_Fk1_Y[i].px); // (H(x_i)^k2)^k1
+        x25519_scalar_mulx(vec_Fk2k1_Y[i].px, k2, vec_Fk1_Y[i].px); // (H(x_i)^k2)^k1
     }
 
     // permutation
@@ -414,6 +407,7 @@ void Client25519(NetIO &io, PP &pp, std::vector<block> &vec_X)
     PrintSplitLine('-'); 
 }
 
+#endif
 
 }
 #endif

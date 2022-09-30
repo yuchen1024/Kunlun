@@ -40,10 +40,25 @@ If the above two issues get solved, the performance of Kunlun will be better.
 ```
   $ brew install openssl
 ```
+
+modify crypto/ec/curve25519.c line 211: remove "static", then do the following steps:
+```
+  $ ./Configure darwin64-x86_64-cc shared enable-ec_nistp_64_gcc_128 no-ssl2 no-ssl3 no-comp --openssldir=/usr/local/ssl/macos-x86_64
+  $ make depend
+  $ sudo make install
+```
+
+test if the function x25519_scalar_mulx is available
+```
+  $ cd /usr/local/lib
+  $ nm libcrypto.a | grep x25519_scalar_mulx
+```
+
 * install OpenMP
 ```
   $ brew install libomp 
 ```
+
 
 ### On Linux
 * install OpenSSL 3.0
@@ -53,6 +68,14 @@ If the above two issues get solved, the performance of Kunlun will be better.
 * install OpenMP
 ```
   $ sudo apt install libomp-dev 
+```
+
+* install libsoudium
+download https://download.libsodium.org/libsodium/releases/
+```
+  ./configure
+  make && make check
+  sudo make install
 ```
 
 
@@ -202,7 +225,8 @@ This library is licensed under the [MIT License](LICENSE).
 
 ## Acknowledgement
 
-We deeply thank [Weiran Liu](https://www.zhihu.com/people/liu-wei-ran-8-34) for many helpful discussions on the development of this library. Here we strongly recommend the efficient and easy-to-use [MPC library for Java](https://github.com/alibaba-edu/mpc4j) developed by his team.
+We deeply thank [Weiran Liu](https://www.zhihu.com/people/liu-wei-ran-8-34) for many helpful discussions on the development of this library. Here we strongly recommend the efficient and easy-to-use [MPC library for Java](https://github.com/alibaba-edu/mpc4j) developed by his team. 
+I thank my deer senior apprentice [Prof. Zhi Guan](http://gmssl.org/) for professional help. 
 
 ## Tips
 

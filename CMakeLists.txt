@@ -4,20 +4,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 # Project's name 
 PROJECT(Kunlun)
 
-# add libsodium
-set(LIBSODIUM_ROOT_DIR "/usr/local")
-message(STATUS "LIBSODIUM_ROOT_DIR set to default: ${LIBSODIUM_ROOT_DIR}")
-set(LIBSODIUM_INCLUDE_DIR "${LIBSODIUM_ROOT_DIR}/include/")
-find_library(LIBSODIUM_LIBRARY NAMES sodium)
-message(STATUS "LIBSODIUM_INCLUDE_DIR:  ${LIBSODIUM_INCLUDE_DIR}")
-message(STATUS "LIBSODIUM_LIBRARY:  ${LIBSODIUM_LIBRARY}")
-include_directories(${LIBSODIUM_INCLUDE_DIR})
-
-
 FIND_PACKAGE(OpenSSL REQUIRED)
 FIND_PACKAGE(OpenMP REQUIRED)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fpic -Wno-deprecated-declarations -Xpreprocessor -O3")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fpic -Wno-deprecated-declarations -Wno-unused-result -Xpreprocessor -O3")
 
 INCLUDE_DIRECTORIES(
     ${OPENSSL_INCLUDE_DIR}
@@ -90,19 +80,19 @@ ADD_EXECUTABLE(test_mqrpmt test/test_mqrpmt.cpp)
 TARGET_LINK_LIBRARIES(test_mqrpmt ${OPENSSL_LIBRARIES} ${LIBSODIUM_LIBRARY} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_mqrpmt_psi test/test_mqrpmt_psi.cpp)
-TARGET_LINK_LIBRARIES(test_mqrpmt_psi ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+TARGET_LINK_LIBRARIES(test_mqrpmt_psi ${OPENSSL_LIBRARIES} ${LIBSODIUM_LIBRARY} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_mqrpmt_psi_card test/test_mqrpmt_psi_card.cpp)
-TARGET_LINK_LIBRARIES(test_mqrpmt_psi_card ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+TARGET_LINK_LIBRARIES(test_mqrpmt_psi_card ${OPENSSL_LIBRARIES} ${LIBSODIUM_LIBRARY} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_mqrpmt_psi_card_sum test/test_mqrpmt_psi_card_sum.cpp)
-TARGET_LINK_LIBRARIES(test_mqrpmt_psi_card_sum ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+TARGET_LINK_LIBRARIES(test_mqrpmt_psi_card_sum ${OPENSSL_LIBRARIES} ${LIBSODIUM_LIBRARY} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_mqrpmt_psu test/test_mqrpmt_psu.cpp)
-TARGET_LINK_LIBRARIES(test_mqrpmt_psu ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+TARGET_LINK_LIBRARIES(test_mqrpmt_psu ${OPENSSL_LIBRARIES} ${LIBSODIUM_LIBRARY} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_mqrpmt_private_id test/test_mqrpmt_private_id.cpp)
-TARGET_LINK_LIBRARIES(test_mqrpmt_private_id ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+TARGET_LINK_LIBRARIES(test_mqrpmt_private_id ${OPENSSL_LIBRARIES} ${LIBSODIUM_LIBRARY} OpenMP::OpenMP_CXX)
 
 # oprf
 ADD_EXECUTABLE(test_oteoprf test/test_oteoprf.cpp)
