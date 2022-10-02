@@ -1,8 +1,6 @@
 #ifndef KUNLUN_CWPRF_MQRPMT_HPP_
 #define KUNLUN_CWPRF_MQRPMT_HPP_
 
-#include <sodium.h>
-
 #include "../../crypto/ec_group.hpp"
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"
