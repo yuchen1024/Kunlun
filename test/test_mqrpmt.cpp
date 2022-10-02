@@ -105,13 +105,7 @@ int main()
     CRYPTO_Initialize(); 
 
     #ifdef USE_CURVE_25519
-        if (sodium_init() < 0) {
-            std::cerr << "panic! the library couldn't be initialized; it is not safe to use" << std::endl;
-            exit(0); 
-        }
-        else{
-            std::cerr << "Using Curve 25519" << std::endl;
-        }
+        std::cerr << "Using Curve 25519" << std::endl;
     #endif
 
     PrintSplitLine('-'); 
