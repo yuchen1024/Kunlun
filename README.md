@@ -36,12 +36,8 @@ If the above two issues get solved, the performance of Kunlun will be better.
 
 ## Install Depedent Libaraies
 ### On MACOS
-* install OpenSSL 3.0
-```
-  $ brew install openssl
-```
-
-modify crypto/ec/curve25519.c line 211: remove "static", then do the following steps:
+* download the latest OpenSSL from the website, to support curve25519, 
+modify crypto/ec/curve25519.c line 211: remove "static", then compile it:
 ```
   $ ./Configure darwin64-x86_64-cc shared enable-ec_nistp_64_gcc_128 no-ssl2 no-ssl3 no-comp --openssldir=/usr/local/ssl/macos-x86_64
   $ make depend
@@ -62,22 +58,15 @@ test if the function x25519_scalar_mulx is available
 
 ### On Linux
 * install OpenSSL 3.0
+do the same modification as in MACOS, then compile it according to
 ```
   https://wiki.openssl.org/index.php/Compilation_and_Installation#Linux
 ```
+
 * install OpenMP
 ```
   $ sudo apt install libomp-dev 
 ```
-
-* install libsoudium
-download https://download.libsodium.org/libsodium/releases/
-```
-  ./configure
-  make && make check
-  sudo make install
-```
-
 
 ## Code Structure
 
