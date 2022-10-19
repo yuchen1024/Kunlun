@@ -1,4 +1,4 @@
-#include "../mpc/pso/mqrpmt_psu.hpp"
+#include "../mpc/psi/cwprf_psi.hpp"
 
 
 struct TestCase{
@@ -10,11 +10,9 @@ struct TestCase{
     std::vector<block> vec_Y; // receiver's set
 
     size_t HAMMING_WEIGHT; // cardinality of intersection
-    size_t UNION_CARDINALITY; 
-
     std::vector<uint8_t> vec_indication_bit; // X[i] = Y[i] iff b[i] = 1 
 
-    std::vector<block> vec_union; // for PSU 
+    std::vector<block> vec_intersection; // for PSI 
 
 };
 
@@ -28,14 +26,12 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
     testcase.SENDER_LEN = size_t(pow(2, testcase.LOG_SENDER_LEN));  
     testcase.RECEIVER_LEN = size_t(pow(2, testcase.LOG_RECEIVER_LEN)); 
 
-    //PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
     PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, testcase.SENDER_LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, testcase.RECEIVER_LEN);
 
     // set the Hamming weight to be a half of the max possible intersection size
     testcase.HAMMING_WEIGHT = std::min(testcase.SENDER_LEN, testcase.RECEIVER_LEN)/2;
-    testcase.UNION_CARDINALITY = testcase.SENDER_LEN + testcase.RECEIVER_LEN - testcase.HAMMING_WEIGHT; 
 
     // generate a random indication bit vector conditioned on given Hamming weight
     testcase.vec_indication_bit.resize(testcase.SENDER_LEN);  
@@ -45,19 +41,16 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
     }
     std::random_shuffle(testcase.vec_indication_bit.begin(), testcase.vec_indication_bit.end());
 
-    testcase.vec_union = testcase.vec_Y; 
     // adjust vec_X and vec_Y
     for(auto i = 0, j = 0; i < testcase.SENDER_LEN; i++){
         if(testcase.vec_indication_bit[i] == 1){
             testcase.vec_X[i] = testcase.vec_Y[j];
+            testcase.vec_intersection.emplace_back(testcase.vec_Y[j]); 
             j++; 
-        }
-        else{
-            testcase.vec_union.emplace_back(testcase.vec_X[i]); 
         }
     }
 
-    std::random_shuffle(testcase.vec_Y.begin(), testcase.vec_Y.end()); 
+    std::random_shuffle(testcase.vec_Y.begin(), testcase.vec_Y.end());
 
     return testcase; 
 }
@@ -68,7 +61,7 @@ void PrintTestCase(TestCase testcase)
     std::cout << "TESTCASE INFO >>>" << std::endl;
     std::cout << "Sender's set size = " << testcase.SENDER_LEN << std::endl;
     std::cout << "Receiver's set size = " << testcase.RECEIVER_LEN << std::endl;
-    std::cout << "Union cardinality = " << testcase.UNION_CARDINALITY << std::endl; 
+    std::cout << "Intersection cardinality = " << testcase.HAMMING_WEIGHT << std::endl; 
     PrintSplitLine('-'); 
 }
 
@@ -87,12 +80,11 @@ void SaveTestCase(TestCase &testcase, std::string testcase_filename)
     fout << testcase.SENDER_LEN; 
     fout << testcase.RECEIVER_LEN; 
     fout << testcase.HAMMING_WEIGHT; 
-    fout << testcase.UNION_CARDINALITY; 
      
     fout << testcase.vec_X; 
     fout << testcase.vec_Y; 
     fout << testcase.vec_indication_bit;
-    fout << testcase.vec_union; 
+    fout << testcase.vec_intersection; 
 
     fout.close(); 
 }
@@ -112,17 +104,16 @@ void FetchTestCase(TestCase &testcase, std::string testcase_filename)
     fin >> testcase.SENDER_LEN; 
     fin >> testcase.RECEIVER_LEN;
     fin >> testcase.HAMMING_WEIGHT; 
-    fin >> testcase.UNION_CARDINALITY; 
 
     testcase.vec_X.resize(testcase.SENDER_LEN); 
     testcase.vec_Y.resize(testcase.RECEIVER_LEN); 
     testcase.vec_indication_bit.resize(testcase.SENDER_LEN); 
-    testcase.vec_union.resize(testcase.UNION_CARDINALITY);   
+    testcase.vec_intersection.resize(testcase.HAMMING_WEIGHT);   
 
     fin >> testcase.vec_X; 
     fin >> testcase.vec_Y; 
     fin >> testcase.vec_indication_bit;
-    fin >> testcase.vec_union; 
+    fin >> testcase.vec_intersection; 
 
     fin.close(); 
 }
@@ -131,41 +122,40 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    std::cout << "mqRPMT-based PSU test begins >>>" << std::endl; 
+    std::cout << "cwPRF-based PSI test begins >>>" << std::endl; 
 
     PrintSplitLine('-');  
     std::cout << "generate or load public parameters and test case" << std::endl;
 
     // generate pp (must be same for both server and client)
-    std::string pp_filename = "mqRPMTPSU.pp"; 
-    mqRPMTPSU::PP pp;   
+    std::string pp_filename = "cwPRFPSI.pp"; 
+    cwPRFPSI::PP pp;   
     if(!FileExist(pp_filename)){
-        std::cout << pp_filename << " does not exist" << std::endl;
-        std::string filter_type = "bloom"; 
+        std::cout << pp_filename << " does not exist" << std::endl; 
         size_t computational_security_parameter = 128;         
         size_t statistical_security_parameter = 40; 
-        size_t LOG_SENDER_LEN = 20;
-        size_t LOG_RECEIVER_LEN = 20;  
-        pp = mqRPMTPSU::Setup("bloom", computational_security_parameter, statistical_security_parameter, 
-                              LOG_SENDER_LEN, LOG_RECEIVER_LEN); 
-        mqRPMTPSU::SavePP(pp, pp_filename); 
+        size_t LOG_SENDER_LEN = 10;
+        size_t LOG_RECEIVER_LEN = 10;  
+        pp = cwPRFPSI::Setup(computational_security_parameter, statistical_security_parameter, 
+                             LOG_SENDER_LEN, LOG_RECEIVER_LEN); 
+        cwPRFPSI::SavePP(pp, pp_filename); 
     }
     else{
-        std::cout << pp_filename << " already exists" << std::endl;
-        mqRPMTPSU::FetchPP(pp, pp_filename); 
+        std::cout << pp_filename << " already exists" << std::endl; 
+        cwPRFPSI::FetchPP(pp, pp_filename); 
     }
 
-    std::string testcase_filename = "mqRPMTPSU.testcase"; 
+    std::string testcase_filename = "cwPRFPSI.testcase"; 
     
     // generate test instance (must be same for server and client)
     TestCase testcase; 
     if(!FileExist(testcase_filename)){ 
-        std::cout << testcase_filename << " does not exist" << std::endl;
+        std::cout << testcase_filename << " does not exist" << std::endl; 
         testcase = GenTestCase(pp.LOG_SENDER_LEN, pp.LOG_RECEIVER_LEN); 
         SaveTestCase(testcase, testcase_filename); 
     }
     else{
-        std::cout << testcase_filename << " already exists" << std::endl;
+        std::cout << testcase_filename << " already exist" << std::endl; 
         FetchTestCase(testcase, testcase_filename);
         if((testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN) || (testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN)){
             std::cerr << "testcase and public parameter do not match" << std::endl; 
@@ -181,21 +171,22 @@ int main()
 
     if(party == "sender"){
         NetIO client("client", "127.0.0.1", 8080);        
-        mqRPMTPSU::Send(client, pp, testcase.vec_X);
+        cwPRFPSI::Send(client, pp, testcase.vec_X);
     } 
 
     if(party == "receiver"){
         NetIO server("server", "", 8080);
-        std::vector<block> vec_union_prime = mqRPMTPSU::Receive(server, pp, testcase.vec_Y);
+        std::vector<block> vec_intersection_prime = cwPRFPSI::Receive(server, pp, testcase.vec_Y);
         std::set<block, BlockCompare> set_diff_result = 
-            ComputeSetDifference(vec_union_prime, testcase.vec_union);  
+            ComputeSetDifference(vec_intersection_prime, testcase.vec_intersection);  
         
-        std::cout << "Union cardinality (test) = " << vec_union_prime.size() << std::endl;
+        std::cout << "Intersection cardinality (test) = " << vec_intersection_prime.size() << std::endl;
+
         if(set_diff_result.size() == 0){
-            std::cout << "mqRPMT-based PSU test succeeds" << std::endl; 
+            std::cout << "cwPRF-based PSI test succeeds" << std::endl; 
         }
         else{
-            std::cout << "mqRPMT-based PSU test fails" << std::endl;
+            std::cout << "cwPRF-based PSI test fails" << std::endl;
             for(auto var: set_diff_result) Block::PrintBlock(var); 
         }
     }

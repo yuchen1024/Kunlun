@@ -9,8 +9,6 @@
 ** implement mqRPMT-based PSI-card
 */
 
-
-
 namespace mqRPMTPSIcard{
 
 using Serialization::operator<<; 

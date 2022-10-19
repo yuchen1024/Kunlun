@@ -78,18 +78,10 @@ public:
 	void ReceiveInteger(T &n);
 
 	void SendBytesArray(const std::vector<std::vector<uint8_t>> &A); 
-
 	void ReceiveBytesArray(std::vector<std::vector<uint8_t>> &A); 
 
-	~NetIO() {
-		close(this->connect_socket); 
-		if(IS_SERVER == true){
-			close(this->server_master_socket); 
-		}
-		fflush(stream);
-		fclose(stream);
-		delete[] buffer;
-	}
+	void SendStringArray(const std::vector<std::string>& A, size_t LEN); 
+	void ReceiveStringArray(std::vector<std::string> &A, size_t LEN); 
 };
 
 NetIO::NetIO(std::string party, std::string address, int port)
@@ -453,6 +445,37 @@ void NetIO::ReceiveBytesArray(std::vector<std::vector<uint8_t>> &A)
 	A.resize(NUM); 
 	for(auto i = 0; i < NUM; i++) {
     	A[i] = std::vector<uint8_t>(buffer+i*LEN, buffer+(i+1)*LEN); 
+    }
+	
+	delete[] buffer; 
+}
+
+// NUM = length of array; LEN = length of each item
+void NetIO::SendStringArray(const std::vector<std::string>& A, size_t LEN) 
+{
+	size_t NUM = A.size(); 
+	SendInteger(NUM);
+
+	unsigned char* buffer = new unsigned char[LEN*NUM];
+	for(auto i = 0; i < NUM; i++) {
+    	memcpy(buffer+i*LEN, A[i].data(), LEN); 
+    }
+	SendBytes(buffer, LEN*NUM);
+	
+	delete[] buffer; 
+}
+
+void NetIO::ReceiveStringArray(std::vector<std::string> &A, size_t LEN) 
+{
+	size_t NUM; 
+	ReceiveInteger(NUM);  
+
+	unsigned char* buffer = new unsigned char[LEN*NUM];
+	ReceiveBytes(buffer, LEN*NUM);
+
+	A.resize(NUM); 
+	for(auto i = 0; i < NUM; i++) {
+		A[i] = std::string(buffer+i*LEN, buffer+(i+1)*LEN);  
     }
 	
 	delete[] buffer; 

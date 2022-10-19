@@ -75,6 +75,10 @@ TARGET_LINK_LIBRARIES(test_alsz_ote ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 ADD_EXECUTABLE(test_aes test/test_aes.cpp)
 TARGET_LINK_LIBRARIES(test_aes ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
+# psi
+ADD_EXECUTABLE(test_cwprf_psi test/test_cwprf_psi.cpp)
+TARGET_LINK_LIBRARIES(test_cwprf_psi ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
 # pso
 ADD_EXECUTABLE(test_mqrpmt test/test_mqrpmt.cpp)
 TARGET_LINK_LIBRARIES(test_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
@@ -155,6 +159,6 @@ ADD_EXECUTABLE(test_adcp test/test_adcp.cpp)
 TARGET_LINK_LIBRARIES(test_adcp ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # mcl
-add_executable(test_mcl test/test_mcl.cpp)
-target_link_libraries(test_mcl libmcl.a libgmp.a)
+# add_executable(test_mcl test/test_mcl.cpp)
+# target_link_libraries(test_mcl libmcl.a libgmp.a)
 

@@ -23,14 +23,14 @@ struct PP
 };
 
 
-PP Setup(size_t PRF_INPUT_LOG_LEN, std::string filter_type, 
+PP Setup(size_t LOG_PRF_INPUT_LEN, std::string filter_type, 
         size_t computational_security_parameter, 
         size_t statistical_security_parameter, 
         size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
 {
     PP pp; 
 
-    pp.oprf_part = OTEOPRF::Setup(PRF_INPUT_LOG_LEN, statistical_security_parameter); 
+    pp.oprf_part = OTEOPRF::Setup(LOG_PRF_INPUT_LEN, statistical_security_parameter); 
     pp.psu_part = mqRPMTPSU::Setup(filter_type, 
                                    computational_security_parameter, statistical_security_parameter, 
                                    LOG_SENDER_LEN, LOG_RECEIVER_LEN); 

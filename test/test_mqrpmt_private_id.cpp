@@ -155,7 +155,7 @@ int main()
         std::cout << testcase_filename << " already exists" << std::endl;
         FetchTestCase(testcase, testcase_filename);
         if((testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN) || (testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN)){
-            std::cerr << "testcasse and public parameter do not match" << std::endl; 
+            std::cerr << "testcase and public parameter do not match" << std::endl; 
         }
     }
     PrintTestCase(testcase); 

@@ -21,7 +21,6 @@ namespace cwPRFmqRPMT{
 using Serialization::operator<<; 
 using Serialization::operator>>; 
 
-const size_t BATCH_SIZE = 8; // used for pipelining optimization
 
 struct PP
 {
@@ -29,9 +28,9 @@ struct PP
     std::string filter_type; // shuffle, bloom
     size_t statistical_security_parameter; // default=40 
     
-    size_t SERVER_LOG_LEN; 
+    size_t LOG_SERVER_LEN; 
     size_t SERVER_LEN; 
-    size_t CLIENT_LOG_LEN; 
+    size_t LOG_CLIENT_LEN; 
     size_t CLIENT_LEN; 
 };
 
@@ -40,9 +39,9 @@ std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 {
     fout << pp.filter_type;
     fout << pp.statistical_security_parameter; 
-    fout << pp.SERVER_LOG_LEN;
+    fout << pp.LOG_SERVER_LEN;
     fout << pp.SERVER_LEN; 
-    fout << pp.CLIENT_LOG_LEN;
+    fout << pp.LOG_CLIENT_LEN;
     fout << pp.CLIENT_LEN; 
 
     return fout; 
@@ -54,9 +53,9 @@ std::ifstream &operator>>(std::ifstream &fin, PP &pp)
     fin >> pp.filter_type;
     fin >> pp.statistical_security_parameter; 
 
-    fin >> pp.SERVER_LOG_LEN;
+    fin >> pp.LOG_SERVER_LEN;
     fin >> pp.SERVER_LEN;
-    fin >> pp.CLIENT_LOG_LEN;
+    fin >> pp.LOG_CLIENT_LEN;
     fin >> pp.CLIENT_LEN;
 
     return fin; 
@@ -64,16 +63,16 @@ std::ifstream &operator>>(std::ifstream &fin, PP &pp)
 
 PP Setup(std::string filter_type, 
          size_t statistical_security_parameter, 
-         size_t SERVER_LOG_LEN, 
-         size_t CLIENT_LOG_LEN)
+         size_t LOG_SERVER_LEN, 
+         size_t LOG_CLIENT_LEN)
 {
     PP pp; 
     pp.filter_type = filter_type; 
     pp.statistical_security_parameter = statistical_security_parameter; 
-    pp.SERVER_LOG_LEN = SERVER_LOG_LEN; 
-    pp.SERVER_LEN = size_t(pow(2, pp.SERVER_LOG_LEN)); 
-    pp.CLIENT_LOG_LEN = CLIENT_LOG_LEN; 
-    pp.CLIENT_LEN = size_t(pow(2, pp.CLIENT_LOG_LEN)); 
+    pp.LOG_SERVER_LEN = LOG_SERVER_LEN; 
+    pp.SERVER_LEN = size_t(pow(2, pp.LOG_SERVER_LEN)); 
+    pp.LOG_CLIENT_LEN = LOG_CLIENT_LEN; 
+    pp.CLIENT_LEN = size_t(pow(2, pp.LOG_CLIENT_LEN)); 
     return pp; 
 }
 

@@ -116,13 +116,13 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    std::cout << "PSI-card test begins >>>" << std::endl; 
+    std::cout << "mqRPMT-based PSI-card test begins >>>" << std::endl; 
 
     PrintSplitLine('-');  
     std::cout << "generate or load public parameters and test case" << std::endl;
 
     // generate pp (must be same for both server and client)
-    std::string pp_filename = "PSIcard.pp"; 
+    std::string pp_filename = "mqRPMTPSIcard.pp"; 
     mqRPMTPSIcard::PP pp;   
     if(!FileExist(pp_filename)){
         std::cout << pp_filename << " does not exist" << std::endl;
@@ -140,7 +140,7 @@ int main()
         mqRPMTPSIcard::FetchPP(pp, pp_filename); 
     }
 
-    std::string testcase_filename = "PSIcard.testcase"; 
+    std::string testcase_filename = "mqRPMTPSIcard.testcase"; 
     
     // generate test instance (must be same for server and client)
     TestCase testcase; 
@@ -154,7 +154,7 @@ int main()
         std::cout << testcase_filename << " already exists" << std::endl;
         FetchTestCase(testcase, testcase_filename);
         if((testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN) || (testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN)){
-            std::cerr << "testcasse and public parameter do not match" << std::endl; 
+            std::cerr << "testcase and public parameter do not match" << std::endl; 
         }
     }
     PrintTestCase(testcase); 
@@ -177,10 +177,10 @@ int main()
         std::cout << "Intersection cardinality (test) = " << HAMMING_WEIGHT_prime << std::endl;
 
         if(HAMMING_WEIGHT_prime == testcase.HAMMING_WEIGHT){
-            std::cout << "PSI-card test succeeds" << std::endl;
+            std::cout << "mqRPMT-based PSI-card test succeeds" << std::endl;
         } 
         else{
-            std::cout << "PSI-card test fails" << std::endl;    
+            std::cout << "mqRPMT-based PSI-card test fails" << std::endl;    
         }
     }
 

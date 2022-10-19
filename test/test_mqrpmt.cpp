@@ -2,10 +2,10 @@
 #include "../include/kunlun.hpp"
 
 struct RPMTTestcase{
-    size_t SERVER_LOG_LEN; 
+    size_t LOG_SERVER_LEN; 
     size_t SERVER_LEN;
 
-    size_t CLIENT_LOG_LEN; 
+    size_t LOG_CLIENT_LEN; 
     size_t CLIENT_LEN;
 
     size_t HAMMING_WEIGHT; 
@@ -14,14 +14,14 @@ struct RPMTTestcase{
     std::vector<uint8_t> vec_indication_bit; 
 };
 
-RPMTTestcase GenTestInstance(size_t SERVER_LOG_LEN, size_t CLIENT_LOG_LEN)
+RPMTTestcase GenTestInstance(size_t LOG_SERVER_LEN, size_t LOG_CLIENT_LEN)
 {
     RPMTTestcase testcase; 
     
-    testcase.SERVER_LOG_LEN = SERVER_LOG_LEN;
-    testcase.SERVER_LEN = size_t(pow(2, testcase.SERVER_LOG_LEN)); 
-    testcase.CLIENT_LOG_LEN = CLIENT_LOG_LEN;
-    testcase.CLIENT_LEN = size_t(pow(2, testcase.CLIENT_LOG_LEN)); 
+    testcase.LOG_SERVER_LEN = LOG_SERVER_LEN;
+    testcase.SERVER_LEN = size_t(pow(2, testcase.LOG_SERVER_LEN)); 
+    testcase.LOG_CLIENT_LEN = LOG_CLIENT_LEN;
+    testcase.CLIENT_LEN = size_t(pow(2, testcase.LOG_CLIENT_LEN)); 
 
     // set the Hamming weight to be a half of the max possible intersection size
     testcase.HAMMING_WEIGHT = std::min(testcase.CLIENT_LEN, testcase.SERVER_LEN)/2;
@@ -60,9 +60,9 @@ void SaveTestInstance(RPMTTestcase &testcase, std::string testcase_filename)
         std::cerr << testcase_filename << " open error" << std::endl;
         exit(1); 
     }
-    fout << testcase.SERVER_LOG_LEN; 
+    fout << testcase.LOG_SERVER_LEN; 
     fout << testcase.SERVER_LEN;
-    fout << testcase.CLIENT_LOG_LEN; 
+    fout << testcase.LOG_CLIENT_LEN; 
     fout << testcase.CLIENT_LEN;
 
     fout << testcase.HAMMING_WEIGHT; 
@@ -82,9 +82,9 @@ void FetchTestInstance(RPMTTestcase &testcase, std::string testcase_filename)
         std::cerr << testcase_filename << " open error" << std::endl;
         exit(1); 
     }
-    fin >> testcase.SERVER_LOG_LEN; 
+    fin >> testcase.LOG_SERVER_LEN; 
     fin >> testcase.SERVER_LEN;
-    fin >> testcase.CLIENT_LOG_LEN; 
+    fin >> testcase.LOG_CLIENT_LEN; 
     fin >> testcase.CLIENT_LEN;
 
     fin >> testcase.HAMMING_WEIGHT; 
@@ -109,18 +109,18 @@ int main()
     #endif
 
     PrintSplitLine('-'); 
-    std::cout << "mqRPMT test begins >>>" << std::endl; 
+    std::cout << "cwPRF-based mqRPMT test begins >>>" << std::endl; 
     PrintSplitLine('-'); 
     std::cout << "generate or load public parameters and test case" << std::endl;
 
-    size_t SERVER_LOG_LEN = 20;
-    size_t CLIENT_LOG_LEN = 20; 
+    size_t LOG_SERVER_LEN = 20;
+    size_t LOG_CLIENT_LEN = 20; 
     size_t statistical_parameter = 40; 
     // generate pp (must be same for both server and client)
-    std::string pp_filename = "mqRPMT.pp"; 
+    std::string pp_filename = "cwPRFmqRPMT.pp"; 
     cwPRFmqRPMT::PP pp; 
     if(!FileExist(pp_filename)){
-        pp = cwPRFmqRPMT::Setup("bloom", statistical_parameter, SERVER_LOG_LEN, CLIENT_LOG_LEN); 
+        pp = cwPRFmqRPMT::Setup("bloom", statistical_parameter, LOG_SERVER_LEN, LOG_CLIENT_LEN); 
         cwPRFmqRPMT::SavePP(pp, pp_filename); 
     }
     else{
@@ -130,16 +130,16 @@ int main()
     std::cout << "size of Server's set = " << pp.SERVER_LEN << std::endl; 
     std::cout << "size of Client's set = " << pp.CLIENT_LEN << std::endl; 
 
-    std::string testcase_filename = "mqRPMT.testcase"; 
+    std::string testcase_filename = "cwPRFmqRPMT.testcase"; 
     RPMTTestcase testcase; 
     if(!FileExist(testcase_filename)){
-        testcase = GenTestInstance(pp.SERVER_LOG_LEN, pp.CLIENT_LOG_LEN); 
+        testcase = GenTestInstance(pp.LOG_SERVER_LEN, pp.LOG_CLIENT_LEN); 
         SaveTestInstance(testcase, testcase_filename); 
     }
     else{
         FetchTestInstance(testcase, testcase_filename);
-        if((pp.SERVER_LOG_LEN != testcase.SERVER_LOG_LEN) || (pp.CLIENT_LOG_LEN != testcase.CLIENT_LOG_LEN)) {
-            std::cerr << "public parameters and testcasse do not match" << std::endl; 
+        if((pp.LOG_SERVER_LEN != testcase.LOG_SERVER_LEN) || (pp.LOG_CLIENT_LEN != testcase.LOG_CLIENT_LEN)) {
+            std::cerr << "public parameters and testcase do not match" << std::endl; 
             exit(1); 
         }
     }
@@ -159,10 +159,10 @@ int main()
 
         if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_prime))
         {
-            std::cout << "cwPRF-mqRPMT test succeeds" << std::endl; 
+            std::cout << "cwPRF-based mqRPMT test succeeds" << std::endl; 
         }
         else{
-            std::cout << "cwPRF-mqRPMT test fails" << std::endl; 
+            std::cout << "cwPRF-based mqRPMT test fails" << std::endl; 
         }
 
         size_t HAMMING_WEIGHT = 0;
@@ -180,7 +180,7 @@ int main()
     } 
 
     PrintSplitLine('-'); 
-    std::cout << "mqRPMT test ends >>>" << std::endl; 
+    std::cout << "cwPRF-based mqRPMT test ends >>>" << std::endl; 
     PrintSplitLine('-'); 
 
     CRYPTO_Finalize();   
