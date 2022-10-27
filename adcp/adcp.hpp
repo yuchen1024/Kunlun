@@ -16,6 +16,9 @@ this hpp implements the ADCP functionality
 //#define DEBUG        // show debug information 
 
 namespace ADCP{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 // define the structure of system parameters
 
 struct PP{    
