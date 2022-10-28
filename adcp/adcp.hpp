@@ -19,6 +19,7 @@ namespace ADCP{
 
 using Serialization::operator<<; 
 using Serialization::operator>>; 
+
 // define the structure of system parameters
 
 struct PP{    
@@ -177,8 +178,6 @@ void FetchPP(PP &pp, std::string ADCP_PP_File)
     fin >> pp.MAXIMUM_COINS;  
     fin >> pp.pka; 
  
-
-
     fin >> pp.bullet_part;
     fin >> pp.enc_part; 
 

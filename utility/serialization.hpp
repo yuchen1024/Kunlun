@@ -12,6 +12,20 @@ this hpp implements some routine algorithms
 
 namespace Serialization{
 
+#ifdef IS_LINUX
+std::ofstream &operator<<(std::ofstream &fout, const size_t& element)
+{
+    fout.write(reinterpret_cast<const char *>(&element), 8); 
+    return fout; 
+}
+
+std::ifstream &operator>>(std::ifstream &fin, size_t& element)
+{
+    fin.read(reinterpret_cast<char *>(&element), 8); 
+    return fin; 
+}
+#endif
+
 template <typename ElementType> // Note: T must be a C++ POD type.
 std::ofstream &operator<<(std::ofstream &fout, const ElementType& element)
 {

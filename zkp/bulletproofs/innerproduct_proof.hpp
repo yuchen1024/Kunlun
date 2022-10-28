@@ -8,6 +8,9 @@ this hpp implements the inner product proof system
 
 namespace InnerProduct{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 // define the structure of InnerProduct Proof
 struct PP
 {
