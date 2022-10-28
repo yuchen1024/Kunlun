@@ -9,7 +9,11 @@ this hpp implements NIZKPoK for twisted ElGamal ciphertext
 
 
 namespace PlaintextKnowledge{
-// define structure of PT_EQ_Proof 
+// define structure of PT_EQ_Proof
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 struct PP
 {
     ECPoint g; 
