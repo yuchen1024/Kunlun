@@ -10,6 +10,9 @@ this hpp implements the merge of (relation R1 and R2) in ESORICS 2015
 
 namespace EncRelation{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 struct PP
 {
     Pedersen::PP com_part;

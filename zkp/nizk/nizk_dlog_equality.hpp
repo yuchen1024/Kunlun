@@ -8,6 +8,9 @@ this hpp implements NIZKPoK for discrete logarithm equality
 
 namespace DLOGEquality{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 // define structure of DLOG_EQ_Proof 
 struct PP
 {

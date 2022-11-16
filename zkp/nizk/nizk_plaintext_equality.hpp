@@ -10,6 +10,9 @@ this hpp implements NIZKPoK for three twisited ElGamal ciphertexts
 
 namespace PlaintextEquality{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 // define structure of PT_EQ_Proof 
 struct PP
 {

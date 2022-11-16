@@ -51,7 +51,7 @@ std::ofstream &operator<<(std::ofstream &fout, const std::vector<ElementType>& v
 template <typename ElementType> // Note: T must be a C++ POD type.
 std::ifstream &operator>>(std::ifstream &fin, std::vector<ElementType>& vec_element)
 { 
-    fin.read(reinterpret_cast<char *>(vec_element.data()), vec_element.size() * sizeof(ElementType)); 
+    fin.read(reinterpret_cast<char*>(vec_element.data()), vec_element.size() * sizeof(ElementType)); 
     return fin; 
 }
 
@@ -60,7 +60,7 @@ std::ofstream &operator<<<std::string>(std::ofstream &fout, const std::string& s
 {
     size_t LEN = str.size();
     fout << LEN; 
-    fout.write(reinterpret_cast<const char *>(&str[0]), str.size()); 
+    fout.write(reinterpret_cast<const char*>(&str[0]), str.size()); 
     return fout; 
 }
 
@@ -70,7 +70,7 @@ std::ifstream &operator>><std::string>(std::ifstream &fin, std::string& str)
     size_t LEN; 
     fin >> LEN;
     str.resize(LEN); 
-    fin.read(reinterpret_cast<char *>(&str[0]), str.size()); 
+    fin.read(reinterpret_cast<char*>(&str[0]), str.size()); 
     return fin; 
 }
 }

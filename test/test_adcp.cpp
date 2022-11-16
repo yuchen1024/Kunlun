@@ -18,10 +18,10 @@ void Build_ADCP_Test_Enviroment()
 
     ADCP::Initialize(pp);
 
-    std::string ADCP_SP_Filename = "ADCP.sp"; 
+    std::string ADCP_SP_Filename = "adcp.sp"; 
     ADCP::SaveSP(sp, ADCP_SP_Filename); 
 
-    std::string adcp_PP_Filename = "ADCP.pp"; 
+    std::string adcp_PP_Filename = "adcp.pp"; 
     ADCP::SavePP(pp, adcp_PP_Filename); 
 
     std::cout << "press any key to continue >>>" << std::endl; 
