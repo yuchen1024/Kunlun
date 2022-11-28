@@ -188,33 +188,35 @@ inline ECPoint BlockToECPoint(const block &var)
     BIGNUM *x = BN_new();
     unsigned char buffer[32];
     memset(buffer, 0, 32);
-    memcpy(buffer, &var, 16);    
+    memcpy(buffer, &var, 16);  // load block to buffer  
+    BasicHash(buffer, 16, buffer); // initial hash to get the indication bit of y coordinate
+    int y_bit = 0x01 & buffer[0]; // this is an ad-hoc method
     while (true) { 
+        BasicHash(buffer, 32, buffer); // iterated hash, modeled as random oracle
         BN_bin2bn(buffer, 32, x);
-        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, ec_ctx)==1) break;      
-        BasicHash(buffer, 32, buffer);
+        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, y_bit, ec_ctx)==1) break;              
     }
     BN_free(x);    
     return ecp_result;
 }
 
 
-// fast and threadsafe block to ecpoint hash using low level openssl code
-inline ECPoint DataToECPoint(const void* data, size_t HASH_INPUT_LEN)
-{
-    ECPoint ecp_result; 
+// // fast and threadsafe block to ecpoint hash using low level openssl code
+// inline ECPoint DataToECPoint(const void* data, size_t HASH_INPUT_LEN)
+// {
+//     ECPoint ecp_result; 
  
-    BIGNUM *x = BN_new();
-    unsigned char buffer[HASH_OUTPUT_LEN];
-    BasicHash((unsigned char*)data, HASH_INPUT_LEN, buffer);    
-    while (true) { 
-        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, ec_ctx)==1) break;      
-        BasicHash(buffer, HASH_INPUT_LEN, buffer); // iterative hash
-        BN_bin2bn(buffer, HASH_OUTPUT_LEN, x);
-    }
-    BN_free(x);    
-    return ecp_result;
-}
+//     BIGNUM *x = BN_new();
+//     unsigned char buffer[HASH_OUTPUT_LEN];
+//     BasicHash((unsigned char*)data, HASH_INPUT_LEN, buffer);    
+//     while (true) { 
+//         if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, ec_ctx)==1) break;      
+//         BasicHash(buffer, HASH_INPUT_LEN, buffer); // iterative hash
+//         BN_bin2bn(buffer, HASH_OUTPUT_LEN, x);
+//     }
+//     BN_free(x);    
+//     return ecp_result;
+// }
 
 // // fast block to ecpoint hash using low level openssl code
 // inline ECPoint ThreadSafeBlockToECPoint(const block &var)
