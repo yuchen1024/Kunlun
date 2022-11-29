@@ -17,9 +17,6 @@ this hpp implements the ADCP functionality
 
 namespace ADCP{
 
-using Serialization::operator<<; 
-using Serialization::operator>>; 
-
 // define the structure of system parameters
 
 struct PP{    

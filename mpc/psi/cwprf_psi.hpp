@@ -17,8 +17,8 @@
 
 namespace cwPRFPSI{
 
-// using Serialization::operator<<; 
-// using Serialization::operator>>; 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 struct PP
 {

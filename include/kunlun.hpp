@@ -28,12 +28,12 @@ this hpp implements some routine algorithms
 #include "../utility/serialization.hpp"
 
 
-// namespace kunlun{
-//     using Serialization::operator<<;
-//     using Serialization::operator>>;
-// }
+namespace kunlun{
+    using Serialization::operator<<;
+    using Serialization::operator>>;
+}
 
-// using namespace kunlun;
+using namespace kunlun;
   
 #endif
 
