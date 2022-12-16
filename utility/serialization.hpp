@@ -73,6 +73,9 @@ std::ifstream &operator>><std::string>(std::ifstream &fin, std::string& str)
     fin.read(reinterpret_cast<char*>(&str[0]), str.size()); 
     return fin; 
 }
+
 }
+
+using namespace Serialization;
   
 #endif

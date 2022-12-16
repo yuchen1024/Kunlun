@@ -1,13 +1,13 @@
 #ifndef KUNLUN_CWPRF_PSI_HPP_
 #define KUNLUN_CWPRF_PSI_HPP_
 
-#include "../../crypto/ec_group.hpp"
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"
 #include "../../crypto/prg.hpp"
 #include "../../crypto/block.hpp"
 #include "../../netio/stream_channel.hpp"
 #include "../../filter/bloom_filter.hpp"
+#include "../../utility/serialization.hpp"
 
 #define USE_CURVE_25519
 
@@ -114,7 +114,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     auto start_time = std::chrono::steady_clock::now(); 
 
     uint8_t k1[32];
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
     GenRandomBytes(seed, k1, 32);  // pick a key k1
 
     std::vector<EC25519Point> vec_Hash_Y(pp.SENDER_LEN);
@@ -169,7 +169,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X)
     auto start_time = std::chrono::steady_clock::now(); 
 
     uint8_t k2[32];
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
     GenRandomBytes(seed, k2, 32);  // pick a key k2
 
     std::vector<EC25519Point> vec_Hash_X(pp.RECEIVER_LEN); 

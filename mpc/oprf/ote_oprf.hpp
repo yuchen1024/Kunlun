@@ -26,6 +26,7 @@
 #define KUNLUN_OTE_OPRF_HPP_
 
 #include "../ot/naor_pinkas_ot.hpp"
+#include "../../crypto/prg.hpp"
 
 namespace OTEOPRF{
 
@@ -62,7 +63,7 @@ PP Setup(size_t LOG_LEN, size_t statistical_security_parameter = 40)
 
     pp.npot_part = NPOT::Setup();
     // use the agreed PRF key to initiate a common PRG seed
-    pp.common_seed = PRG::SetSeed(PRG::fixed_salt, 0); 
+    pp.common_seed = PRG::SetSeed(fixed_seed, 0); 
 
     // parameters of matrix width for input set size in page 16 table 1
     if (LOG_LEN <= 10) pp.matrix_width = 591;
@@ -236,7 +237,7 @@ std::vector<std::vector<uint8_t>> Server(NetIO &io, PP &pp)
     auto start_time = std::chrono::steady_clock::now(); 
 
     /* step 1: base OT (page 10 figure 4 item1) */
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0);
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0);
 	
     std::vector<uint8_t> vec_selection_bit = GenRandomBits(seed, pp.matrix_width); 
 
@@ -356,7 +357,7 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
     auto start_time = std::chrono::steady_clock::now(); 
     
     /* step 1: base OT (page 10 figure 4 item1) */
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); 
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); 
     std::vector<block> vec_K0 = PRG::GenRandomBlocks(seed, pp.matrix_width);
     std::vector<block> vec_K1 = PRG::GenRandomBlocks(seed, pp.matrix_width);
 

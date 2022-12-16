@@ -14,8 +14,13 @@ in the range [LEFT_BOUND, RIGHT_BOUND)
 #include "../zkp/nizk/nizk_plaintext_knowledge.hpp"        // NIZKPoK for ciphertext/honest encryption 
 #include "../zkp/nizk/nizk_dlog_equality.hpp"      // NIZKPoK for dlog equality
 #include "../zkp/bulletproofs/bullet_proof.hpp"    // implement Log Size Bulletproof
+#include "../crypto/hash.hpp"
 
 namespace Gadget{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 struct PP{     
     TwistedElGamal::PP enc_part; 
     Bullet::PP bullet_part; 

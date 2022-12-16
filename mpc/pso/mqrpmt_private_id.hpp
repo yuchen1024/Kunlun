@@ -11,6 +11,9 @@
 
 namespace mqRPMTPrivateID{
 
+using Serialization::operator<<; 
+using Serialization::operator>>; 
+
 struct PP
 {
     OTEOPRF::PP oprf_part; 

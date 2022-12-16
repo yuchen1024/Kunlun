@@ -1,4 +1,5 @@
 #include "../mpc/pso/mqrpmt_psi_card.hpp"
+#include "../crypto/setup.hpp"
 
 
 struct TestCase{
@@ -23,7 +24,6 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
     testcase.SENDER_LEN = size_t(pow(2, testcase.LOG_SENDER_LEN));  
     testcase.RECEIVER_LEN = size_t(pow(2, testcase.LOG_RECEIVER_LEN)); 
 
-    //PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
     PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, testcase.SENDER_LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, testcase.RECEIVER_LEN);
@@ -176,12 +176,8 @@ int main()
 
         std::cout << "Intersection cardinality (test) = " << HAMMING_WEIGHT_prime << std::endl;
 
-        if(HAMMING_WEIGHT_prime == testcase.HAMMING_WEIGHT){
-            std::cout << "mqRPMT-based PSI-card test succeeds" << std::endl;
-        } 
-        else{
-            std::cout << "mqRPMT-based PSI-card test fails" << std::endl;    
-        }
+        double error_probability = abs(double(testcase.HAMMING_WEIGHT)-double(HAMMING_WEIGHT_prime))/double(testcase.HAMMING_WEIGHT); 
+        std::cout << "mqRPMT-based PSI-card test succeeds with probability " << (1 - error_probability) << std::endl; 
     }
 
     CRYPTO_Finalize();   

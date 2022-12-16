@@ -14,12 +14,10 @@
 #include <random>
 #endif
 
+// used as PRG seed
+const char fixed_seed[] = "\x61\x7e\x8d\xa2\xa0\x51\x1e\x96\x5e\x41\xc2\x9b\x15\x3f\xc7\x7a";
+
 namespace PRG{
-
-using Serialization::operator<<; 
-using Serialization::operator>>; 
-
-const char fixed_salt[] = "\x61\x7e\x8d\xa2\xa0\x51\x1e\x96\x5e\x41\xc2\x9b\x15\x3f\xc7\x7a";
 
 struct Seed{ 
     size_t counter = 0; 
@@ -191,8 +189,7 @@ bool CompareBits(std::vector<uint8_t>& vec_A,  std::vector<uint8_t>& vec_B)
 }
 
 
-
-#endif// PRP_H__
+#endif// PRP_HPP__
 
 
 

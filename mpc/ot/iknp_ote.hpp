@@ -2,6 +2,7 @@
 #define KUNLUN_IKNP_OTE_HPP_
 
 #include "naor_pinkas_ot.hpp"
+#include "../../crypto/prg.hpp"
 /*
  * IKNP OT Extension
  * [REF] Implementation of "Extending oblivious transfers efficiently"
@@ -10,8 +11,6 @@
 
 namespace IKNPOTE{
 
-using Serialization::operator<<; 
-using Serialization::operator>>; 
 
 // check if the parameters are legal
 void CheckParameters(size_t ROW_NUM, size_t COLUMN_NUM)

@@ -1,7 +1,6 @@
 #ifndef TWISTED_ELGAMAL_HPP_
 #define TWISTED_ELGAMAL_HPP_
 
-#include "../include/kunlun.hpp"
 #include "calculate_dlog.hpp"
 
 namespace TwistedElGamal{

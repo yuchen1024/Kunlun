@@ -1,7 +1,7 @@
 #define DEBUG
 
 #include "../zkp/nizk/nizk_dlog_equality.hpp"
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 
 void GenRandomDDHInstanceWitness(DLOGEquality::PP &pp, DLOGEquality::Instance &instance, 
                                  DLOGEquality::Witness &witness, bool flag)

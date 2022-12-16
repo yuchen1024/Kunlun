@@ -2,7 +2,7 @@
 
 #include "../pke/twisted_elgamal.hpp"
 #include "../zkp/nizk/nizk_plaintext_knowledge.hpp"
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 
 
 void GenRandomEncInstanceWitness(PlaintextKnowledge::PP &pp, PlaintextKnowledge::Instance &instance, 

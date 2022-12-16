@@ -1,4 +1,5 @@
 #include "../mpc/psi/psi_from_oprf.hpp"
+#include "../crypto/setup.hpp"
 
 std::set<block, BlockCompare> ComputeSetDifference(std::vector<block> &vec_A, std::vector<block> &vec_B)
 { 

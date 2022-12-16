@@ -9,7 +9,9 @@
 #define KUNLUN_CUCKOO_FILTER_HPP
 
 #include "../include/std.inc"
-#include "../include/kunlun.hpp"
+#include "../utility/murmurhash3.hpp"
+#include "../utility/bit_operation.hpp"
+#include "../crypto/ec_point.hpp"
 
 
 // selection of keyed hash for cuckoo filter
@@ -109,7 +111,7 @@ public:
             return false;
         }
 
-        uint32_t hash_value = FastHash(input, LEN);
+        uint32_t hash_value = FastHash(fixed_salt32, input, LEN);
         uint32_t current_bucket_index = ComputeBucketIndex(hash_value); 
         uint32_t current_tag = ComputeTag(hash_value); 
 
@@ -203,7 +205,7 @@ public:
 
     // Report if the item is inserted, with false positive rate.
     bool PlainContain(const void* input, size_t LEN) {
-        uint32_t hash_value = FastHash(input, LEN);
+        uint32_t hash_value = FastHash(fixed_salt32, input, LEN);
         uint32_t index1 = ComputeBucketIndex(hash_value); 
         uint32_t tag = ComputeTag(hash_value); 
         uint32_t index2 = ComputeAnotherBucketIndex(index1, tag);
@@ -249,7 +251,7 @@ public:
     // Delete an key from the filter
     bool PlainDelete(const void* input, size_t LEN) {
         bool delete_status = false; 
-        uint32_t hash_value = FastHash(input, LEN);
+        uint32_t hash_value = FastHash(fixed_salt32, input, LEN);
         uint32_t index1 = ComputeBucketIndex(hash_value); 
         uint32_t tag = ComputeTag(hash_value); 
         uint32_t index2 = ComputeAnotherBucketIndex(index1, tag);

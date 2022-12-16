@@ -1,6 +1,7 @@
 #define DEBUG
 
 #include "../signature/accountable_ring_sig.hpp"
+#include "../crypto/setup.hpp"
 
 
 void test_accountable_ring_sig()

@@ -1,4 +1,5 @@
 #include "../adcp/adcp.hpp"
+#include "../crypto/setup.hpp"
 
 void Build_ADCP_Test_Enviroment()
 {

@@ -1,5 +1,5 @@
 #include "../mpc/rpmt/cwprf_mqrpmt.hpp"
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 
 struct RPMTTestcase{
     size_t LOG_SERVER_LEN; 
@@ -26,7 +26,7 @@ RPMTTestcase GenTestInstance(size_t LOG_SERVER_LEN, size_t LOG_CLIENT_LEN)
     // set the Hamming weight to be a half of the max possible intersection size
     testcase.HAMMING_WEIGHT = std::min(testcase.CLIENT_LEN, testcase.SERVER_LEN)/2;
 
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
     
     testcase.vec_X = PRG::GenRandomBlocks(seed, testcase.CLIENT_LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, testcase.SERVER_LEN);
@@ -157,20 +157,15 @@ int main()
         
         vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y);
 
-        if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_prime))
-        {
-            std::cout << "cwPRF-based mqRPMT test succeeds" << std::endl; 
-        }
-        else{
-            std::cout << "cwPRF-based mqRPMT test fails" << std::endl; 
-        }
-
         size_t HAMMING_WEIGHT = 0;
         for(auto i = 0; i < pp.CLIENT_LEN; i++){
             if(vec_indication_bit_prime[i] == 1) HAMMING_WEIGHT++; 
         } 
         std::cout << "correct Hamming weight = " << testcase.HAMMING_WEIGHT << std::endl;
         std::cout << "real Hamming weight = " << HAMMING_WEIGHT << std::endl;
+
+        double error_probability = abs(double(testcase.HAMMING_WEIGHT)-double(HAMMING_WEIGHT))/double(testcase.HAMMING_WEIGHT); 
+        std::cout << "cwPRF-based mqRPMT test succeeds with probability " << (1 - error_probability) << std::endl; 
     }
 
     if(party == "client")

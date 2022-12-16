@@ -1,7 +1,8 @@
 #ifndef SCHNORR_HPP_
 #define SCHNORR_HPP_
 
-#include "../include/kunlun.hpp"
+#include "../crypto/ec_point.hpp"
+#include "../crypto/hash.hpp"
 
 namespace Schnorr{
 

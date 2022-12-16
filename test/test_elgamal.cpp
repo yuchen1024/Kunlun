@@ -1,5 +1,5 @@
 //#define DEBUG
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 #include "../pke/elgamal.hpp"
 
 void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)

@@ -1,7 +1,7 @@
 #define DEBUG
 
 #include "../zkp/nizk/nizk_enc_relation.hpp"
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 
 
 void GenRandomEncInstanceWitness(EncRelation::PP &pp, EncRelation::Instance &instance, 

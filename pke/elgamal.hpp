@@ -1,11 +1,10 @@
 #ifndef ELGAMAL_HPP_
 #define ELGAMAL_HPP_
 
-#include "../include/kunlun.hpp"
 #include "calculate_dlog.hpp"
 
 namespace ElGamal{
-
+ 
 using Serialization::operator<<; 
 using Serialization::operator>>; 
 

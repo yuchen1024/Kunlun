@@ -241,7 +241,7 @@ size_t ECPoint::ToUint64() const
     memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN); 
     EC_POINT_point2oct(group, this->point_ptr, POINT_CONVERSION_COMPRESSED, buffer, 
                        POINT_COMPRESSED_BYTE_LEN, ec_ctx);
-    return MurmurHash64A(buffer, POINT_COMPRESSED_BYTE_LEN, fixed_salt); 
+    return MurmurHash64A(buffer, POINT_COMPRESSED_BYTE_LEN, fixed_salt64); 
 }
 
 // adhoc lossy encoding for ECPoint based on AES

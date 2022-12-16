@@ -3,8 +3,7 @@
 #include "../crypto/prg.hpp"
 #include "../crypto/hash.hpp"
 #include "../utility/print.hpp"
-
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 
 
 void benchmark_ecc(size_t TEST_NUM)
@@ -64,7 +63,7 @@ void benchmark_ecc(size_t TEST_NUM)
 
 void test_hash_to_point(size_t LEN)
 {
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
     std::vector<block> vec_M = PRG::GenRandomBlocks(seed, LEN);
     
 

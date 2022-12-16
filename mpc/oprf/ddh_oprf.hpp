@@ -1,7 +1,6 @@
 #ifndef KUNLUN_DDH_OPRF_HPP_
 #define KUNLUN_DDH_OPRF_HPP_
 
-#include "../../include/kunlun.hpp"
 
 /*
 ** implement (permuted)-OPRF based on the DDH Assumption

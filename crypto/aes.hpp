@@ -9,7 +9,6 @@
 #include "../include/global.hpp"
 #include "block.hpp"
 
-
 namespace AES{
 
 using Serialization::operator<<; 

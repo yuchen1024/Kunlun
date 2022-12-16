@@ -13,7 +13,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h> // Include this header file for using socket feature
 
-#include "../include/kunlun.hpp"
+#include "../include/std.inc"
+#include "../crypto/ec_point.hpp"
 
 const static size_t NETWORK_BUFFER_SIZE = 1024*1024;
 const static size_t FILE_BUFFER_SIZE = 1024*16;

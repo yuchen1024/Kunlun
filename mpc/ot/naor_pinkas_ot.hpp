@@ -6,7 +6,10 @@
 #ifndef KUNLUN_NP_OT_HPP__
 #define KUNLUN_NP_OT_HPP__
 
-#include "../../include/kunlun.hpp"
+#include "../../include/std.inc"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
+#include "../../netio/stream_channel.hpp"
 
 
 /*

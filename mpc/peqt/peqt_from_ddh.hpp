@@ -1,7 +1,10 @@
 #ifndef KUNLUN_DDH_PEQT_HPP_
 #define KUNLUN_DDH_PEQT_HPP_
 
-#include "../../include/kunlun.hpp"
+#include "../../include/std.inc"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
+#include "../../netio/stream_channel.hpp"
 
 
 /*
@@ -9,6 +12,9 @@
 */
 
 namespace DDHPEQT{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 std::vector<uint64_t> Send(NetIO &io, std::vector<block> &vec_Y, size_t ROW_NUM, size_t COLUMN_NUM)
 {

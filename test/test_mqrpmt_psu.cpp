@@ -1,4 +1,5 @@
 #include "../mpc/pso/mqrpmt_psu.hpp"
+#include "../crypto/setup.hpp"
 
 
 struct TestCase{
@@ -28,7 +29,6 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
     testcase.SENDER_LEN = size_t(pow(2, testcase.LOG_SENDER_LEN));  
     testcase.RECEIVER_LEN = size_t(pow(2, testcase.LOG_RECEIVER_LEN)); 
 
-    //PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
     PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, testcase.SENDER_LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, testcase.RECEIVER_LEN);
@@ -189,15 +189,9 @@ int main()
         std::vector<block> vec_union_prime = mqRPMTPSU::Receive(server, pp, testcase.vec_Y);
         std::set<block, BlockCompare> set_diff_result = 
             ComputeSetDifference(vec_union_prime, testcase.vec_union);  
-        
-        std::cout << "Union cardinality (test) = " << vec_union_prime.size() << std::endl;
-        if(set_diff_result.size() == 0){
-            std::cout << "mqRPMT-based PSU test succeeds" << std::endl; 
-        }
-        else{
-            std::cout << "mqRPMT-based PSU test fails" << std::endl;
-            for(auto var: set_diff_result) Block::PrintBlock(var); 
-        }
+
+        double error_probability = set_diff_result.size()/double(testcase.vec_union.size()); 
+        std::cout << "mqRPMT-based PSU test succeeds with probability " << (1 - error_probability) << std::endl; 
     }
 
     CRYPTO_Finalize();   

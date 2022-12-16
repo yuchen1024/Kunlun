@@ -6,6 +6,7 @@
 #ifndef MURMURHASH3_HPP_
 #define MURMURHASH3_HPP_
 
+const uint32_t fixed_salt32 = 0xAAAA; // used for murmurhash
 
 void MurmurHash3_x86_32  (const void * key, int len, uint32_t seed, void * out);
 
@@ -143,7 +144,7 @@ uint32_t MurmurHash3(uint32_t salt, const unsigned char* input, size_t LEN)
 uint32_t MurmurHash3(const unsigned char* input, size_t LEN)
 {
     uint32_t digest; 
-    MurmurHash3_x86_32 (input, static_cast<int>(LEN), fixed_salt, &digest); 
+    MurmurHash3_x86_32(input, static_cast<int>(LEN), fixed_salt32, &digest); 
     return digest; 
 }
 
@@ -381,9 +382,5 @@ inline uint32_t LiteMurmurHash(uint32_t salt, const void* input, size_t LEN)
    return digest;
 }
 
-inline uint32_t LiteMurmurHash(const void* input, size_t LEN)
-{ 
-    return LiteMurmurHash(fixed_salt, input, LEN);  
-}
 
 #endif

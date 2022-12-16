@@ -1,4 +1,5 @@
 #include "../mpc/oprf/ote_oprf.hpp"
+#include "../crypto/setup.hpp"
 
 struct OTEOPRFTestCase{
     std::vector<block> vec_X; // server set
@@ -11,7 +12,7 @@ OTEOPRFTestCase GenTestCase(size_t LOG_LEN)
     OTEOPRFTestCase testcase;
     testcase.LEN = 1 << LOG_LEN; 
 
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, testcase.LEN);
 
     return testcase; 

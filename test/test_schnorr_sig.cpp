@@ -1,7 +1,7 @@
 //#define DEBUG
 #include "../signature/schnorr.hpp"
 #include "../utility/print.hpp"
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 
 void test_schnorr(size_t TEST_NUM)
 {

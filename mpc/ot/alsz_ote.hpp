@@ -14,8 +14,6 @@ const static size_t BASE_LEN = 128; // the default length of base OT
 
 namespace ALSZOTE{
 
-using Serialization::operator<<; 
-using Serialization::operator>>; 
 
 // check if the parameters are legal
 void CheckParameters(size_t ROW_NUM, size_t COLUMN_NUM)

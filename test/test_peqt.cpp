@@ -1,8 +1,6 @@
 #include "../mpc/peqt/peqt_from_ddh.hpp"
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 
-using Serialization::operator<<; 
-using Serialization::operator>>; 
 
 struct PEQTTestcase{
     size_t LEN;  
@@ -15,7 +13,7 @@ PEQTTestcase GenTestInstance(size_t LEN)
 {
     PEQTTestcase testcase; 
     testcase.LEN = LEN;  
-    PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
     testcase.vec_X = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_Y = PRG::GenRandomBlocks(seed, LEN);
     testcase.vec_indication_bit = PRG::GenRandomBits(seed, LEN);  

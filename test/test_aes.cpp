@@ -1,5 +1,5 @@
 #include "../crypto/aes.hpp"
-#include "../include/kunlun.hpp"
+#include "../crypto/setup.hpp"
 
 int main()
 {  

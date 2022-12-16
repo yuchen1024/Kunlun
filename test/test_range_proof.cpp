@@ -1,6 +1,7 @@
 #define DEBUG
 
 #include "../gadget/range_proof.hpp"
+#include "../crypto/setup.hpp"
 
 
 void GenRandomGadget1InstanceWitness(Gadget::PP &pp, Gadget::Instance &instance, Gadget::Witness_type1 &witness)

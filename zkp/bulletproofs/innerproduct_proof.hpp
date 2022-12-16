@@ -4,7 +4,8 @@ this hpp implements the inner product proof system
 #ifndef IP_PROOF_HPP
 #define IP_PROOF_HPP
 
-#include "../../include/kunlun.hpp"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
 
 namespace InnerProduct{
 

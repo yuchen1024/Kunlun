@@ -1,4 +1,5 @@
 #include "../mpc/pso/mqrpmt_psi_card_sum.hpp"
+#include "../crypto/setup.hpp"
 
 
 struct TestCase{
@@ -237,14 +238,10 @@ int main()
         NetIO client("client", "127.0.0.1", 8080);        
 
         size_t CARDINALITY = mqRPMTPSIcardsum::Receive(client, pp, testcase.vec_Y);
-        std::cout << "INTERSECTION CARDINALITY = " << CARDINALITY << std::endl;
+        std::cout << "INTERSECTION CARDINALITY (test) = " << CARDINALITY << std::endl;
 
-        if(CARDINALITY == testcase.HAMMING_WEIGHT){
-            std::cout << "mqRPMT-based PSI-card-sum test succeeds" << std::endl; 
-        }
-        else{
-            std::cout << "mqRPMT-based PSI-card-sum test fails" << std::endl; 
-        }
+        double error_probability = abs(double(testcase.HAMMING_WEIGHT)-double(CARDINALITY))/double(testcase.HAMMING_WEIGHT); 
+        std::cout << "mqRPMT-based PSI-card-sum test succeeds with probability " << (1 - error_probability) << std::endl; 
  
     }
 

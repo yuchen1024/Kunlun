@@ -9,6 +9,7 @@
 #include "../include/std.inc"
 #include "../utility/serialization.hpp"
 
+
 typedef __m128i block;
 
 namespace Block{

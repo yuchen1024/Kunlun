@@ -1,10 +1,12 @@
 #include "../mpc/ot/naor_pinkas_ot.hpp"
+#include "../crypto/prg.hpp"
+#include "../crypto/setup.hpp"
 
 // here NUM denotes the number of base OT, also the length of vec_m
 void GenTestCase(std::vector<block> &vec_m0, std::vector<block> &vec_m1, std::vector<uint8_t> &vec_selection_bit, 
                  std::vector<block> &vec_result, size_t NUM)
 {	
-	PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
 	vec_m0 = PRG::GenRandomBlocks(seed, NUM);
 	vec_m1 = PRG::GenRandomBlocks(seed, NUM);	
 	vec_selection_bit = PRG::GenRandomBits(seed, NUM);

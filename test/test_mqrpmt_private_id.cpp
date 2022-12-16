@@ -1,4 +1,5 @@
 #include "../mpc/pso/mqrpmt_private_id.hpp"
+#include "../crypto/setup.hpp"
 
 struct TestCase{
     size_t LOG_SENDER_LEN; 
@@ -166,7 +167,6 @@ int main()
     PrintSplitLine('-'); 
 
     size_t ITEM_LEN = pp.oprf_part.OUTPUT_LEN; // byte length of each item
-    // std::cout << "ITEM_LEN = " << ITEM_LEN << std::endl; 
     
     if(party == "sender"){
         NetIO server_io("server", "", 8080);

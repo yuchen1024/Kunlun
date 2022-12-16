@@ -4,7 +4,8 @@ this hpp implements NIZKPoK for discrete logarithm equality
 #ifndef KUNLUN_NIZK_DLOGEQ_HPP_
 #define KUNLUN_NIZK_DLOGEQ_HPP_
 
-#include "../../include/kunlun.hpp"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
 
 namespace DLOGEquality{
 

@@ -1,6 +1,5 @@
-//#define DEBUG
-#include "../include/kunlun.hpp"
 #include "../pke/calculate_dlog.hpp"
+#include "../crypto/setup.hpp"
 
 void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 {

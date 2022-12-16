@@ -54,6 +54,27 @@ configure_file(${PROJECT_SOURCE_DIR}/config/config.h.in ${PROJECT_SOURCE_DIR}/co
 ADD_EXECUTABLE(test_netio test/test_netio.cpp)
 TARGET_LINK_LIBRARIES(test_netio ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
+# ske  
+ADD_EXECUTABLE(test_aes test/test_aes.cpp)
+TARGET_LINK_LIBRARIES(test_aes ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+# pke  
+ADD_EXECUTABLE(test_twisted_elgamal test/test_twisted_elgamal.cpp)
+TARGET_LINK_LIBRARIES(test_twisted_elgamal ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_elgamal test/test_elgamal.cpp)
+TARGET_LINK_LIBRARIES(test_elgamal ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_calculate_dlog test/test_calculate_dlog.cpp)
+TARGET_LINK_LIBRARIES(test_calculate_dlog ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+# signature
+ADD_EXECUTABLE(test_schnorr_sig test/test_schnorr_sig.cpp)
+TARGET_LINK_LIBRARIES(test_schnorr_sig ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_accountable_ring_sig test/test_accountable_ring_sig.cpp)
+TARGET_LINK_LIBRARIES(test_accountable_ring_sig ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
 # filter
 ADD_EXECUTABLE(test_bloom_filter test/test_bloom_filter.cpp)
 TARGET_LINK_LIBRARIES(test_bloom_filter ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
@@ -71,9 +92,6 @@ TARGET_LINK_LIBRARIES(test_iknp_ote ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 ADD_EXECUTABLE(test_alsz_ote test/test_alsz_ote.cpp)
 TARGET_LINK_LIBRARIES(test_alsz_ote ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
-# ske  
-ADD_EXECUTABLE(test_aes test/test_aes.cpp)
-TARGET_LINK_LIBRARIES(test_aes ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # psi
 ADD_EXECUTABLE(test_cwprf_psi test/test_cwprf_psi.cpp)
@@ -110,22 +128,6 @@ TARGET_LINK_LIBRARIES(test_peqt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 ADD_EXECUTABLE(test_misc test/test_misc.cpp)
 TARGET_LINK_LIBRARIES(test_misc ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
   
-# pke  
-ADD_EXECUTABLE(test_twisted_elgamal test/test_twisted_elgamal.cpp)
-TARGET_LINK_LIBRARIES(test_twisted_elgamal ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
-
-ADD_EXECUTABLE(test_elgamal test/test_elgamal.cpp)
-TARGET_LINK_LIBRARIES(test_elgamal ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
-
-ADD_EXECUTABLE(test_calculate_dlog test/test_calculate_dlog.cpp)
-TARGET_LINK_LIBRARIES(test_calculate_dlog ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
-
-# signature
-ADD_EXECUTABLE(test_accountable_ring_sig test/test_accountable_ring_sig.cpp)
-TARGET_LINK_LIBRARIES(test_accountable_ring_sig ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
-
-ADD_EXECUTABLE(test_schnorr_sig test/test_schnorr_sig.cpp)
-TARGET_LINK_LIBRARIES(test_schnorr_sig ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # nike
 ADD_EXECUTABLE(test_nizk_enc_relation test/test_nizk_enc_relation.cpp)

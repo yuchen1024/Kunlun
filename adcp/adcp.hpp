@@ -11,11 +11,15 @@ this hpp implements the ADCP functionality
 #include "../zkp/nizk/nizk_dlog_knowledge.hpp"     // NIZKPoK for dlog knowledge
 #include "../zkp/bulletproofs/bullet_proof.hpp"    // implement Log Size Bulletproof
 #include "../gadget/range_proof.hpp"
+#include "../utility/serialization.hpp"
 
 #define DEMO           // demo mode 
 //#define DEBUG        // show debug information 
 
 namespace ADCP{
+
+using Serialization::operator<<; 
+using Serialization::operator>>; 
 
 // define the structure of system parameters
 

@@ -1,6 +1,7 @@
 //#define DEBUG
 
 #include "../mpc/ot/iknp_ote.hpp"
+#include "../crypto/setup.hpp"
 
 struct OTETestcase{
     size_t EXTEND_LEN; 
@@ -20,7 +21,7 @@ OTETestcase GenTestCase(size_t EXTEND_LEN)
     testcase.EXTEND_LEN = EXTEND_LEN; 
     testcase.HAMMING_WEIGHT = 0; 
 
-	PRG::Seed seed = PRG::SetSeed(PRG::fixed_salt, 0); // initialize PRG
+	PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
 	
     testcase.vec_m0 = PRG::GenRandomBlocks(seed, EXTEND_LEN);
 	testcase.vec_m1 = PRG::GenRandomBlocks(seed, EXTEND_LEN);

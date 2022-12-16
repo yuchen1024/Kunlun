@@ -1,7 +1,6 @@
 #ifndef COMMITMENT_HPP_
 #define COMMITMENT_HPP_
 
-#include "../include/kunlun.hpp"
 
 namespace Pedersen{
 

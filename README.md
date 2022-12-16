@@ -80,7 +80,6 @@ do the same modification as in MACOS, then compile it according to
   * std.inc: standard header files
   * openssl.inc: openssl header files
   * global.hpp: define global variables for kunlun lib as well as error information
-  * kunlun.hpp: include all necessary files to write a cryptographic program
 
 - /utility: dependent files
   * bit_operation.hpp

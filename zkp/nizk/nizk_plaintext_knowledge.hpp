@@ -4,9 +4,9 @@ this hpp implements NIZKPoK for twisted ElGamal ciphertext
 #ifndef KUNLUN_NIZK_PTKE_HPP_
 #define KUNLUN_NIZK_PTKE_HPP_
 
-#include "../../include/kunlun.hpp"
+#include "../../crypto/ec_point.hpp"
+#include "../../crypto/hash.hpp"
 #include "../../pke/twisted_elgamal.hpp"
-
 
 namespace PlaintextKnowledge{
 // define structure of PT_EQ_Proof

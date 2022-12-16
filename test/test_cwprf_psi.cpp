@@ -1,4 +1,5 @@
 #include "../mpc/psi/cwprf_psi.hpp"
+#include "../crypto/setup.hpp"
 
 
 struct TestCase{
@@ -180,15 +181,18 @@ int main()
         std::set<block, BlockCompare> set_diff_result = 
             ComputeSetDifference(vec_intersection_prime, testcase.vec_intersection);  
         
-        std::cout << "Intersection cardinality (test) = " << vec_intersection_prime.size() << std::endl;
+        // std::cout << "Intersection cardinality (test) = " << vec_intersection_prime.size() << std::endl;
 
-        if(set_diff_result.size() == 0){
-            std::cout << "cwPRF-based PSI test succeeds" << std::endl; 
-        }
-        else{
-            std::cout << "cwPRF-based PSI test fails" << std::endl;
-            for(auto var: set_diff_result) Block::PrintBlock(var); 
-        }
+        // if(set_diff_result.size() == 0){
+        //     std::cout << "cwPRF-based PSI test succeeds" << std::endl; 
+        // }
+        // else{
+        //     std::cout << "cwPRF-based PSI test fails" << std::endl;
+        //     for(auto var: set_diff_result) Block::PrintBlock(var); 
+        // }
+
+        double error_probability = set_diff_result.size()/double(testcase.vec_intersection.size()); 
+        std::cout << "cwPRF-based PSI test succeeds with probability " << (1 - error_probability) << std::endl; 
     }
 
     CRYPTO_Finalize();   

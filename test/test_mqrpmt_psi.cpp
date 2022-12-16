@@ -1,4 +1,5 @@
 #include "../mpc/pso/mqrpmt_psi.hpp"
+#include "../crypto/setup.hpp"
 
 
 struct TestCase{
@@ -180,16 +181,9 @@ int main()
         std::vector<block> vec_intersection_prime = mqRPMTPSI::Receive(server, pp, testcase.vec_Y);
         std::set<block, BlockCompare> set_diff_result = 
             ComputeSetDifference(vec_intersection_prime, testcase.vec_intersection);  
-        
-        std::cout << "Intersection cardinality (test) = " << vec_intersection_prime.size() << std::endl;
 
-        if(set_diff_result.size() == 0){
-            std::cout << "mqRPMT-based PSI test succeeds" << std::endl; 
-        }
-        else{
-            std::cout << "mqRPMT-based PSI test fails" << std::endl;
-            for(auto var: set_diff_result) Block::PrintBlock(var); 
-        }
+        double error_probability = set_diff_result.size()/double(testcase.vec_intersection.size()); 
+        std::cout << "mqRPMT-based PSI test succeeds with probability " << (1 - error_probability) << std::endl; 
     }
 
     CRYPTO_Finalize();   
