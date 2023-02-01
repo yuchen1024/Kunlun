@@ -104,7 +104,6 @@ PP Setup(TwistedElGamal::PP pp_enc)
 }
 
 
-
 // generate NIZK proof for C = Enc(pk, v; r) with witness (r, v)
 Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str)
 {   
