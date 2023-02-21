@@ -1,5 +1,7 @@
 /***********************************************************************************
 this hpp implements and improves the scheme in ESORICS 2015
+Short Accountable Ring Signatures Based on DDH
+by replacing ElGamal with twisted ElGamal
 ***********************************************************************************/
 #ifndef ACCOUNTABLE_RING_SIG_HPP_
 #define ACCOUNTABLE_RING_SIG_HPP_

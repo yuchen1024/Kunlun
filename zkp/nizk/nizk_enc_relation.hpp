@@ -1,5 +1,7 @@
 /***********************************************************************************
 this hpp implements the merge of (relation R1 and R2) in ESORICS 2015
+Short Accountable Ring Signatures Based on DDH
+by replacing ElGamal with twisted ElGamal
 ***********************************************************************************/
 #ifndef NIZK_ENC_RELATION_HPP_
 #define NIZK_ENC_RELATION_HPP_

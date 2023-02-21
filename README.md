@@ -58,9 +58,10 @@ test if the function x25519_scalar_mulx is available
 
 ### On Linux
 * install OpenSSL 3.0
+
 do the same modification as in MACOS, then compile it according to
 ```
-    $ ./Configure no-shared enable-ec_nistp_64_gcc_128 no-ssl2 no-ssl3 no-comp --openssldir=/usr/local/ssl/macos-x86_64
+  $ ./Configure no-shared enable-ec_nistp_64_gcc_128 no-ssl2 no-ssl3 no-comp --openssldir=/usr/local/ssl/macos-x86_64
   $ make depend
   $ sudo make install
 ```
