@@ -18,12 +18,15 @@ PP Setup(size_t N_max)
     PP pp;
     pp.N_max = N_max;
     pp.g = ECPoint(generator); 
+    /* 
+    ** warning: the following method is ad-hoc and insafe cause it is not transparent
+    ** we left a secure hash to many points mapping as the future work   
+    */
     pp.vec_h = GenRandomECPointVector(N_max); 
     return pp; 
 }
 
 
-/* initialize the hashmap to accelerate decryption */
 ECPoint Commit(PP &pp, std::vector<BigInt>& vec_m, BigInt r)
 {
     if(pp.N_max < vec_m.size()){
