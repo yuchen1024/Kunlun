@@ -5,9 +5,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 PROJECT(Kunlun)
 
 IF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    SET(OPENSSL_LIBRARIES /usr/local/lib64/libcrypto.a /usr/local/lib64/libssl.a)
-    SET(OPENSSL_INCLUDE_DIR /usr/local/include)
-    SET(OPENSSL_DIR /usr/local/lib64)
+    SET(OPENSSL_LIBRARIES /usr/local/openssl/lib64/libcrypto.a /usr/local/openssl/lib64/libssl.a)
+    SET(OPENSSL_INCLUDE_DIR /usr/local/openssl/include)
+    SET(OPENSSL_DIR /usr/local/openssl/lib64)
 ELSEIF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     SET(OPENSSL_LIBRARIES /usr/local/lib/libcrypto.a /usr/local/lib/libssl.a)
     SET(OPENSSL_INCLUDE_DIR /usr/local/include)
@@ -17,6 +17,8 @@ FIND_PACKAGE(OpenMP REQUIRED)
 
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fpic -Wno-deprecated-declarations -Wno-unused-result -Xpreprocessor -O3")
+
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
 
 INCLUDE_DIRECTORIES(
     ${OPENSSL_INCLUDE_DIR}
@@ -170,4 +172,5 @@ TARGET_LINK_LIBRARIES(test_adcp ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 # mcl
 # add_executable(test_mcl test/test_mcl.cpp)
 # target_link_libraries(test_mcl libmcl.a libgmp.a)
+
 

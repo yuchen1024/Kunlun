@@ -66,9 +66,14 @@ do the same modification as in MACOS, then compile it according to
   $ sudo make install
 ```
 
+if reporting cannot find "opensslv.h" error, try to install libssl-dev
+```
+  $ sudo apt-get install libssl-dev 
+```
+
 * install OpenMP
 ```
-  $ sudo apt install libomp-dev 
+  $ sudo apt-get install libomp-dev 
 ```
 
 ## Code Structure
