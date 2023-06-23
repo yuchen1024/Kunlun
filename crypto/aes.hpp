@@ -148,8 +148,9 @@ inline void ECBEnc(const Key &key, block* data, size_t BLOCK_LEN)
 ** but more efficient since it unroll the loop
 */
 __attribute__((target("aes,sse2")))
-inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN) 
-{
+inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN,block* dest=nullptr) 
+{   
+    if(dest==nullptr)dest=data;
     const size_t BATCH_SIZE = 8;
     size_t LEN = BLOCK_LEN - BLOCK_LEN % BATCH_SIZE; // ensure LEN = 8*n
 
@@ -165,15 +166,15 @@ inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN)
                 temp[j] = _mm_aesenc_si128(temp[j], key.roundkey[k]);
         
         for (auto j = 0; j < BATCH_SIZE; j++)
-            data[i + j] = _mm_aesenclast_si128(temp[j], key.roundkey[key.ROUND_NUM]);
+            dest[i + j] = _mm_aesenclast_si128(temp[j], key.roundkey[key.ROUND_NUM]);
     }
 
     for (auto i = LEN; i < BLOCK_LEN; i++)
     {
-        data[i] = _mm_xor_si128(data[i], key.roundkey[0]);
+        dest[i] = _mm_xor_si128(data[i], key.roundkey[0]);
         for (auto k = 1; k < key.ROUND_NUM; k++)
-            data[i] = _mm_aesenc_si128(data[i], key.roundkey[k]);
-        data[i] = _mm_aesenclast_si128(data[i], key.roundkey[key.ROUND_NUM]);
+            dest[i] = _mm_aesenc_si128(dest[i], key.roundkey[k]);
+        dest[i] = _mm_aesenclast_si128(dest[i], key.roundkey[key.ROUND_NUM]);
     }
 }
 
@@ -221,5 +222,4 @@ void AES_Initialize()
     AES::fixed_dec_key = AES::DeriveDecKeyFromEncKey(AES::fixed_enc_key); 
 }
 #endif
-
 
