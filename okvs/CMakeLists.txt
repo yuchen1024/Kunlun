@@ -7,7 +7,7 @@ PROJECT(Kunlun)
 FIND_PACKAGE(OpenSSL REQUIRED)
 FIND_PACKAGE(OpenMP REQUIRED)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fpic -flto -Wno-deprecated-declarations -Wno-unused-result -Xpreprocessor -O3 -DNDEBUG -Wall -Wfatal-errors")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fpic -flto -Wno-deprecated-declarations -Wno-unused-result -Xpreprocessor -O3 -DNDEBUG -Wall")
 # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mpclmul -msse2 -std=c++14  -mavx -mavx2 -g -DNDEBUG -fpic -flto -Wno-deprecated-declarations -Wno-unused-result -Xpreprocessor -march=native -Wall -Wfatal-errors")
 # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14  -g ")
 
