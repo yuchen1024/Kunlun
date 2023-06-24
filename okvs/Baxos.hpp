@@ -1,3 +1,10 @@
+/*
+** Modified from https://github.com/Visa-Research/volepsi.git
+** (1) simplify the design
+** (2) support multi-thread programming with OpenMP
+*/
+
+
 #ifndef KUNLUN_BAXOS_H_
 #define KUNLUN_BAXOS_H_
 #include "Paxos.hpp"
