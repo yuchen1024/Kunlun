@@ -114,7 +114,7 @@ inline bool Compare(std::vector<block> &vec_a, std::vector<block> &vec_b)
 	}
 	return EQUAL;
 }
-
+__attribute__((target("sse4")))
 inline bool Compare(const block &a, const block &b) 
 {
     __m128i vcmp = _mm_xor_si128(a, b); 
@@ -344,4 +344,3 @@ inline void BitMatrixTranspose(uint8_t const *input, uint64_t ROW_NUM, uint64_t 
 
 
 #endif
-
