@@ -1,3 +1,11 @@
+
+/*
+** Modified from https://github.com/Visa-Research/volepsi.git
+** (1) simplify the design
+** (2) add serialize/deserialize interfaces for variables such as matrices
+** (3) fix two overflow issues when the weight is not 3
+*/
+
 #ifndef KUNLUN_PAXOS_H_
 #define KUNLUN_PAXOS_H_
 
