@@ -1,3 +1,11 @@
+
+/*
+** Modified from https://github.com/Visa-Research/volepsi.git and https://github.com/ridiculousfish/libdivide.git
+** (1) simplify the design, reduce unnecessary jumps in functions under the requirements of okvs
+** (2) replace the method for finding reversible random submatrix
+*/
+
+
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
@@ -9,12 +17,36 @@ struct divider
     uint64_t magic;
     uint8_t more;
 };
-
+static inline uint32_t divide_mullhi_u32(uint32_t x, uint32_t y) {
+    uint64_t xl = x, yl = y;
+    uint64_t rl = xl * yl;
+    return (uint32_t)(rl >> 32);
+}
 static inline uint64_t divide_mullhi_u64(uint64_t x, uint64_t y)
 {
+#if defined(_MSC_VER) && defined(LIBDIVIDE_X86_64)
+    return __umulh(x, y);
+#elif defined(__SIZEOF_INT128__)
     __uint128_t xl = x, yl = y;
     __uint128_t rl = xl * yl;
     return (uint64_t)(rl >> 64);
+#else
+    // full 128 bits are x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
+    uint32_t mask = 0xFFFFFFFF;
+    uint32_t x0 = (uint32_t)(x & mask);
+    uint32_t x1 = (uint32_t)(x >> 32);
+    uint32_t y0 = (uint32_t)(y & mask);
+    uint32_t y1 = (uint32_t)(y >> 32);
+    uint32_t x0y0_hi = divide_mullhi_u32(x0, y0);
+    uint64_t x0y1 = x0 * (uint64_t)y1;
+    uint64_t x1y0 = x1 * (uint64_t)y0;
+    uint64_t x1y1 = x1 * (uint64_t)y1;
+    uint64_t temp = x1y0 + x0y0_hi;
+    uint64_t temp_lo = temp & mask;
+    uint64_t temp_hi = temp >> 32;
+
+    return x1y1 + temp_hi + ((temp_lo + x0y1) >> 32);
+#endif
 }
 
 __attribute__((target("avx2")))
@@ -93,14 +125,41 @@ __m256i divide_u64_do_vec256(__m256i numers, const struct divider *denom)
         }
     }
 }
-
+static inline int32_t divide_count_leading_zeros32(uint32_t val) {
+#if defined(__AVR__)
+    // Fast way to count leading zeros
+    return __builtin_clzl(val);
+#elif defined(__GNUC__) || __has_builtin(__builtin_clz)
+    // Fast way to count leading zeros
+    return __builtin_clz(val);
+#elif defined(_MSC_VER)
+    unsigned long result;
+    if (_BitScanReverse(&result, val)) {
+        return 31 - result;
+    }
+    return 0;
+#else
+    if (val == 0) return 32;
+    int32_t result = 8;
+    uint32_t hi = 0xFFU << 24;
+    while ((val & hi) == 0) {
+        hi >>= 8;
+        result += 8;
+    }
+    while (val & hi) {
+        result -= 1;
+        hi <<= 1;
+    }
+    return result;
+#endif
+}
 static inline int32_t count_leading_zeros64(uint64_t val)
 {
     // return __builtin_clzll(val);
-    #if defined(__GNUC__) || __has_builtin(__builtin_clzll)
+#if defined(__GNUC__) || __has_builtin(__builtin_clzll)
     // Fast way to count leading zeros
     return __builtin_clzll(val);
-#elif defined(LIBDIVIDE_VC) && defined(_WIN64)
+#elif defined(_MSC_VER) && defined(_WIN64)
     unsigned long result;
     if (_BitScanReverse64(&result, val)) {
         return 63 - result;
@@ -109,19 +168,115 @@ static inline int32_t count_leading_zeros64(uint64_t val)
 #else
     uint32_t hi = val >> 32;
     uint32_t lo = val & 0xFFFFFFFF;
-    if (hi != 0) return libdivide_count_leading_zeros32(hi);
-    return 32 + libdivide_count_leading_zeros32(lo);
+    if (hi != 0) return divide_count_leading_zeros32(hi);
+    return 32 + divide_count_leading_zeros32(lo);
 #endif
 }
+
+#if defined(__x86_64__) || defined(_M_X64)
+#define LIBDIVIDE_X86_64
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define LIBDIVIDE_GCC_STYLE_ASM
+#endif
+
+
 static inline uint64_t divide_128_div_64_to_64(
-    uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r)
-{
+    uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r) {
+    // N.B. resist the temptation to use __uint128_t here.
+    // In LLVM compiler-rt, it performs a 128/128 -> 128 division which is many times slower than
+    // necessary. In gcc it's better but still slower than the divlu implementation, perhaps because
+    // it's not LIBDIVIDE_INLINEd.
+#if defined(LIBDIVIDE_X86_64) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint64_t result;
-    __asm__("divq %[v]"
-            : "=a"(result), "=d"(*r)
-            : [v] "r"(den), "a"(numlo), "d"(numhi));
+    __asm__("divq %[v]" : "=a"(result), "=d"(*r) : [v] "r"(den), "a"(numlo), "d"(numhi));
     return result;
+#else
+    // We work in base 2**32.
+    // A uint32 holds a single digit. A uint64 holds two digits.
+    // Our numerator is conceptually [num3, num2, num1, num0].
+    // Our denominator is [den1, den0].
+    const uint64_t b = ((uint64_t)1 << 32);
+
+    // The high and low digits of our computed quotient.
+    uint32_t q1;
+    uint32_t q0;
+
+    // The normalization shift factor.
+    int shift;
+
+    // The high and low digits of our denominator (after normalizing).
+    // Also the low 2 digits of our numerator (after normalizing).
+    uint32_t den1;
+    uint32_t den0;
+    uint32_t num1;
+    uint32_t num0;
+
+    // A partial remainder.
+    uint64_t rem;
+
+    // The estimated quotient, and its corresponding remainder (unrelated to true remainder).
+    uint64_t qhat;
+    uint64_t rhat;
+
+    // Variables used to correct the estimated quotient.
+    uint64_t c1;
+    uint64_t c2;
+
+    // Check for overflow and divide by 0.
+    if (numhi >= den) {
+        if (r != NULL) *r = ~0ull;
+        return ~0ull;
+    }
+
+    // Determine the normalization factor. We multiply den by this, so that its leading digit is at
+    // least half b. In binary this means just shifting left by the number of leading zeros, so that
+    // there's a 1 in the MSB.
+    // We also shift numer by the same amount. This cannot overflow because numhi < den.
+    // The expression (-shift & 63) is the same as (64 - shift), except it avoids the UB of shifting
+    // by 64. The funny bitwise 'and' ensures that numlo does not get shifted into numhi if shift is
+    // 0. clang 11 has an x86 codegen bug here: see LLVM bug 50118. The sequence below avoids it.
+    shift = count_leading_zeros64(den);
+    den <<= shift;
+    numhi <<= shift;
+    numhi |= (numlo >> (-shift & 63)) & (-(int64_t)shift >> 63);
+    numlo <<= shift;
+
+    // Extract the low digits of the numerator and both digits of the denominator.
+    num1 = (uint32_t)(numlo >> 32);
+    num0 = (uint32_t)(numlo & 0xFFFFFFFFu);
+    den1 = (uint32_t)(den >> 32);
+    den0 = (uint32_t)(den & 0xFFFFFFFFu);
+
+    // We wish to compute q1 = [n3 n2 n1] / [d1 d0].
+    // Estimate q1 as [n3 n2] / [d1], and then correct it.
+    // Note while qhat may be 2 digits, q1 is always 1 digit.
+    qhat = numhi / den1;
+    rhat = numhi % den1;
+    c1 = qhat * den0;
+    c2 = rhat * b + num1;
+    if (c1 > c2) qhat -= (c1 - c2 > den) ? 2 : 1;
+    q1 = (uint32_t)qhat;
+
+    // Compute the true (partial) remainder.
+    rem = numhi * b + num1 - q1 * den;
+
+    // We wish to compute q0 = [rem1 rem0 n0] / [d1 d0].
+    // Estimate q0 as [rem1 rem0] / [d1] and correct it.
+    qhat = rem / den1;
+    rhat = rem % den1;
+    c1 = qhat * den0;
+    c2 = rhat * b + num0;
+    if (c1 > c2) qhat -= (c1 - c2 > den) ? 2 : 1;
+    q0 = (uint32_t)qhat;
+
+    // Return remainder if requested.
+    if (r != NULL) *r = (rem * b + num0 - q0 * den) >> shift;
+    return ((uint64_t)q1 << 32) | q0;
+#endif
 }
+
 
 static inline struct divider gen_divider(uint64_t d)
 {
