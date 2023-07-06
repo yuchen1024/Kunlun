@@ -104,7 +104,7 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    #ifdef USE_CURVE_25519
+    #ifdef USING_CURVE_25519
         std::cerr << "Using Curve 25519" << std::endl;
     #endif
 

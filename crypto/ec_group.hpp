@@ -1,6 +1,10 @@
 #ifndef CRYPTO_EC_GROUP_HPP_
 #define CRYPTO_EC_GROUP_HPP_
 
+#include "../include/global.hpp"
+#include "../utility/print.hpp"
+#include "bigint.hpp"
+
 // enable pre-computation for fixed point multiplication
 #define PRECOMPUTE_ENABLE
 
@@ -10,11 +14,6 @@
 */
 
 //#define ECPOINT_COMPRESSED
-
-#include "../include/global.hpp"
-#include "../utility/print.hpp"
-#include "bigint.hpp"
-
 
 static EC_GROUP *group;
 const static EC_POINT *generator; 
@@ -31,17 +30,11 @@ static size_t POINT_COMPRESSED_BYTE_LEN; // the byte length of ec point in compr
 
 static BN_CTX *ec_ctx; // define ctx for ecc operations
 
-static int curve_id = NID_X9_62_prime256v1; 
-// static int curve_id = NID_secp256k1; 
+//#define USING_CURVE_25519
 
+static int curve_id = NID_X9_62_prime256v1;  
 
 void ECGroup_Initialize(){
-    #ifdef PARALLEL
-        ec_ctx = nullptr;
-    #else
-        ec_ctx = bn_ctx; 
-    #endif
-
     group = EC_GROUP_new_by_curve_name(curve_id);
     // If this fails, this is usually due to an invalid curve id.
     CRYPTO_CHECK(group !=nullptr);
@@ -49,19 +42,19 @@ void ECGroup_Initialize(){
     generator = EC_GROUP_get0_generator(group);
 
     order = BN_new(); 
-    CRYPTO_CHECK(EC_GROUP_get_order(group, order, bn_ctx) == 1);
+    CRYPTO_CHECK(EC_GROUP_get_order(group, order, bn_ctx[0]) == 1);
 
     cofactor = BN_new(); 
-    CRYPTO_CHECK(EC_GROUP_get_cofactor(group, cofactor, bn_ctx) == 1); 
+    CRYPTO_CHECK(EC_GROUP_get_cofactor(group, cofactor, bn_ctx[0]) == 1); 
 
     curve_params_p = BN_new(); 
     curve_params_a = BN_new();
     curve_params_b = BN_new(); 
 
-    CRYPTO_CHECK(EC_GROUP_get_curve_GFp(group, curve_params_p, curve_params_a, curve_params_b, bn_ctx) == 1); 
+    CRYPTO_CHECK(EC_GROUP_get_curve_GFp(group, curve_params_p, curve_params_a, curve_params_b, bn_ctx[0]) == 1); 
 
     size_t rounds = 100; 
-    CRYPTO_CHECK(BN_is_prime_ex(curve_params_p, rounds, bn_ctx, nullptr) == 1);
+    CRYPTO_CHECK(BN_is_prime_ex(curve_params_p, rounds, bn_ctx[0], nullptr) == 1);
 
     curve_params_q = BN_new(); 
     BN_rshift(curve_params_q, curve_params_p, 1); // p_minus_one_over_two = (p-1)/2
@@ -82,7 +75,7 @@ void ECGroup_Initialize(){
      
     
     #ifdef PRECOMPUTE_ENABLE
-        EC_GROUP_precompute_mult((EC_GROUP*) group, bn_ctx); // pre-compute the table of g    
+        EC_GROUP_precompute_mult((EC_GROUP*) group, bn_ctx[0]); // pre-compute the table of g    
         // check if precomputation have been done properly
         if(EC_GROUP_have_precompute_mult((EC_GROUP*) group) == 0){
             std::cerr << "precomputation is not done properly" << std::endl;

@@ -171,7 +171,7 @@ void RandomSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<block
 
     // std::cout << "still clean here [1]" << std::endl;
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> Q_row(COLUMN_NUM/128);
@@ -250,7 +250,7 @@ void RandomReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
 
     //std::cout << "still clean here [2]" << std::endl;
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> T_row(COLUMN_NUM/128);  
@@ -286,7 +286,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     std::vector<block> vec_outer_C0(ROW_NUM); 
     std::vector<block> vec_outer_C1(ROW_NUM); 
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {       
         vec_outer_C0[i] = vec_m0[i]^vec_K0[i]; 
@@ -335,7 +335,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver
     #endif
 
     std::vector<block> vec_result(ROW_NUM);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {
         if(vec_receiver_selection_bit[i] == 0){
@@ -389,7 +389,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     // begin to transmit the real message
     std::vector<block> vec_outer_C(ROW_NUM);
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {
         vec_outer_C[i] = vec_m[i]^vec_K1[i];
@@ -483,7 +483,7 @@ void OnesidedSendByteVector(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>>
     // begin to transmit the real message
     std::vector<std::vector<uint8_t>> vec_outer_C(EXTEND_LEN);
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < EXTEND_LEN; i++)
     {
         vec_outer_C[i] = OTP::Enc(vec_K1[i], vec_m[i]);
@@ -565,7 +565,7 @@ void SendByteVector(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m0
     std::vector<std::vector<uint8_t>> vec_outer_C1(EXTEND_LEN);
 
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < EXTEND_LEN; i++)
     {
         vec_outer_C0[i] = OTP::Enc(vec_K0[i], vec_m0[i]);

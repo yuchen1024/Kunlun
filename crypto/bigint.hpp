@@ -5,21 +5,26 @@
 #include "../include/std.inc"
 #include "../include/global.hpp"
 
-static size_t BN_BYTE_LEN;  // the byte length of bigint
+static size_t BN_BYTE_LEN;    // the byte length of bigint
 static size_t INT_BYTE_LEN; 
 //static size_t FIELD_BYTE_LEN;  // each scalar field element is 256 bit 
-static BN_CTX *bn_ctx; // define ctx for ecc operations
+
+static BN_CTX *bn_ctx[NUMBER_OF_THREADS]; // define ctx for ecc operations
+
 
 void BN_Initialize(){
-    bn_ctx = BN_CTX_new();
-    if (bn_ctx == nullptr) std::cerr << "bn_ctx initialize fails" << std::endl;
-    
+    for(auto i = 0; i < NUMBER_OF_THREADS; i++){
+        bn_ctx[i] = BN_CTX_new();
+        if (bn_ctx[i] == nullptr) std::cerr << "bn_ctx initialize fails" << std::endl;
+    }
     //BN_BIT_LEN = BN_BYTE_LEN * 8; 
     INT_BYTE_LEN = sizeof(size_t); 
 }
 
 void BN_Finalize(){
-    BN_CTX_free(bn_ctx);
+    for(auto i = 0; i < NUMBER_OF_THREADS; i++){
+        BN_CTX_free(bn_ctx[i]);
+    }
 } 
 
 
@@ -341,7 +346,8 @@ BigInt BigInt::Sub(const BigInt& other) const {
 // Causes a check failure if the operation fails.
 BigInt BigInt::Mul(const BigInt& other) const {
     BigInt result;
-    CRYPTO_CHECK(1 == BN_mul(result.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_mul(result.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -350,7 +356,8 @@ BigInt BigInt::Mul(const BigInt& other) const {
 BigInt BigInt::Div(const BigInt& other) const {
     BigInt result;
     BigInt remainder;
-    CRYPTO_CHECK(1 == BN_div(result.bn_ptr, remainder.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_div(result.bn_ptr, remainder.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx[thread_num]));
     if (BN_is_zero(remainder.bn_ptr)){
         std::cerr << "Use DivAndTruncate() instead of Div() if you want truncated division." << std::endl;  
     } 
@@ -362,7 +369,8 @@ BigInt BigInt::Div(const BigInt& other) const {
 BigInt BigInt::DivAndTruncate(const BigInt& other) const {
     BigInt result;
     BigInt remainder;
-    CRYPTO_CHECK(1 == BN_div(result.bn_ptr, remainder.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_div(result.bn_ptr, remainder.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -376,21 +384,24 @@ int BigInt::CompareTo(const BigInt& other) const {
 // Causes a check failure if the operation fails.
 BigInt BigInt::Exp(const BigInt& exponent) const{
     BigInt result;
-    CRYPTO_CHECK(1 == BN_exp(result.bn_ptr, this->bn_ptr, exponent.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_exp(result.bn_ptr, this->bn_ptr, exponent.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
 // return square
 BigInt BigInt::Square() const{
     BigInt result;
-    CRYPTO_CHECK(1 == BN_sqr(result.bn_ptr, this->bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_sqr(result.bn_ptr, this->bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
 // Returns a BigInt whose value is (*this mod m).
 BigInt BigInt::Mod(const BigInt& modulus) const {
     BigInt result;
-    CRYPTO_CHECK(1 == BN_nnmod(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_nnmod(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -398,7 +409,8 @@ BigInt BigInt::Mod(const BigInt& modulus) const {
 // Causes a check failure if the operation fails.
 BigInt BigInt::ModAdd(const BigInt& other, const BigInt& modulus) const {
     BigInt result;
-    CRYPTO_CHECK(1 == BN_mod_add(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_mod_add(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -406,14 +418,16 @@ BigInt BigInt::ModAdd(const BigInt& other, const BigInt& modulus) const {
 // Causes a check failure if the operation fails.
 BigInt BigInt::ModSub(const BigInt& other, const BigInt& modulus) const {
     BigInt result;
-    CRYPTO_CHECK(1 == BN_mod_sub(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_mod_sub(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
 // Returns a BigInt whose value is (*this * val mod m).
 BigInt BigInt::ModMul(const BigInt& other, const BigInt& modulus) const {
     BigInt result;
-    CRYPTO_CHECK(1 == BN_mod_mul(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_mod_mul(result.bn_ptr, this->bn_ptr, other.bn_ptr, modulus.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -424,7 +438,8 @@ BigInt BigInt::ModExp(const BigInt& exponent, const BigInt& modulus) const {
         std::cerr << "Cannot use a negative exponent in BigInt ModExp." << std::endl; 
     } 
     BigInt result;
-    CRYPTO_CHECK(1 == BN_mod_exp(result.bn_ptr, this->bn_ptr, exponent.bn_ptr, modulus.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_mod_exp(result.bn_ptr, this->bn_ptr, exponent.bn_ptr, modulus.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -432,7 +447,8 @@ BigInt BigInt::ModExp(const BigInt& exponent, const BigInt& modulus) const {
 // Causes a check failure if the operation fails.
 BigInt BigInt::ModSquare(const BigInt& modulus) const {
     BigInt result;
-    CRYPTO_CHECK(1 == BN_mod_sqr(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_mod_sqr(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -440,7 +456,8 @@ BigInt BigInt::ModSquare(const BigInt& modulus) const {
 // Causes a check failure if the operation fails.
 BigInt BigInt::ModInverse(const BigInt& modulus) const {
     BigInt result;
-    CRYPTO_CHECK(nullptr != BN_mod_inverse(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(nullptr != BN_mod_inverse(result.bn_ptr, this->bn_ptr, modulus.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -448,7 +465,8 @@ BigInt BigInt::ModInverse(const BigInt& modulus) const {
 // Causes a check failure if the operation fails.
 BigInt BigInt::ModSquareRoot(const BigInt& modulus) const {
     BigInt result;
-    CRYPTO_CHECK(nullptr != BN_mod_sqrt(result.bn_ptr, bn_ptr, modulus.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(nullptr != BN_mod_sqrt(result.bn_ptr, bn_ptr, modulus.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -480,7 +498,8 @@ BigInt BigInt::Rshift(int n) const {
 // Causes a check failure if the operation fails.
 BigInt BigInt::GCD(const BigInt& other) const {
     BigInt result;
-    CRYPTO_CHECK(1 == BN_gcd(result.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx));
+    int thread_num = omp_get_thread_num();
+    CRYPTO_CHECK(1 == BN_gcd(result.bn_ptr, this->bn_ptr, other.bn_ptr, bn_ctx[thread_num]));
     return result;
 }
 
@@ -489,7 +508,8 @@ BigInt BigInt::GCD(const BigInt& other) const {
 // True if it is prime with an error probability of 1e-40, which gives at least 128 bit security.
 bool BigInt::IsPrime(double prime_error_probability) const {
     int rounds = static_cast<int>(ceil(-log(prime_error_probability) / log(4)));
-    return (1 == BN_is_prime_ex(this->bn_ptr, rounds, bn_ctx, nullptr));
+    int thread_num = omp_get_thread_num();
+    return (1 == BN_is_prime_ex(this->bn_ptr, rounds, bn_ctx[thread_num], nullptr));
 }
 
 bool BigInt::IsSafePrime(double prime_error_probability = 1e-40) const {
@@ -803,7 +823,7 @@ std::vector<BigInt> GenRandomBigIntVectorLessThan(size_t LEN, const BigInt &modu
 {
     std::vector<BigInt> vec_result(LEN);
     
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){ 
         vec_result[i] = GenRandomBigIntLessThan(modulus); 
     }

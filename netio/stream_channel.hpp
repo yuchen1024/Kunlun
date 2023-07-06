@@ -277,18 +277,19 @@ void NetIO::ReceiveString(std::string &str)
 
 void NetIO::SendECPoints(const ECPoint* A, size_t LEN) 
 {
+	int thread_num = omp_get_thread_num();
 	#ifdef ECPOINT_COMPRESSED
 		unsigned char* buffer = new unsigned char[LEN*POINT_COMPRESSED_BYTE_LEN];
 		for(auto i = 0; i < LEN; i++) {
     		EC_POINT_point2oct(group, A[i].point_ptr, POINT_CONVERSION_COMPRESSED, 
-				               buffer + i*POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+				               buffer + i*POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
     	}
 		SendBytes(buffer, LEN*POINT_COMPRESSED_BYTE_LEN);
 	#else
 		unsigned char* buffer = new unsigned char[LEN*POINT_BYTE_LEN];
 		for(auto i = 0; i < LEN; i++) {
     		EC_POINT_point2oct(group, A[i].point_ptr, POINT_CONVERSION_UNCOMPRESSED, 
-				               buffer + i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx);
+				               buffer + i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx[thread_num]);
     	}
 		SendBytes(buffer, LEN*POINT_BYTE_LEN);
 	#endif
@@ -298,18 +299,19 @@ void NetIO::SendECPoints(const ECPoint* A, size_t LEN)
 
 void NetIO::ReceiveECPoints(ECPoint* A, size_t LEN) 
 {
+	int thread_num = omp_get_thread_num();
 	#ifdef ECPOINT_COMPRESSED
 		unsigned char* buffer = new unsigned char[LEN*POINT_COMPRESSED_BYTE_LEN];
 		ReceiveBytes(buffer, LEN*POINT_COMPRESSED_BYTE_LEN); 
 		for(auto i = 0; i < LEN; i++) {
 			EC_POINT_oct2point(group, A[i].point_ptr, buffer+i*POINT_COMPRESSED_BYTE_LEN, 
-			                   POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+			                   POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
 		}
 	#else
 		unsigned char* buffer = new unsigned char[LEN*POINT_BYTE_LEN];
 		ReceiveBytes(buffer, LEN*POINT_BYTE_LEN); 
 		for(auto i = 0; i < LEN; i++) {
-			EC_POINT_oct2point(group, A[i].point_ptr, buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx);
+			EC_POINT_oct2point(group, A[i].point_ptr, buffer+i*POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx[thread_num]);
 		}
 	#endif
 
@@ -340,27 +342,29 @@ void NetIO::ReceiveEC25519Points(EC25519Point* A, size_t LEN)
 
 void NetIO::SendECPoint(const ECPoint &A) 
 {
+	int thread_num = omp_get_thread_num();
 	#ifdef ECPOINT_COMPRESSED
 		unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
-		EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+		EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
 		SendBytes(buffer, POINT_COMPRESSED_BYTE_LEN);
 	#else
 		unsigned char buffer[POINT_BYTE_LEN];
-		EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx);
+		EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx[thread_num]);
 		SendBytes(buffer, POINT_BYTE_LEN);
 	#endif
 }
 
 void NetIO::ReceiveECPoint(ECPoint &A) 
 {
+	int thread_num = omp_get_thread_num();
 	#ifdef ECPOINT_COMPRESSED
 		unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
 		ReceiveBytes(buffer, POINT_COMPRESSED_BYTE_LEN); 
-		EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+		EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
 	#else
 		unsigned char buffer[POINT_BYTE_LEN];
 		ReceiveBytes(buffer, POINT_BYTE_LEN); 
-		EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx);
+		EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx[thread_num]);
 	#endif
 }
 

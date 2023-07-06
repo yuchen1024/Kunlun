@@ -125,9 +125,10 @@ block ECPointToBlock(const ECPoint &A)
 
 std::string ECPointToString(const ECPoint &A) 
 { 
+    int thread_num = omp_get_thread_num();
     unsigned char input[POINT_COMPRESSED_BYTE_LEN];
     unsigned char output[HASH_OUTPUT_LEN]; 
-    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, input, POINT_COMPRESSED_BYTE_LEN, bn_ctx);
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, input, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
     
     size_t HASH_INPUT_LEN = POINT_COMPRESSED_BYTE_LEN;
     BasicHash(input, HASH_INPUT_LEN, output); 
@@ -183,8 +184,8 @@ int BlockToBytes(const block &var, uint8_t* output, size_t LEN)
 // fast and threadsafe block to ecpoint hash using low level openssl code
 inline ECPoint BlockToECPoint(const block &var)
 {
+    int thread_num = omp_get_thread_num();
     ECPoint ecp_result; 
- 
     BIGNUM *x = BN_new();
     unsigned char buffer[32];
     memset(buffer, 0, 32);
@@ -194,7 +195,7 @@ inline ECPoint BlockToECPoint(const block &var)
     while (true) { 
         BasicHash(buffer, 32, buffer); // iterated hash, modeled as random oracle
         BN_bin2bn(buffer, 32, x);
-        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, y_bit, ec_ctx)==1) break;              
+        if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, y_bit, bn_ctx[thread_num])==1) break;              
     }
     BN_free(x);    
     return ecp_result;

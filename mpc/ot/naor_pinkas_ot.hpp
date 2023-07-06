@@ -102,7 +102,7 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	ECPoint C = pp.g * d;  // compute C = g^d
 
 	//  compute g^r[i] and C^r[i]
-	#pragma omp parallel for num_threads(thread_count)
+	#pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 	for(auto i = 0; i < LEN; i++) {
 		vec_r[i] = GenRandomBigIntLessThan(order);
 		vec_X[i] = pp.g * vec_r[i];
@@ -124,7 +124,7 @@ void Send(NetIO &io, PP &pp, const std::vector<block>& vec_m0, const std::vector
 	std::vector<block> vec_Y1(LEN); 
 
 	// send m0 and m1
-	#pragma omp parallel for num_threads(thread_count)
+	#pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 	for(auto i = 0 ; i < LEN; ++i) {
 		vec_K0[i] = vec_pk0[i] * vec_r[i];
 		vec_K1[i] = vec_Z[i] - vec_K0[i];
@@ -164,7 +164,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
 	io.ReceiveECPoints(vec_X.data(), LEN);
 
 	// send pk0[i]
-	#pragma omp parallel for num_threads(thread_count)
+	#pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 	for(auto i = 0; i < LEN; i++) {
 		vec_sk[i] = GenRandomBigIntLessThan(order);
 		vec_pk0[i] = pp.g * vec_sk[i];
@@ -187,7 +187,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, const std::vector<uint8_t> &vec_se
 	io.ReceiveBlocks(vec_Y1.data(), LEN); 
 
 	// decrypt with Kb[i]
-	#pragma omp parallel for num_threads(thread_count)
+	#pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 	for(auto i = 0; i < LEN; i++) {
 		vec_K[i] = vec_X[i] * vec_sk[i];
 		if(vec_selection_bit[i] == 0){

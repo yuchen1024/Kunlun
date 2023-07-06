@@ -176,7 +176,7 @@ std::vector<block> Encode(std::vector<block> &vec_X, block& key)
     std::vector<block> vec_Z0(LEN);
     std::vector<block> vec_Z1(LEN); 
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for (auto i = 0; i < LEN; i++) {
         BasicHash((uint8_t*)(vec_X.data() + i), sizeof(block), vec_H1_X[i].data());
         // H1(x) = (x_left||x_right)
@@ -189,7 +189,7 @@ std::vector<block> Encode(std::vector<block> &vec_X, block& key)
 
     // compute [ECBEnc(k, x_0) xor x_1]
     std::vector<block> vec_Encode_X(LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for (auto i = 0; i < LEN; i++){
         vec_Encode_X[i] = vec_Z0[i]^vec_Z1[i];
     }
@@ -205,7 +205,7 @@ std::vector<std::vector<uint8_t>> Packing(PP &pp, std::vector<std::vector<uint8_
 	std::vector<std::vector<uint8_t>> matrix_input(pp.matrix_height, std::vector<uint8_t>(matrix_width_byte, 0));
 
     // convert the matrix_mapping_values[matrix_width][matrix_height_byte] to matrix_input[matrix_height][matrix_width_byte]
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 	for (auto low_index = 0; low_index < pp.matrix_height; low_index += pp.BATCH_SIZE){
 		for (auto i = 0; i < pp.matrix_width; i++){
 			for (auto j = low_index; j < low_index + pp.BATCH_SIZE; j++){
@@ -259,13 +259,13 @@ std::vector<std::vector<uint8_t>> Server(NetIO &io, PP &pp)
         std::vector<uint8_t> matrix_B(split_bucket_size * matrix_height_byte);
         io.ReceiveBytes(matrix_B.data(), bucket_size * matrix_height_byte);
 
-        #pragma omp parallel for num_threads(thread_count)
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 		for (auto i = 0; i < bucket_size; i++){
             PRG::ReSeed(vec_seed[i], &vec_K[left_index + i], 0);
             matrix_C[left_index + i] = PRG::GenRandomBytes(vec_seed[i], matrix_height_byte);
 
 			if (vec_selection_bit[left_index + i]){
-                #pragma omp parallel for num_threads(thread_count)
+                #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 				for (auto j = 0; j < matrix_height_byte; j++){
 					matrix_C[left_index + i][j] ^= matrix_B[i * matrix_height_byte + j];
 				}
@@ -319,7 +319,7 @@ std::vector<std::vector<uint8_t>> Evaluate(PP &pp, std::vector<std::vector<uint8
 
         aes_enc_key = AES::GenEncKey(vec_salt[left_index / split_bucket_size + 1]);
 
-        #pragma omp parallel for num_threads(thread_count)
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
         for (auto low_index = 0; low_index < ITEM_NUM; low_index += pp.BATCH_SIZE){
             // encrypt vec_Fk_X t times, each time encrypt BATCH_SIZE blocks
             AES::FastECBEnc(aes_enc_key, vec_Encode_X.data() + low_index, pp.BATCH_SIZE);
@@ -335,7 +335,7 @@ std::vector<std::vector<uint8_t>> Evaluate(PP &pp, std::vector<std::vector<uint8
 		}
 
         // compute mapping values from the oprfkey (compute (C1[v[1]] || ... || Cw[v[w]]) in page 9 figure 3 item3-(b))
-        #pragma omp parallel for num_threads(thread_count)
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
         for (auto i = 0; i < bucket_size; i++){
 			for (auto j = 0; j < ITEM_NUM; j++){
                 auto location = (*(uint32_t*)(matrix_location[i].data() + j * log_height_byte)) & max_location;
@@ -399,7 +399,7 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
         aes_enc_key = AES::GenEncKey(vec_keysalt[left_index / split_bucket_size + 1]);
 
         /* step 3-1: compute matrix_location (computes v = F_k(H1(y)) in page 9 figure 3 item3-(c)) */
-        #pragma omp parallel for num_threads(thread_count)
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
         for (auto low_index = 0; low_index < ITEM_NUM; low_index += pp.BATCH_SIZE){
             // encrypt vec_Fk_Y t times, each time encrypt BATCH_SIZE blocks
             AES::FastECBEnc(aes_enc_key, vec_Encode_Y.data() + low_index, pp.BATCH_SIZE);
@@ -415,13 +415,13 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
 		}
         
         // initialize a all one matrix_D
-        #pragma omp parallel for num_threads(thread_count)
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
         for (auto i = 0; i < split_bucket_size; i++){
 			memset(matrix_D[i].data(), 255, matrix_height_byte);
 		}
 
         /* step3-2: compute matrix_D (page 9 figure 3 item1-(c)) */
-        #pragma omp parallel for num_threads(thread_count)
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 		for (auto i = 0; i < bucket_size; i++){
 			for (auto j = 0; j < ITEM_NUM; j++){
                 // get a location from matrix_location, and set the value of that location in matrix_D to 0
@@ -435,7 +435,7 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
         std::vector<uint8_t> send_matrix_B(bucket_size * matrix_height_byte);
         std::vector<PRG::Seed> vec_seed(bucket_size);
 
-        #pragma omp parallel for num_threads(thread_count)
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 		for (auto i = 0; i < bucket_size; i++){
             PRG::ReSeed(vec_seed[i], &vec_K0[left_index + i], 0);
             matrix_A[i] = PRG::GenRandomBytes(vec_seed[i], matrix_height_byte);
@@ -443,7 +443,7 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
             PRG::ReSeed(vec_seed[i], &vec_K1[left_index + i], 0);
             matrix_B[i] = PRG::GenRandomBytes(vec_seed[i], matrix_height_byte);
 
-            #pragma omp parallel for num_threads(thread_count)
+            #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
 			for (auto j = 0; j < matrix_height_byte; j++){
 				matrix_B[i][j] ^= matrix_A[i][j] ^ matrix_D[i][j];
                 send_matrix_B[i * matrix_height_byte + j] = matrix_B[i][j];
@@ -453,7 +453,7 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
         io.SendBytes(send_matrix_B.data(), bucket_size * matrix_height_byte);
             
         /* step 3-4: compute mapping values from matrix A (compute (A1[v[1]] || ... || Aw[v[w]]) in page 9 figure 3 item3-(c)) */ 
-        #pragma omp parallel for num_threads(thread_count)
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
         for (auto i = 0; i < bucket_size; i++){
 			for (auto j = 0; j < ITEM_NUM; j++){
                 auto location_in_A = (*(uint32_t*)(matrix_location[i].data() + j * log_height_byte)) & max_location;

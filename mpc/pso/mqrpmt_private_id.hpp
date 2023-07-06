@@ -106,7 +106,7 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN)
     std::vector<std::vector<uint8_t>> vec_Fk2_X = OTEOPRF::Client(io, pp.oprf_part, vec_X, pp.SENDER_LEN); 
     // compute F_k(X) = F_k1(X) xor F_k2(X)
     std::vector<std::vector<uint8_t>> vec_X_id(pp.SENDER_LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.SENDER_LEN; i++){
         vec_X_id[i] = XOR(vec_Fk1_X[i], vec_Fk2_X[i]); 
     }     
@@ -143,7 +143,7 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN)
 
     // compute F_k(Y) = F_k1(Y) xor F_k2(Y)
     std::vector<std::vector<uint8_t>> vec_Y_id(pp.RECEIVER_LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.RECEIVER_LEN; i++){
         vec_Y_id[i] = XOR(vec_Fk1_Y[i], vec_Fk2_Y[i]); 
     }     

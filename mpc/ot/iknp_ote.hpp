@@ -159,7 +159,7 @@ void RandomSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<block
     std::vector<block> vec_sender_selection_block(COLUMN_NUM/128); 
     Block::FromSparseBytes(vec_sender_selection_bit.data(), COLUMN_NUM, vec_sender_selection_block.data(), COLUMN_NUM/128); 
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++){
         std::vector<block> Q_row_block(COLUMN_NUM/128);
         memcpy(Q_row_block.data(), Q_transpose.data()+i*COLUMN_NUM/128, COLUMN_NUM/8); 
@@ -231,7 +231,7 @@ void RandomReceive(NetIO &io, PP &pp, std::vector<block> &vec_K,
         std::cout << "IKNP OTE: Receiver transposes matrix T" << std::endl; 
     #endif
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {
         std::vector<block> T_row(COLUMN_NUM/128);  
@@ -267,7 +267,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_m0, std::vector<block> &vec
     std::vector<block> vec_outer_C0(ROW_NUM); 
     std::vector<block> vec_outer_C1(ROW_NUM); 
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {       
         vec_outer_C0[i] = vec_m0[i]^vec_K0[i]; 
@@ -316,7 +316,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<uint8_t> &vec_receiver
     #endif
 
     std::vector<block> vec_result(ROW_NUM);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {
         if(vec_receiver_selection_bit[i] == 0){
@@ -370,7 +370,7 @@ void OnesidedSend(NetIO &io, PP &pp, std::vector<block> &vec_m, size_t EXTEND_LE
     // begin to transmit the real message
     std::vector<block> vec_outer_C(ROW_NUM);
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {
         vec_outer_C[i] = vec_m[i]^vec_K1[i];

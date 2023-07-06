@@ -21,23 +21,25 @@ this hpp file define and initialize misc global variables
 void CRYPTO_Initialize()
 {
     BN_Initialize();
-    ECGroup_Initialize(); 
-    AES_Initialize();
-    #ifdef PARALLEL
-    if(thread_count == 1){
-        std::cerr << "parallel parameter setting is wrong" << std::endl;
-    }
+
+    AES_Initialize();    
+    #ifndef USING_CURVE_25519
+        ECGroup_Initialize(); 
     #endif
 
     PrintSplitLine('-'); 
     std::cout << "GLOBAL ENVIROMENT INFO >>>" << std::endl;
-    std::cout << "THREAD NUM = " << thread_count << std::endl;
-    std::cout << "EC Curve ID = " << curve_id << std::endl;
-    std::cout << "ECPoint COMPRESSION = "; 
-    #ifdef ECPOINT_COMPRESSED
-        std::cout << "ON" << std::endl;
+    std::cout << "THREAD NUM = " << NUMBER_OF_THREADS << std::endl;
+    #ifndef USING_CURVE_25519
+        std::cout << "EC Curve ID = " << curve_id << std::endl;
+        std::cout << "ECPoint COMPRESSION = "; 
+        #ifdef ECPOINT_COMPRESSED
+            std::cout << "ON" << std::endl;
+        #else
+            std::cout << "OFF" << std::endl;
+        #endif
     #else
-        std::cout << "OFF" << std::endl;
+        std::cout << "EC Curve ID = 25519" << std::endl; 
     #endif
     PrintSplitLine('-');  
 
@@ -46,7 +48,9 @@ void CRYPTO_Initialize()
 void CRYPTO_Finalize()
 {
     BN_Finalize();
-    ECGroup_Finalize();
+    #ifndef USING_CURVE_25519
+        ECGroup_Finalize();
+    #endif
 } 
 
 #endif

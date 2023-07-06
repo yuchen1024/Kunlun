@@ -76,7 +76,7 @@ BigInt Server(NetIO &io, PP &pp, std::vector<uint64_t> permutation_map, size_t L
     io.ReceiveECPoints(vec_mask_X.data(), LEN);
 
     std::vector<ECPoint> vec_Fk_mask_X(LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){ 
         vec_Fk_mask_X[permutation_map[i]] = vec_mask_X[i] * k; 
     }
@@ -109,7 +109,7 @@ std::vector<block> Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t L
     BigInt r = GenRandomBigIntLessThan(order); // pick a mask
 
     std::vector<ECPoint> vec_mask_X(LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
         vec_mask_X[i] = Hash::BlockToECPoint(vec_X[i]) * r; // H(x_i)^r
     } 
@@ -128,7 +128,7 @@ std::vector<block> Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t L
 
     BigInt r_inverse = r.ModInverse(order); 
     std::vector<ECPoint> vec_Fk_X(LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
         vec_Fk_X[i] = vec_Fk_mask_X[i] * r_inverse; 
     }

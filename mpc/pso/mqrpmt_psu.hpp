@@ -140,7 +140,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_Y);
        
     // flip the indication bit to get elements in Y\X
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < vec_indication_bit.size(); i++){
         vec_indication_bit[i] ^= 0x01; 
     } 
@@ -177,7 +177,7 @@ void Send(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_X, size_t IT
     std::cout << "[mqRPMT-based PSU] Phase 1: execute mqRPMT >>>" << std::endl;
 
     std::vector<block> vec_Block_X(pp.SENDER_LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < vec_X.size(); i++){
         vec_Block_X[i] = Hash::BytesToBlock(vec_X[i]); 
     }
@@ -207,14 +207,14 @@ std::vector<std::vector<uint8_t>> Receive(NetIO &io, PP &pp, std::vector<std::ve
     std::cout << "[mqRPMT-based PSU] Phase 1: execute mqRPMT >>>" << std::endl;
      
     std::vector<block> vec_Block_Y(pp.RECEIVER_LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < vec_Y.size(); i++){
         vec_Block_Y[i] = Hash::BytesToBlock(vec_Y[i]); 
     }
     std::vector<uint8_t> vec_indication_bit = cwPRFmqRPMT::Server(io, pp.mqrpmt_part, vec_Block_Y);
        
     // flip the indication bit to get elements in Y\X
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < vec_indication_bit.size(); i++){
         vec_indication_bit[i] ^= 0x01; 
     } 

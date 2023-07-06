@@ -138,7 +138,7 @@ inline void Dec(const Key &key, block &data)
 __attribute__((target("aes,sse2")))
 inline void ECBEnc(const Key &key, block* data, size_t BLOCK_LEN) 
 {
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for (auto i = 0; i < BLOCK_LEN; i++)
         Enc(key, data[i]);
 }
@@ -180,7 +180,7 @@ inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN)
 __attribute__((target("aes,sse2")))
 inline void ECBDec(const Key &key, block* data, size_t BLOCK_LEN) 
 {
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for (auto i = 0; i < BLOCK_LEN; i++)
         Dec(key, data[i]);
 }

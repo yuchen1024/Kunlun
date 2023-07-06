@@ -9,8 +9,6 @@
 #include "../../filter/bloom_filter.hpp"
 #include "../../utility/serialization.hpp"
 
-#define USE_CURVE_25519
-
 /*
 ** implement multi-query RPMT based on weak commutative PRF
 ** cuckoo filter is not gurantteed to be safe here, cause the filter may reveal the order of X
@@ -99,7 +97,7 @@ void FetchPP(PP &pp, std::string pp_filename)
     fin.close(); 
 }
 
-#ifndef USE_CURVE_25519
+#ifndef USING_CURVE_25519
 std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
 {
     if(pp.SERVER_LEN != vec_Y.size()){
@@ -113,7 +111,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     BigInt k1 = GenRandomBigIntLessThan(order); // pick a key k1
 
     std::vector <ECPoint> vec_Fk1_Y(pp.SERVER_LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.SERVER_LEN; i++){
         vec_Fk1_Y[i] = Hash::BlockToECPoint(vec_Y[i]) * k1; // H(x_i)^k1
     }
@@ -131,7 +129,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     io.ReceiveECPoints(vec_Fk2_X.data(), pp.CLIENT_LEN);
 
     std::vector<ECPoint> vec_Fk1k2_X(pp.CLIENT_LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.CLIENT_LEN; i++){ 
         vec_Fk1k2_X[i] = vec_Fk2_X[i] * k1; 
     }
@@ -191,7 +189,7 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
     BigInt k2 = GenRandomBigIntLessThan(order); // pick a key
 
     std::vector<ECPoint> vec_Fk2_X(pp.CLIENT_LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.CLIENT_LEN; i++){
         vec_Fk2_X[i] = Hash::BlockToECPoint(vec_X[i]) * k2; // H(x_i)^k2
     } 
@@ -211,7 +209,7 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
     #endif
 
     std::vector<ECPoint> vec_Fk2k1_Y(pp.SERVER_LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.SERVER_LEN; i++){
         vec_Fk2k1_Y[i] = vec_Fk1_Y[i] * k2; 
     }
@@ -276,7 +274,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     std::vector<EC25519Point> vec_Hash_Y(pp.SERVER_LEN);
     std::vector<EC25519Point> vec_Fk1_Y(pp.SERVER_LEN);
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.SERVER_LEN; i++){
         Hash::BlockToBytes(vec_Y[i], vec_Hash_Y[i].px, 32); 
         x25519_scalar_mulx(vec_Fk1_Y[i].px, k1, vec_Hash_Y[i].px); 
@@ -292,7 +290,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     io.ReceiveEC25519Points(vec_Fk2_X.data(), pp.CLIENT_LEN);
 
     std::vector<EC25519Point> vec_Fk1k2_X(pp.CLIENT_LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.CLIENT_LEN; i++){ 
         x25519_scalar_mulx(vec_Fk1k2_X[i].px, k1, vec_Fk2_X[i].px); // (H(x_i)^k2)^k1
     }
@@ -346,7 +344,7 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
 
     std::vector<EC25519Point> vec_Hash_X(pp.CLIENT_LEN); 
     std::vector<EC25519Point> vec_Fk2_X(pp.CLIENT_LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.CLIENT_LEN; i++){
         Hash::BlockToBytes(vec_X[i], vec_Hash_X[i].px, 32); 
         x25519_scalar_mulx(vec_Fk2_X[i].px, k2, vec_Hash_X[i].px); 
@@ -365,7 +363,7 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
 
 
     std::vector<EC25519Point> vec_Fk2k1_Y(pp.SERVER_LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.SERVER_LEN; i++){
         x25519_scalar_mulx(vec_Fk2k1_Y[i].px, k2, vec_Fk1_Y[i].px); // (H(x_i)^k2)^k1
     }

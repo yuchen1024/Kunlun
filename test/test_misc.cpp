@@ -68,7 +68,7 @@ void test_hash_to_point(size_t LEN)
     
 
     auto start_time = std::chrono::steady_clock::now(); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
         Hash::BlockToECPoint(vec_M[i]); 
     }
@@ -156,9 +156,9 @@ int main()
 {  
     CRYPTO_Initialize(); 
 
-    size_t TEST_NUM = 10000;  
+    //size_t TEST_NUM = 10000;  
 
-    benchmark_ecc(TEST_NUM); 
+    //benchmark_ecc(TEST_NUM); 
 
     // test_hash_to_point(TEST_NUM);
 
@@ -198,6 +198,14 @@ int main()
     // Block::PrintBlock(a); 
 
     // Block::Calc2ToTheN(23);
+
+    std::vector<BigInt> a(4096);
+    #pragma omp parallel for
+    for (int i = 0; i < 4096; i++){
+        a[i] = i; 
+        a[i] = a[i]+a[i]; 
+    }
+    std::cout << "ok" << std::endl;
 
     CRYPTO_Finalize(); 
     return 0; 

@@ -1,6 +1,6 @@
 /****************************************************************************
 this hpp file define global variables for the Kunlun lib 
-thread_count indicates the maximum number of threads that openmp works
+NUMBER_OF_THREADS indicates the maximum number of threads that openmp works
 *****************************************************************************
 * @author     developed by Yu Chen
 * @copyright  MIT license (see LICENSE file)
@@ -10,10 +10,14 @@ thread_count indicates the maximum number of threads that openmp works
 
 #include "openssl.inc"
 #include "std.inc"
+#include "../config/config.h"
 
-#define PARALLEL
-const static size_t thread_count = 8; // maximum thread count 
-
+/* 
+* default setting: set the maximum thread num as num of physical cores
+* you can switch to **N** thread setting by assign NUMBER_OF_THREADS = N by hand
+*/
+const static size_t NUMBER_OF_THREADS = NUMBER_OF_PHYSICAL_CORES;  
+// const static size_t NUMBER_OF_THREADS = 1;  
 const static size_t CHECK_BUFFER_SIZE = 1024*8;
 
 // return the error message reported by OpenSSL

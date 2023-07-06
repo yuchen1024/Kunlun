@@ -192,13 +192,13 @@ algorithms in ec_point.hpp will be complied according to this setting
 - For multi-thread
 ```
 #define PARALLEL
-const static size_t thread_count = 8; // maximum thread count 
+const static size_t NUMBER_OF_THREADS = 8; // maximum thread count 
 ```
 
 - For single-thread
 ```
 //#define PARALLEL
-const static size_t thread_count = 1; // maximum thread count 
+const static size_t NUMBER_OF_THREADS = 1; // maximum thread count 
 ```
 
 

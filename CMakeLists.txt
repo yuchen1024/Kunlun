@@ -13,6 +13,7 @@ ELSEIF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     SET(OPENSSL_INCLUDE_DIR /usr/local/include)
     SET(OPENSSL_DIR /usr/local/lib)
 ENDIF()
+
 FIND_PACKAGE(OpenMP REQUIRED)
 
 

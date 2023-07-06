@@ -118,7 +118,7 @@ inline void PlainInsert(const void* input, size_t LEN)
 {
    size_t bit_index[hash_num];
 
-   #pragma omp parallel for num_threads(thread_count)
+   #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
    for (auto i = 0; i < hash_num; i++){
       bit_index[i] = FastKeyedHash(vec_salt[i], input, LEN) % table_size;    
       #pragma omp atomic // atomic operation
@@ -152,15 +152,16 @@ template <>
 #endif
 inline void Insert(const ECPoint &A)
 {
+   int thread_num = omp_get_thread_num();
    #ifdef ECPOINT_COMPRESSED
       unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
       memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN);  
-      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
       PlainInsert(buffer, POINT_COMPRESSED_BYTE_LEN);
    #else
       unsigned char buffer[POINT_BYTE_LEN]; 
       memset(buffer, 0, POINT_BYTE_LEN); 
-      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
+      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx[thread_num]);
       PlainInsert(buffer, POINT_BYTE_LEN);
    #endif
 }
@@ -178,7 +179,7 @@ inline void Insert(const InputIterator begin, const InputIterator end)
 template <class T, class Allocator, template <class,class> class Container>
 inline void Insert(const Container<T, Allocator>& container)
 {
-   #pragma omp parallel for num_threads(thread_count)
+   #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
    for(auto i = 0; i < container.size(); i++){
       Insert(container[i]); 
    }
@@ -191,7 +192,7 @@ template <>
 inline void Insert(const std::vector<ECPoint> &vec_A)
 {   
    //sequential implementation
-   #pragma omp parallel for num_threads(thread_count)
+   #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
    for(auto i = 0; i < vec_A.size(); i++){
       Insert(vec_A[i]); 
    }
@@ -203,7 +204,7 @@ inline bool PlainContain(const void* input, size_t LEN) const
    bool CONTAIN = true; // assume input in filter at the beginning
    std::vector<size_t> bit_index(hash_num);
    std::vector<size_t> local_bit_index(hash_num); 
-   #pragma omp parallel for num_threads(thread_count)
+   #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
    for(auto i = 0; i < hash_num; i++)
    {
       if(CONTAIN == true)
@@ -236,15 +237,16 @@ template <>
 #endif
 inline bool Contain(const ECPoint& A) const
 {
+   int thread_num = omp_get_thread_num();
    #ifdef ECPOINT_COMPRESSED
       unsigned char buffer[POINT_COMPRESSED_BYTE_LEN];
       memset(buffer, 0, POINT_COMPRESSED_BYTE_LEN);  
-      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, nullptr);
+      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, buffer, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
       return PlainContain(buffer, POINT_COMPRESSED_BYTE_LEN);
    #else
       unsigned char buffer[POINT_BYTE_LEN];
       memset(buffer, 0, POINT_BYTE_LEN);  
-      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, nullptr);
+      EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer, POINT_BYTE_LEN, bn_ctx[thread_num]);
       return PlainContain(buffer, POINT_BYTE_LEN);
    #endif
 }
@@ -256,7 +258,7 @@ inline std::vector<uint8_t> Contain(const Container<T, Allocator>& container)
 {
    size_t LEN = container.size();
    std::vector<uint8_t> vec_indication_bit(LEN); 
-   #pragma omp parallel for num_threads(thread_count)
+   #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
    for(auto i = 0; i < container.size(); i++){
       if(Contain(container[i]) == true) vec_indication_bit[i] = 1;
       else vec_indication_bit[i] = 0; 
@@ -274,7 +276,7 @@ inline std::vector<uint8_t> Contain(const std::vector<ECPoint> &vec_A)
    size_t LEN = vec_A.size();
    std::vector<uint8_t> vec_indication_bit(LEN); 
 
-   #pragma omp parallel for num_threads(thread_count)
+   #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
    for(auto i = 0; i < vec_A.size(); i++){
       if(Contain(vec_A[i]) == true) vec_indication_bit[i] = 1;
       else vec_indication_bit[i] = 0; 
@@ -302,7 +304,7 @@ template <>
 #endif
 inline void Insert(const std::vector<EC25519Point> &vec_A)
 {   
-   #pragma omp parallel for num_threads(thread_count)
+   #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
    for(auto i = 0; i < vec_A.size(); i++){
       Insert(vec_A[i]); 
    }
@@ -326,7 +328,7 @@ inline std::vector<uint8_t> Contain(const std::vector<EC25519Point> &vec_A)
    size_t LEN = vec_A.size();
    std::vector<uint8_t> vec_indication_bit(LEN); 
 
-   #pragma omp parallel for num_threads(thread_count)
+   #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
    for(auto i = 0; i < vec_A.size(); i++){
       if(Contain(vec_A[i]) == true) vec_indication_bit[i] = 1;
       else vec_indication_bit[i] = 0; 

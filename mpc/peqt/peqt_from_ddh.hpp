@@ -44,7 +44,7 @@ std::vector<uint64_t> Send(NetIO &io, std::vector<block> &vec_Y, size_t ROW_NUM,
     }
 
     std::vector<ECPoint> vec_Fk_permuted_Y(LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
         vec_Fk_permuted_Y[permutation_map[i]] = Hash::BlockToECPoint(vec_Y[i]) * k; 
     }
@@ -62,7 +62,7 @@ std::vector<uint64_t> Send(NetIO &io, std::vector<block> &vec_Y, size_t ROW_NUM,
 
 
     std::vector<ECPoint> vec_Fk_permuted_mask_X(LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
         vec_Fk_permuted_mask_X[permutation_map[i]] = vec_mask_X[i] * k; 
     }
@@ -99,7 +99,7 @@ std::vector<uint8_t> Receive(NetIO &io, std::vector<block> &vec_X, size_t ROW_NU
     BigInt r = GenRandomBigIntLessThan(order); // pick a key
 
     std::vector<ECPoint> vec_mask_X(LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
         vec_mask_X[i] = Hash::BlockToECPoint(vec_X[i]) * r; 
     } 
@@ -121,7 +121,7 @@ std::vector<uint8_t> Receive(NetIO &io, std::vector<block> &vec_X, size_t ROW_NU
 
     std::vector<uint8_t> vec_result(LEN);
     BigInt r_inverse = r.ModInverse(order); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
         vec_result[i] = vec_Fk_permuted_Y[i].CompareTo(vec_Fk_permuted_mask_X[i] *r_inverse); 
     }

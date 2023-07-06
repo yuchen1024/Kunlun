@@ -152,7 +152,7 @@ std::tuple<size_t, BigInt> Send(NetIO &io, PP &pp, std::vector<block> &vec_X, st
     std::vector<std::vector<uint8_t>> vec_m0(pp.SENDER_LEN); 
     std::vector<std::vector<uint8_t>> vec_m1(pp.SENDER_LEN); 
     
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.SENDER_LEN; i++){
         vec_m0[i] = vec_r[i].ToByteVector(pp.LOG_SUM_BOUND/8); 
         vec_m1[i] = vec_v[i].ToByteVector(pp.LOG_SUM_BOUND/8);

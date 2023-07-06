@@ -9,7 +9,6 @@
 #include "../../filter/bloom_filter.hpp"
 #include "../../utility/serialization.hpp"
 
-#define USE_CURVE_25519
 
 /*
 ** implement cwPRF-based PSI
@@ -120,7 +119,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     std::vector<EC25519Point> vec_Hash_Y(pp.SENDER_LEN);
     std::vector<EC25519Point> vec_Fk1_Y(pp.SENDER_LEN);
 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.SENDER_LEN; i++){
         Hash::BlockToBytes(vec_Y[i], vec_Hash_Y[i].px, 32); 
         x25519_scalar_mulx(vec_Fk1_Y[i].px, k1, vec_Hash_Y[i].px); 
@@ -135,7 +134,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     io.ReceiveEC25519Points(vec_Fk2_X.data(), pp.RECEIVER_LEN);
 
     std::vector<EC25519Point> vec_Fk1k2_X(pp.RECEIVER_LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.RECEIVER_LEN; i++){ 
         x25519_scalar_mulx(vec_Fk1k2_X[i].px, k1, vec_Fk2_X[i].px); // (H(x_i)^k2)^k1
     }
@@ -174,7 +173,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X)
 
     std::vector<EC25519Point> vec_Hash_X(pp.RECEIVER_LEN); 
     std::vector<EC25519Point> vec_Fk2_X(pp.RECEIVER_LEN); 
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.RECEIVER_LEN; i++){
         Hash::BlockToBytes(vec_X[i], vec_Hash_X[i].px, 32); 
         x25519_scalar_mulx(vec_Fk2_X[i].px, k2, vec_Hash_X[i].px); 
@@ -192,7 +191,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X)
     std::cout << " [" << 32*pp.RECEIVER_LEN/(1024*1024) << " MB]" << std::endl;
 
     std::vector<EC25519Point> vec_Fk2k1_Y(pp.SENDER_LEN);
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < pp.SENDER_LEN; i++){
         x25519_scalar_mulx(vec_Fk2k1_Y[i].px, k2, vec_Fk1_Y[i].px); // (H(x_i)^k2)^k1
     }

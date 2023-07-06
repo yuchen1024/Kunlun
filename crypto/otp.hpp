@@ -5,7 +5,7 @@
 
 inline void XOR(uint8_t* A, uint8_t* B, uint8_t* C, size_t LEN)
 {
-    #pragma omp parallel for num_threads(thread_count)
+    #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
         C[i] = A[i]^B[i]; 
     }    
