@@ -179,26 +179,36 @@ if reporting cannot find "opensslv.h" error, try to install libssl-dev
 ---
 
 ## Multi-threads Support
-- Kunlun supports multithread by leveraging openmp. Since OpenSSL is not thread-safe, 
-I slightly hack the code to work around using the following facts about bn_ctx: 
-* bn_ctx is necessary for most big number operations, but not necessary for elliptic curve crypto operations. 
-* bn_ctx can improve the performance
-* one can set bn_ctx = nullptr for thread safety when dealing with ECC operations
-* one could still use the original bn_ctx in single thread setting    
+- Kunlun supports multithread by leveraging openmp. The underlying OpenSSL is not thread-safe, cause several threads may access a critial data structure "bn_ctx" concurrently. Kunlun is made thread-safe by introducing an array of bn_ctx. Thus, each thread has its own bn_ctx.     
 
-- The global setting for multi-thread support lies at "include/global.hpp" line 21-22
-algorithms in ec_point.hpp will be complied according to this setting
+- The global setting for multi-thread support lies at "include/global.hpp" line 19
 
-- For multi-thread
+- For multi-thread (n)
 ```
-#define PARALLEL
-const static size_t NUMBER_OF_THREADS = 8; // maximum thread count 
+const static size_t NUMBER_OF_THREADS = n; 
+the default value of n is NUMBER_OF_PHYSICAL_CORES 
 ```
 
 - For single-thread
 ```
-//#define PARALLEL
-const static size_t NUMBER_OF_THREADS = 1; // maximum thread count 
+const static size_t NUMBER_OF_THREADS = 1; 
+```
+
+## Elliptic curve setting
+- Kunlun not only support all EC curves provided by OpenSSL, but also support the hidden curve25519.    
+
+- The global setting of EC curves lies at "crypto/ec_group.hpp" line 16-18
+
+- choose curve25519
+```
+#define USING_CURVE_25519 
+```
+
+- choose other curves by curve-ID
+```
+//#define USING_CURVE_25519 // comment this line
+static int curve_id = NID_X9_62_prime256v1;  
+#define ECPOINT_COMPRESSED // comment this line to enable uncompressed representation
 ```
 
 
@@ -210,6 +220,7 @@ const static size_t NUMBER_OF_THREADS = 1; // maximum thread count
    * 20220319: add private set operation and re-org many places 
    * 20220329: speeding Shanks DLOG algorithm and add ElGamal PKE and Schnorr SIG
    * 20220605: greatly improve the multi-thread support (simplify the code and unify the interface)
+   * 20230719: refine multi-thread support (fix bugs and improve performance)
 
 ---
 

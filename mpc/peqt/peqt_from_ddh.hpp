@@ -123,7 +123,7 @@ std::vector<uint8_t> Receive(NetIO &io, std::vector<block> &vec_X, size_t ROW_NU
     BigInt r_inverse = r.ModInverse(order); 
     #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < LEN; i++){
-        vec_result[i] = vec_Fk_permuted_Y[i].CompareTo(vec_Fk_permuted_mask_X[i] *r_inverse); 
+        vec_result[i] = vec_Fk_permuted_Y[i].CompareTo(vec_Fk_permuted_mask_X[i] * r_inverse); 
     }
     
     auto end_time = std::chrono::steady_clock::now(); 

@@ -31,7 +31,7 @@ public:
 const static size_t BUILD_TASK_NUM  = pow(2, 6);  // number of parallel task for building pre-computable table 
 const static size_t SEARCH_TASK_NUM = pow(2, 6);  // number of parallel task for search  
 
-const static size_t KEY_LEN = 8; // the key length for hashtable
+const static size_t HASH_KEY_LEN = 8; // the key length for hashtable
 
 
 ECPoint giantstep; 
@@ -83,7 +83,7 @@ void BuildSlicedKeyTable(ECPoint g, ECPoint startpoint, size_t startindex, size_
     for(auto i = 0; i < SLICED_BABYSTEP_NUM; i++)
     {
         hashkey = startpoint.ToUint64(); 
-        std::memcpy(buffer+(startindex+i)*KEY_LEN, &hashkey, KEY_LEN);
+        std::memcpy(buffer + (startindex + i) * HASH_KEY_LEN, &hashkey, HASH_KEY_LEN);
         startpoint = startpoint + g; 
     } 
 }
@@ -125,7 +125,7 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     }
     
     // allocate memory
-    unsigned char *buffer = new unsigned char[BABYSTEP_NUM*KEY_LEN]();
+    unsigned char *buffer = new unsigned char[BABYSTEP_NUM * HASH_KEY_LEN]();
     if(buffer == nullptr)
     {
         std::cerr << "fail to create buffer for babystep key table" << std::endl; 
@@ -169,7 +169,7 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     }
 
     // save babystep key to table
-    fout.write(reinterpret_cast<char *>(buffer), BABYSTEP_NUM*KEY_LEN); 
+    fout.write(reinterpret_cast<char *>(buffer), BABYSTEP_NUM * HASH_KEY_LEN); 
     delete[] buffer;
 
     // save giantstep aux info to table
@@ -210,7 +210,7 @@ void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM
     fin.seekg(0, fin.end);
 
     size_t FILE_BYTE_LEN = fin.tellg(); // get the size of hash table file 
-    size_t BABYSTEP_KEY_SIZE = BABYSTEP_NUM * KEY_LEN; 
+    size_t BABYSTEP_KEY_SIZE = BABYSTEP_NUM * HASH_KEY_LEN; 
 
     #ifdef ECPOINT_COMPRESSED
         size_t GIANTSTEP_AUX_SIZE = (SEARCH_TASK_NUM+1) * POINT_COMPRESSED_BYTE_LEN; 
@@ -229,7 +229,7 @@ void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM
     fin.seekg(0);                  // reset the file pointer to the beginning of file
 
     // construct hashmap from babystep key 
-    unsigned char* buffer = new unsigned char[BABYSTEP_NUM*KEY_LEN]();  
+    unsigned char* buffer = new unsigned char[BABYSTEP_NUM * HASH_KEY_LEN]();  
     if(buffer == nullptr)
     {
         std::cerr << "fail to create buffer for babystep table" << std::endl; 
@@ -247,7 +247,7 @@ void LoadTable(std::string table_filename, size_t RANGE_LEN, size_t TRADEOFF_NUM
             /* point_to_index_map[ECn_to_String(babystep)] = i */
             for(auto i = 0; i < BABYSTEP_NUM; i++)
             {
-                std::memcpy(&hashkey, buffer+i*KEY_LEN, KEY_LEN);
+                std::memcpy(&hashkey, buffer + i * HASH_KEY_LEN, HASH_KEY_LEN);
                 encoding2index_map[hashkey] = i; 
             }
             delete[] buffer; 
@@ -330,7 +330,7 @@ bool ShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRA
         {
             if(SearchSlicedRange(i, h, SLICED_GIANTSTEP_NUM, babystep_index[i], giantstep_index[i], FIND) == true)
             {
-                x = BigInt(babystep_index[i]) + BigInt(giantstep_index[i]+i*SLICED_GIANTSTEP_NUM) * BigInt(BABYSTEP_NUM); 
+                x = BigInt(babystep_index[i]) + BigInt(giantstep_index[i] + i * SLICED_GIANTSTEP_NUM) * BigInt(BABYSTEP_NUM); 
                 FIND = true;
             } 
         } 

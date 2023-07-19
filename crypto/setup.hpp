@@ -30,6 +30,7 @@ void CRYPTO_Initialize()
     PrintSplitLine('-'); 
     std::cout << "GLOBAL ENVIROMENT INFO >>>" << std::endl;
     std::cout << "THREAD NUM = " << NUMBER_OF_THREADS << std::endl;
+
     #ifndef USING_CURVE_25519
         std::cout << "EC Curve ID = " << curve_id << std::endl;
         std::cout << "ECPoint COMPRESSION = "; 
@@ -42,7 +43,6 @@ void CRYPTO_Initialize()
         std::cout << "EC Curve ID = 25519" << std::endl; 
     #endif
     PrintSplitLine('-');  
-
 }
 
 void CRYPTO_Finalize()

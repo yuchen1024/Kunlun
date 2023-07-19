@@ -13,7 +13,9 @@
 ** will save bandwidth by half at the cost of expensive decompression 
 */
 
-//#define ECPOINT_COMPRESSED
+//#define USING_CURVE_25519
+static int curve_id = NID_X9_62_prime256v1;  
+#define ECPOINT_COMPRESSED
 
 static EC_GROUP *group;
 const static EC_POINT *generator; 
@@ -30,9 +32,6 @@ static size_t POINT_COMPRESSED_BYTE_LEN; // the byte length of ec point in compr
 
 static BN_CTX *ec_ctx; // define ctx for ecc operations
 
-//#define USING_CURVE_25519
-
-static int curve_id = NID_X9_62_prime256v1;  
 
 void ECGroup_Initialize(){
     group = EC_GROUP_new_by_curve_name(curve_id);
@@ -78,7 +77,7 @@ void ECGroup_Initialize(){
         EC_GROUP_precompute_mult((EC_GROUP*) group, bn_ctx[0]); // pre-compute the table of g    
         // check if precomputation have been done properly
         if(EC_GROUP_have_precompute_mult((EC_GROUP*) group) == 0){
-            std::cerr << "precomputation is not done properly" << std::endl;
+            std::cerr << "pre-computation is not done properly" << std::endl;
         }; 
     #endif
 }

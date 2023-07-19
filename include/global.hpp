@@ -18,6 +18,7 @@ NUMBER_OF_THREADS indicates the maximum number of threads that openmp works
 */
 const static size_t NUMBER_OF_THREADS = NUMBER_OF_PHYSICAL_CORES;  
 // const static size_t NUMBER_OF_THREADS = 1;  
+
 const static size_t CHECK_BUFFER_SIZE = 1024*8;
 
 // return the error message reported by OpenSSL

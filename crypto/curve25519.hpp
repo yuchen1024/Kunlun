@@ -14,7 +14,7 @@
 
 
 /*
-* extract from openssl: modify line 5493 [remove const]
+* This file is extracted from openssl: modify line 5493 [remove const]
 */
 
 #include "stdint.h"
