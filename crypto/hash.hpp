@@ -162,7 +162,10 @@ block FastBlocksToBlock(const std::vector<block> input_block)
     return vec_B[BLOCK_NUM-1];
 }
 
-// convert block to unsigned char
+/* 
+* hash a block to uint8_t[32]
+* must guranttee output[] has at least LEN bytes space 
+*/
 int BlockToBytes(const block &var, uint8_t* output, size_t LEN)
 {
     if(HASH_OUTPUT_LEN < LEN){
@@ -170,13 +173,16 @@ int BlockToBytes(const block &var, uint8_t* output, size_t LEN)
         return 0;     
     }
 
-    unsigned char buffer[32];
-    memset(buffer, 0, 32);
-    memcpy(buffer, &var, 16);
+    // unsigned char buffer[32];
+    // memset(buffer, 0, 32);
+    // memcpy(buffer, &var, 16);
 
-    unsigned char digest[HASH_OUTPUT_LEN];   
-    BasicHash(buffer, 32, digest);
-    memcpy(output, digest, LEN);  
+    // unsigned char digest[HASH_OUTPUT_LEN];   
+    // BasicHash(buffer, 32, digest);
+    // memcpy(output, digest, LEN);  
+
+    memcpy(output, &var, 16); // set the block as input of hash
+    BasicHash(output, 16, output); // compute the hash value
 
     return 1; 
 }
@@ -187,11 +193,9 @@ inline ECPoint BlockToECPoint(const block &var)
     int thread_num = omp_get_thread_num();
     ECPoint ecp_result; 
     BIGNUM *x = BN_new();
-    unsigned char buffer[32];
-    memset(buffer, 0, 32);
-    memcpy(buffer, &var, 16);  // load block to buffer  
-    BasicHash(buffer, 16, buffer); // initial hash to get the indication bit of y coordinate
-    int y_bit = 0x01 & buffer[0]; // this is an ad-hoc method
+    unsigned char buffer[32]; 
+    BasicHash((unsigned char*)&var, 16, buffer); // initial hash to get the indication bit of y coordinate
+    int y_bit = 0x01 & buffer[0]; // this is an ad-hoc method: set y_bit as one bit of buffer[0]
     while (true) { 
         BasicHash(buffer, 32, buffer); // iterated hash, modeled as random oracle
         BN_bin2bn(buffer, 32, x);
