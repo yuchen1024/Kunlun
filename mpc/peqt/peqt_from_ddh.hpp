@@ -30,11 +30,11 @@ std::vector<uint64_t> Send(NetIO &io, std::vector<block> &vec_Y, size_t ROW_NUM,
 
     std::vector<uint64_t> row_map(ROW_NUM);
     for(auto i = 0; i < ROW_NUM; i++) row_map[i] = i; 
-    std::random_shuffle(row_map.begin(), row_map.end()); 
+    std::shuffle(row_map.begin(), row_map.end(), global_built_in_prg); 
 
     std::vector<uint64_t> column_map(COLUMN_NUM); 
     for(auto j = 0; j < COLUMN_NUM; j++) column_map[j] = j; 
-    std::random_shuffle(column_map.begin(), column_map.end());
+    std::shuffle(column_map.begin(), column_map.end(), global_built_in_prg);
 
     std::vector<uint64_t> permutation_map(LEN); 
     for(auto i = 0; i < ROW_NUM; i++){

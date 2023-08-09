@@ -24,6 +24,7 @@ this file includes commonly used head files
 #include <iomanip>
 #include <functional>
 #include <algorithm>
+#include <random>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>

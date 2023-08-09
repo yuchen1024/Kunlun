@@ -10,7 +10,7 @@
  * https://eprint.iacr.org/2013/552.pdf
 */
 
-const static size_t BASE_LEN = 128; // the default length of base OT
+inline const size_t BASE_LEN = 128; // the default length of base OT
 
 namespace ALSZOTE{
 

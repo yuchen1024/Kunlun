@@ -185,13 +185,13 @@ if reporting cannot find "opensslv.h" error, try to install libssl-dev
 
 - For multi-thread (n)
 ```
-const static size_t NUMBER_OF_THREADS = n; 
+inline const size_t NUMBER_OF_THREADS = n; 
 the default value of n is NUMBER_OF_PHYSICAL_CORES 
 ```
 
 - For single-thread
 ```
-const static size_t NUMBER_OF_THREADS = 1; 
+inline const size_t NUMBER_OF_THREADS = 1; 
 ```
 
 ## Elliptic curve setting
@@ -207,7 +207,7 @@ const static size_t NUMBER_OF_THREADS = 1;
 - choose other curves by curve-ID
 ```
 //#define USING_CURVE_25519 // comment this line
-static int curve_id = NID_X9_62_prime256v1;  
+inline int curve_id = NID_X9_62_prime256v1;  
 #define ECPOINT_COMPRESSED // comment this line to enable uncompressed representation
 ```
 

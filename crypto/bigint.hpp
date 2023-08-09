@@ -5,11 +5,11 @@
 #include "../include/std.inc"
 #include "../include/global.hpp"
 
-static size_t BN_BYTE_LEN;    // the byte length of bigint
-static size_t INT_BYTE_LEN; 
-//static size_t FIELD_BYTE_LEN;  // each scalar field element is 256 bit 
+inline size_t BN_BYTE_LEN;    // the byte length of bigint
+inline size_t INT_BYTE_LEN; 
+//inline size_t FIELD_BYTE_LEN;  // each scalar field element is 256 bit 
 
-static BN_CTX *bn_ctx[NUMBER_OF_THREADS]; // define ctx for ecc operations
+inline BN_CTX *bn_ctx[NUMBER_OF_THREADS]; // define ctx for ecc operations
 
 
 void BN_Initialize(){
@@ -228,10 +228,10 @@ public:
 };
 
 // global bigint objects
-const static BigInt bn_0(uint64_t(0)); 
-const static BigInt bn_1(uint64_t(1)); 
-const static BigInt bn_2(uint64_t(2)); 
-const static BigInt bn_3(uint64_t(3));  
+inline const BigInt bn_0(uint64_t(0)); 
+inline const BigInt bn_1(uint64_t(1)); 
+inline const BigInt bn_2(uint64_t(2)); 
+inline const BigInt bn_3(uint64_t(3));  
 
 
 

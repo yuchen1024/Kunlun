@@ -40,7 +40,8 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
         if(i < testcase.HAMMING_WEIGHT) testcase.vec_indication_bit[i] = 1; 
         else testcase.vec_indication_bit[i] = 0; 
     }
-    std::random_shuffle(testcase.vec_indication_bit.begin(), testcase.vec_indication_bit.end());
+
+    std::shuffle(testcase.vec_indication_bit.begin(), testcase.vec_indication_bit.end(), global_built_in_prg);
 
     // adjust vec_X and vec_Y
     for(auto i = 0, j = 0; i < testcase.SENDER_LEN; i++){
@@ -51,7 +52,7 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
         }
     }
 
-    std::random_shuffle(testcase.vec_Y.begin(), testcase.vec_Y.end());
+    std::shuffle(testcase.vec_Y.begin(), testcase.vec_Y.end(), global_built_in_prg);
 
     return testcase; 
 }
@@ -181,15 +182,6 @@ int main()
         std::set<block, BlockCompare> set_diff_result = 
             ComputeSetDifference(vec_intersection_prime, testcase.vec_intersection);  
         
-        // std::cout << "Intersection cardinality (test) = " << vec_intersection_prime.size() << std::endl;
-
-        // if(set_diff_result.size() == 0){
-        //     std::cout << "cwPRF-based PSI test succeeds" << std::endl; 
-        // }
-        // else{
-        //     std::cout << "cwPRF-based PSI test fails" << std::endl;
-        //     for(auto var: set_diff_result) Block::PrintBlock(var); 
-        // }
 
         double error_probability = set_diff_result.size()/double(testcase.vec_intersection.size()); 
         std::cout << "cwPRF-based PSI test succeeds with probability " << (1 - error_probability) << std::endl; 

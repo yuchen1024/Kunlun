@@ -16,8 +16,8 @@
 #include "../include/std.inc"
 #include "../crypto/ec_point.hpp"
 
-const static size_t NETWORK_BUFFER_SIZE = 1024*1024;
-const static size_t FILE_BUFFER_SIZE = 1024*16;
+inline const size_t NETWORK_BUFFER_SIZE = 1024*1024;
+inline const size_t FILE_BUFFER_SIZE = 1024*16;
 
 class NetIO{ 
 public:

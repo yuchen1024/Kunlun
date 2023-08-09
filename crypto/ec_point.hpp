@@ -102,9 +102,7 @@ public:
  
     friend std::ifstream &operator>>(std::ifstream &fin, ECPoint &A);
 };
-
-// const static BigInt bn_order(order);  
-
+  
 ECPoint::ECPoint(){
     this->point_ptr = EC_POINT_new(group);
 }

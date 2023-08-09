@@ -216,7 +216,8 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
 
     // permutation
     if(pp.filter_type == "shuffle"){
-        std::random_shuffle(vec_Fk2k1_Y.begin(), vec_Fk2k1_Y.end());
+        std::shuffle(vec_Fk2k1_Y.begin(), vec_Fk2k1_Y.end(), global_built_in_prg);
+
         io.SendECPoints(vec_Fk2k1_Y.data(), pp.SERVER_LEN); 
         std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> Permutation(F_k2k1(y_i)) ===> Server"; 
         #ifdef ECPOINT_COMPRESSED

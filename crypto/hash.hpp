@@ -11,8 +11,8 @@ this hpp implements hash functions
 #include "bigint.hpp"
 #include "ec_point.hpp"
 
-const static size_t HASH_BUFFER_SIZE = 1024*8;
-const static size_t HASH_OUTPUT_LEN = 32;  // hash output = 256-bit string
+inline const size_t HASH_BUFFER_SIZE = 1024*8;
+inline const size_t HASH_OUTPUT_LEN = 32;  // hash output = 256-bit string
 
 //#define BasicHash(input, HASH_INPUT_LEN, output) SM3(input, HASH_INPUT_LEN, output)
 #define BasicHash(input, HASH_INPUT_LEN, output) SHA256(input, HASH_INPUT_LEN, output)
@@ -58,12 +58,24 @@ void CBCAES(const unsigned char *input, size_t HASH_INPUT_LEN, unsigned char *ou
     _mm_storeu_si128((block*)output, data[BLOCK_NUM-1]);
 }
 
+// dedicated CBCAES that hash 32 bytes input to 32 bytes output
+void Dedicated_CBCAES(const uint8_t* input, uint8_t* output) 
+{
+    block data[2];
+    data[0] = _mm_load_si128((block *)(input));
+    data[1] = _mm_load_si128((block *)(input + 16));
+
+    // use CBC-AES hash: digest lies in the last block
+    AES::CBCEnc(AES::fixed_enc_key, data, 2);  
+
+    _mm_storeu_si128((block*)output, data[0]);
+    _mm_storeu_si128((block*)(output+16), data[1]);
+}
+
 __attribute__((target("sse2")))
 block StringToBlock(const std::string &str_input) 
 {
     unsigned char output[HASH_OUTPUT_LEN];
-    //const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());
-    //size_t HASH_INPUT_LEN = str_input.length();
     BasicHash(reinterpret_cast<const unsigned char*>(str_input.c_str()), str_input.length(), output); 
     return _mm_load_si128((block*)&output[0]);
 }
@@ -72,8 +84,6 @@ __attribute__((target("sse2")))
 block BytesToBlock(const std::vector<uint8_t> &vec_A) 
 {
     unsigned char output[HASH_OUTPUT_LEN];
-    //const unsigned char* input = reinterpret_cast<const unsigned char*>(str_input.c_str());
-    //size_t HASH_INPUT_LEN = str_input.length();
     BasicHash(vec_A.data(), vec_A.size(), output); 
     return _mm_load_si128((block*)&output[0]);
 }
@@ -173,16 +183,10 @@ int BlockToBytes(const block &var, uint8_t* output, size_t LEN)
         return 0;     
     }
 
-    // unsigned char buffer[32];
-    // memset(buffer, 0, 32);
-    // memcpy(buffer, &var, 16);
-
-    // unsigned char digest[HASH_OUTPUT_LEN];   
-    // BasicHash(buffer, 32, digest);
-    // memcpy(output, digest, LEN);  
-
+    memset(output, 0, 32);
     memcpy(output, &var, 16); // set the block as input of hash
-    BasicHash(output, 16, output); // compute the hash value
+    Dedicated_CBCAES(output, output); 
+    //BasicHash(output, 16, output); // compute the hash value
 
     return 1; 
 }
@@ -193,11 +197,15 @@ inline ECPoint BlockToECPoint(const block &var)
     int thread_num = omp_get_thread_num();
     ECPoint ecp_result; 
     BIGNUM *x = BN_new();
-    unsigned char buffer[32]; 
-    BasicHash((unsigned char*)&var, 16, buffer); // initial hash to get the indication bit of y coordinate
+    uint8_t buffer[32]; 
+    memset(buffer, 0, 32); 
+    memcpy(buffer, &var, 16); // set the block as input of hash
+    Dedicated_CBCAES(buffer, buffer); // initial hash to get the indication bit of y coordinate
+    // BasicHash(buffer, 32, buffer); 
     int y_bit = 0x01 & buffer[0]; // this is an ad-hoc method: set y_bit as one bit of buffer[0]
     while (true) { 
-        BasicHash(buffer, 32, buffer); // iterated hash, modeled as random oracle
+        Dedicated_CBCAES(buffer, buffer); // iterated hash, modeled as random oracle
+        // BasicHash(buffer, 32, buffer); 
         BN_bin2bn(buffer, 32, x);
         if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, y_bit, bn_ctx[thread_num])==1) break;              
     }
@@ -205,49 +213,6 @@ inline ECPoint BlockToECPoint(const block &var)
     return ecp_result;
 }
 
-
-// // fast and threadsafe block to ecpoint hash using low level openssl code
-// inline ECPoint DataToECPoint(const void* data, size_t HASH_INPUT_LEN)
-// {
-//     ECPoint ecp_result; 
- 
-//     BIGNUM *x = BN_new();
-//     unsigned char buffer[HASH_OUTPUT_LEN];
-//     BasicHash((unsigned char*)data, HASH_INPUT_LEN, buffer);    
-//     while (true) { 
-//         if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, ec_ctx)==1) break;      
-//         BasicHash(buffer, HASH_INPUT_LEN, buffer); // iterative hash
-//         BN_bin2bn(buffer, HASH_OUTPUT_LEN, x);
-//     }
-//     BN_free(x);    
-//     return ecp_result;
-// }
-
-// // fast block to ecpoint hash using low level openssl code
-// inline ECPoint ThreadSafeBlockToECPoint(const block &var)
-// {
-//     BN_CTX *temp_bn_ctx = BN_CTX_new(); 
-//     ECPoint ecp_result; 
- 
-//     BIGNUM *x = BN_new();
-//     // unsigned char buffer[32];
-//     // memset(buffer, 0, 32);
-//     // memcpy(buffer, &var, 16);    
-//     block buffer[2];
-//     buffer[0] = Block::zero_block;
-//     buffer[1] = var; 
-//     AES::CBCEnc(fix_aes_enc_key, buffer, 2); 
-//     while (true) { 
-//         BN_bin2bn((unsigned char*)buffer, 32, x);
-//         if(EC_POINT_set_compressed_coordinates(group, ecp_result.point_ptr, x, 0, temp_bn_ctx) ==1) break;      
-//         //BasicHash(buffer, 32, buffer);
-//         AES::CBCEnc(fix_aes_enc_key, buffer, 2); 
-//     }
-//     BN_free(x);    
-//     BN_CTX_free(temp_bn_ctx); 
-   
-//     return ecp_result;
-// }
 
 }
 

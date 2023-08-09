@@ -40,7 +40,7 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
         if(i < testcase.HAMMING_WEIGHT) testcase.vec_indication_bit[i] = 1; 
         else testcase.vec_indication_bit[i] = 0; 
     }
-    std::random_shuffle(testcase.vec_indication_bit.begin(), testcase.vec_indication_bit.end());
+    std::shuffle(testcase.vec_indication_bit.begin(), testcase.vec_indication_bit.end(), global_built_in_prg);
 
     // adjust vec_X and vec_Y
     for(auto i = 0, j = 0; i < testcase.SENDER_LEN; i++){
@@ -51,7 +51,7 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
         }
     }
 
-    std::random_shuffle(testcase.vec_Y.begin(), testcase.vec_Y.end());
+    std::shuffle(testcase.vec_Y.begin(), testcase.vec_Y.end(), global_built_in_prg);
 
     return testcase; 
 }

@@ -14,23 +14,23 @@
 */
 
 //#define USING_CURVE_25519
-static int curve_id = NID_X9_62_prime256v1;  
-#define ECPOINT_COMPRESSED
+inline int curve_id = NID_X9_62_prime256v1;  
+//#define ECPOINT_COMPRESSED
 
-static EC_GROUP *group;
-const static EC_POINT *generator; 
+inline EC_GROUP *group;
+const inline EC_POINT *generator; 
 
-static BIGNUM *order;
-static BIGNUM *cofactor;  // The cofactor of this group
-static BIGNUM *curve_params_p; 
-static BIGNUM *curve_params_a; 
-static BIGNUM *curve_params_b;
-static BIGNUM *curve_params_q; // q = (p-1)/2
+inline BIGNUM *order;
+inline BIGNUM *cofactor;  // The cofactor of this group
+inline BIGNUM *curve_params_p; 
+inline BIGNUM *curve_params_a; 
+inline BIGNUM *curve_params_b;
+inline BIGNUM *curve_params_q; // q = (p-1)/2
 
-static size_t POINT_BYTE_LEN; // the byte length of ec point
-static size_t POINT_COMPRESSED_BYTE_LEN; // the byte length of ec point in compressed form
+inline size_t POINT_BYTE_LEN; // the byte length of ec point
+inline size_t POINT_COMPRESSED_BYTE_LEN; // the byte length of ec point in compressed form
 
-static BN_CTX *ec_ctx; // define ctx for ecc operations
+inline BN_CTX *ec_ctx; // define ctx for ecc operations
 
 
 void ECGroup_Initialize(){

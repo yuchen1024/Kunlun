@@ -13,7 +13,7 @@
 #include "../utility/murmurhash3.hpp"
 
 //00000001 00000010 00000100 00001000 00010000 00100000 01000000 10000000
-static const uint8_t bit_mask[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+inline const uint8_t bit_mask[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
 // selection of keyed hash for bloom filter
 #define FastKeyedHash LiteMurmurHash // an alternative choice is MurmurHash3 

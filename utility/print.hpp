@@ -9,7 +9,7 @@ this hpp implements print functionality
 
 #include <iostream>
 
-const static size_t LINE_LEN = 120;     // the length of split line
+inline const size_t LINE_LEN = 120;     // the length of split line
 
 
 /* print split line */

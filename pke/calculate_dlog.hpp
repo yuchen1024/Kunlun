@@ -28,10 +28,10 @@ public:
 };
 
 
-const static size_t BUILD_TASK_NUM  = pow(2, 6);  // number of parallel task for building pre-computable table 
-const static size_t SEARCH_TASK_NUM = pow(2, 6);  // number of parallel task for search  
+inline const size_t BUILD_TASK_NUM  = pow(2, 6);  // number of parallel task for building pre-computable table 
+inline const size_t SEARCH_TASK_NUM = pow(2, 6);  // number of parallel task for search  
 
-const static size_t HASH_KEY_LEN = 8; // the key length for hashtable
+inline const size_t HASH_KEY_LEN = 8; // the key length for hashtable
 
 
 ECPoint giantstep; 

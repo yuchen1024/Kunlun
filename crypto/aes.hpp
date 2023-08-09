@@ -14,8 +14,8 @@ namespace AES{
 using Serialization::operator<<; 
 using Serialization::operator>>; 
 
-static const block IV = Block::zero_block; 
-const static size_t BATCH_SIZE = 8;
+inline const block IV = Block::zero_block; 
+inline const size_t BATCH_SIZE = 8;
 
 struct Key{ 
     block roundkey[11]; 
@@ -51,8 +51,8 @@ std::ifstream &operator>>(std::ifstream &fin, Key &key)
     return fin; 
 }
 
-static Key fixed_enc_key; // global aes enc key
-static Key fixed_dec_key; // global aes dec key
+inline Key fixed_enc_key; // global aes enc key
+inline Key fixed_dec_key; // global aes dec key
 
 
 #define EXPAND_ASSIST(v1, v2, v3, v4, SHUFFLE_CONST, AES_CONST)                               \
@@ -148,9 +148,9 @@ inline void ECBEnc(const Key &key, block* data, size_t BLOCK_LEN)
 ** but more efficient since it unroll the loop
 */
 __attribute__((target("aes,sse2")))
-inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN,block* dest=nullptr) 
+inline void FastECBEnc(const Key &key, block* plaintext, size_t BLOCK_LEN, block* ciphertext = nullptr) 
 {   
-    if(dest==nullptr)dest=data;
+    if(ciphertext == nullptr) ciphertext = plaintext;
     const size_t BATCH_SIZE = 8;
     size_t LEN = BLOCK_LEN - BLOCK_LEN % BATCH_SIZE; // ensure LEN = 8*n
 
@@ -159,22 +159,22 @@ inline void FastECBEnc(const Key &key, block *data, size_t BLOCK_LEN,block* dest
     for (auto i = 0; i < LEN; i += BATCH_SIZE)
     {
         for (auto j = 0; j < BATCH_SIZE; j++)
-            temp[j] = _mm_xor_si128(data[i + j], key.roundkey[0]);
+            temp[j] = _mm_xor_si128(plaintext[i + j], key.roundkey[0]);
 
         for (auto k = 1; k < key.ROUND_NUM; k++)
             for (auto j = 0; j < BATCH_SIZE; j++)
                 temp[j] = _mm_aesenc_si128(temp[j], key.roundkey[k]);
         
         for (auto j = 0; j < BATCH_SIZE; j++)
-            dest[i + j] = _mm_aesenclast_si128(temp[j], key.roundkey[key.ROUND_NUM]);
+            ciphertext[i + j] = _mm_aesenclast_si128(temp[j], key.roundkey[key.ROUND_NUM]);
     }
 
     for (auto i = LEN; i < BLOCK_LEN; i++)
     {
-        dest[i] = _mm_xor_si128(data[i], key.roundkey[0]);
+        ciphertext[i] = _mm_xor_si128(plaintext[i], key.roundkey[0]);
         for (auto k = 1; k < key.ROUND_NUM; k++)
-            dest[i] = _mm_aesenc_si128(dest[i], key.roundkey[k]);
-        dest[i] = _mm_aesenclast_si128(dest[i], key.roundkey[key.ROUND_NUM]);
+            ciphertext[i] = _mm_aesenc_si128(ciphertext[i], key.roundkey[k]);
+            ciphertext[i] = _mm_aesenclast_si128(ciphertext[i], key.roundkey[key.ROUND_NUM]);
     }
 }
 

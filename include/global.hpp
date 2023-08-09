@@ -12,14 +12,16 @@ NUMBER_OF_THREADS indicates the maximum number of threads that openmp works
 #include "std.inc"
 #include "../config/config.h"
 
+inline std::random_device rd;
+inline std::mt19937 global_built_in_prg(rd());
+
 /* 
 * default setting: set the maximum thread num as num of physical cores
 * you can switch to **N** thread setting by assign NUMBER_OF_THREADS = N by hand
 */
-const static size_t NUMBER_OF_THREADS = NUMBER_OF_PHYSICAL_CORES;  
-// const static size_t NUMBER_OF_THREADS = 1;  
-
-const static size_t CHECK_BUFFER_SIZE = 1024*8;
+// inline const size_t NUMBER_OF_THREADS = NUMBER_OF_PHYSICAL_CORES;  
+inline const size_t NUMBER_OF_THREADS = 4;  
+inline const size_t CHECK_BUFFER_SIZE = 1024*8;
 
 // return the error message reported by OpenSSL
 void CRYPTO_CHECK(bool condition)

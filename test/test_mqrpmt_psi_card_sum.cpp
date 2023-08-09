@@ -52,7 +52,8 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN,
         if(i < testcase.HAMMING_WEIGHT) testcase.vec_indication_bit[i] = 1; 
         else testcase.vec_indication_bit[i] = 0; 
     }
-    std::random_shuffle(testcase.vec_indication_bit.begin(), testcase.vec_indication_bit.end());
+
+    std::shuffle(testcase.vec_indication_bit.begin(), testcase.vec_indication_bit.end(), global_built_in_prg);
 
     testcase.vec_value = GenRandomBigIntVectorLessThan(testcase.SENDER_LEN, testcase.VALUE_BOUND); 
     testcase.INTERSECTION_SUM = bn_0; 
@@ -67,7 +68,7 @@ TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN,
     }
     testcase.INTERSECTION_SUM = testcase.INTERSECTION_SUM % testcase.SUM_BOUND; 
 
-    std::random_shuffle(testcase.vec_Y.begin(), testcase.vec_Y.end());
+    std::shuffle(testcase.vec_Y.begin(), testcase.vec_Y.end(), global_built_in_prg);
 
     return testcase; 
 }
