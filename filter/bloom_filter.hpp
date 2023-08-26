@@ -254,7 +254,7 @@ inline bool Contain(const ECPoint& A) const
 
 
 template <class T, class Allocator, template <class,class> class Container>
-inline std::vector<uint8_t> Contain(const Container<T, Allocator>& container)
+inline std::vector<uint8_t> Contain(const Container<T, Allocator>& container) const
 {
    size_t LEN = container.size();
    std::vector<uint8_t> vec_indication_bit(LEN); 
@@ -271,7 +271,7 @@ inline std::vector<uint8_t> Contain(const Container<T, Allocator>& container)
 #ifdef IS_MACOS
 template <> 
 #endif
-inline std::vector<uint8_t> Contain(const std::vector<ECPoint> &vec_A)
+inline std::vector<uint8_t> Contain(const std::vector<ECPoint> &vec_A) const
 {
    size_t LEN = vec_A.size();
    std::vector<uint8_t> vec_indication_bit(LEN); 
@@ -323,7 +323,7 @@ inline bool Contain(const EC25519Point& A) const
 #ifdef IS_MACOS
 template <> 
 #endif
-inline std::vector<uint8_t> Contain(const std::vector<EC25519Point> &vec_A)
+inline std::vector<uint8_t> Contain(const std::vector<EC25519Point> &vec_A) const
 {
    size_t LEN = vec_A.size();
    std::vector<uint8_t> vec_indication_bit(LEN); 
