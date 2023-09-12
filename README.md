@@ -199,7 +199,12 @@ inline const size_t NUMBER_OF_THREADS = 1;
 
 - The global setting of EC curves lies at "crypto/ec_group.hpp" line 16-18
 
-- choose curve25519
+- curve25519 can significantly improve EC exponentiation operations, 
+  but does not support EC add operations. 
+  In sum, curve25519 is not full-fledged, 
+  and thus ordinary EC curves are always necessary for base OT. 
+  One can decide whether using curve25519 to accelerate EC exponentiation operations 
+  by turn on/off line 16    
 ```
 #define USING_CURVE_25519 
 ```

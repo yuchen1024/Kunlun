@@ -21,36 +21,33 @@ this hpp file define and initialize misc global variables
 void CRYPTO_Initialize()
 {
     BN_Initialize();
-
-    AES_Initialize();    
-    #ifndef USING_CURVE_25519
-        ECGroup_Initialize(); 
-    #endif
+    ECGroup_Initialize(); 
+    AES_Initialize();   // does not need Finalize() 
 
     PrintSplitLine('-'); 
     std::cout << "GLOBAL ENVIROMENT INFO >>>" << std::endl;
     std::cout << "THREAD NUM = " << NUMBER_OF_THREADS << std::endl;
 
-    #ifndef USING_CURVE_25519
-        std::cout << "EC Curve ID = " << curve_id << std::endl;
-        std::cout << "ECPoint COMPRESSION = "; 
-        #ifdef ECPOINT_COMPRESSED
-            std::cout << "ON" << std::endl;
-        #else
-            std::cout << "OFF" << std::endl;
-        #endif
+    std::cout << "EC Curve ID = " << curve_id << std::endl;
+    std::cout << "ECPoint COMPRESSION = "; 
+    #ifdef ECPOINT_COMPRESSED
+        std::cout << "ON" << std::endl;
     #else
-        std::cout << "EC Curve ID = 25519" << std::endl; 
+        std::cout << "OFF" << std::endl;
     #endif
+    
+    #ifdef USING_CURVE_25519
+        PrintSplitLine('-');  
+        std::cout << "accelerate EC exponentiation operations using curve25519" << std::endl; 
+    #endif
+
     PrintSplitLine('-');  
 }
 
 void CRYPTO_Finalize()
 {
     BN_Finalize();
-    #ifndef USING_CURVE_25519
-        ECGroup_Finalize();
-    #endif
+    ECGroup_Finalize();
 } 
 
 #endif

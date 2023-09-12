@@ -13,7 +13,7 @@
 ** will save bandwidth by half at the cost of expensive decompression 
 */
 
-//#define USING_CURVE_25519
+#define USING_CURVE_25519
 inline int curve_id = NID_X9_62_prime256v1;  
 //#define ECPOINT_COMPRESSED
 

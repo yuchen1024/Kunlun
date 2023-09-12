@@ -53,6 +53,7 @@ std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
     fout << pp.ote_part; 
     fout << pp.mqrpmt_part; 
 
+    
     fout << pp.LOG_SENDER_LEN; 
     fout << pp.LOG_RECEIVER_LEN; 
     fout << pp.SENDER_LEN; 
