@@ -430,7 +430,7 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
 			}
 		}
 
-        /* step 3-3: compute matrix_B and send to sender (page 10 figure 4 item2) */
+        /* step 3-3: compute matrix_B and send to server (page 10 figure 4 item2) */
         std::vector<std::vector<uint8_t>> matrix_B(bucket_size, std::vector<uint8_t>(matrix_height_byte));
         std::vector<uint8_t> send_matrix_B(bucket_size * matrix_height_byte);
         std::vector<PRG::Seed> vec_seed(bucket_size);
@@ -463,9 +463,8 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
     }
     
     PrintSplitLine('-');
-    std::cout << "OTE-based OPRF: Receiver ===> matrix_B ===> Sender [" 
+    std::cout << "OTE-based OPRF: Client ===> matrix_B ===> Server [" 
               << (double)(pp.matrix_width * matrix_height_byte)/(1 << 20) << " MB]" << std::endl;
-
 
     /* step4: compute \Psi = H2(A1[v[1]] || ... || Aw[v[w]]) */
     std::vector<std::vector<uint8_t>> vec_Fk_Y = Packing(pp, matrix_mapping_values);

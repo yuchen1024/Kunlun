@@ -6,8 +6,11 @@
 
 
 /*
-** implement Private-ID based on OPRF and PSU
+** implement Private-ID based on distributed OPRF and PSU
 */
+
+#define OPRF OTEOPRF
+//#define OPRF VOLEOPRF
 
 namespace mqRPMTPrivateID{
 
@@ -33,7 +36,7 @@ PP Setup(size_t LOG_PRF_INPUT_LEN, std::string filter_type,
 {
     PP pp; 
 
-    pp.oprf_part = OTEOPRF::Setup(LOG_PRF_INPUT_LEN, statistical_security_parameter); 
+    pp.oprf_part = OPRF::Setup(LOG_PRF_INPUT_LEN, statistical_security_parameter); 
     pp.psu_part = mqRPMTPSU::Setup(filter_type, 
                                    computational_security_parameter, statistical_security_parameter, 
                                    LOG_SENDER_LEN, LOG_RECEIVER_LEN); 
@@ -97,13 +100,13 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN)
     auto start_time = std::chrono::steady_clock::now();   
     PrintSplitLine('-');
 
-    std::cout << "[Private-ID from OPRF+PSU] Phase 1: compute sender's ID using OPRF >>>" << std::endl;
+    std::cout << "[Private-ID from distributed OPRF+PSU] Phase 1: compute sender's ID using distributed OPRF (run OPRF twice)>>>" << std::endl;
 
     // first act as server: compute F_k1(X)
-    std::vector<std::vector<uint8_t>> k1 = OTEOPRF::Server(io, pp.oprf_part); 
-    std::vector<std::vector<uint8_t>> vec_Fk1_X = OTEOPRF::Evaluate(pp.oprf_part, k1, vec_X, pp.SENDER_LEN); 
+    std::vector<std::vector<uint8_t>> k1 = OPRF::Server(io, pp.oprf_part); 
+    std::vector<std::vector<uint8_t>> vec_Fk1_X = OPRF::Evaluate(pp.oprf_part, k1, vec_X, pp.SENDER_LEN); 
     // then act as client: compute F_k2(X)
-    std::vector<std::vector<uint8_t>> vec_Fk2_X = OTEOPRF::Client(io, pp.oprf_part, vec_X, pp.SENDER_LEN); 
+    std::vector<std::vector<uint8_t>> vec_Fk2_X = OPRF::Client(io, pp.oprf_part, vec_X, pp.SENDER_LEN); 
     // compute F_k(X) = F_k1(X) xor F_k2(X)
     std::vector<std::vector<uint8_t>> vec_X_id(pp.SENDER_LEN);
     #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
@@ -111,7 +114,7 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN)
         vec_X_id[i] = XOR(vec_Fk1_X[i], vec_Fk2_X[i]); 
     }     
 
-    std::cout << "[Private-ID from OPRF+PSU] Phase 2: execute PSU >>>" << std::endl;
+    std::cout << "[Private-ID from distributed OPRF+PSU] Phase 2: execute PSU >>>" << std::endl;
     mqRPMTPSU::Send(io, pp.psu_part, vec_X_id, ITEM_LEN);
 
     std::vector<std::vector<uint8_t>> vec_union_id; 
@@ -119,7 +122,7 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN)
     
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
-    std::cout << "[Private-ID from OPRF+PSU]: Sender side takes time = " 
+    std::cout << "[Private-ID from distributed OPRF+PSU]: Sender side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
 
     return {vec_union_id, vec_X_id};
@@ -132,14 +135,14 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN)
     auto start_time = std::chrono::steady_clock::now();  
     PrintSplitLine('-');
 
-    std::cout << "[Private-ID from OPRF+PSU] Phase 1: compute receiver's ID using OPRF >>>" << std::endl;
+    std::cout << "[Private-ID from distributed OPRF+PSU] Phase 1: compute receiver's ID using distributed OPRF (run OPRF twice)>>>" << std::endl;
 
     // first act as client: compute F_k1(Y)
-    std::vector<std::vector<uint8_t>> vec_Fk1_Y = OTEOPRF::Client(io, pp.oprf_part, vec_Y, pp.RECEIVER_LEN); 
+    std::vector<std::vector<uint8_t>> vec_Fk1_Y = OPRF::Client(io, pp.oprf_part, vec_Y, pp.RECEIVER_LEN); 
 
     // then act as server: compute F_k2(Y)
-    std::vector<std::vector<uint8_t>> k2 = OTEOPRF::Server(io, pp.oprf_part);     
-    std::vector<std::vector<uint8_t>> vec_Fk2_Y = OTEOPRF::Evaluate(pp.oprf_part, k2, vec_Y, pp.RECEIVER_LEN);  
+    std::vector<std::vector<uint8_t>> k2 = OPRF::Server(io, pp.oprf_part);     
+    std::vector<std::vector<uint8_t>> vec_Fk2_Y = OPRF::Evaluate(pp.oprf_part, k2, vec_Y, pp.RECEIVER_LEN);  
 
     // compute F_k(Y) = F_k1(Y) xor F_k2(Y)
     std::vector<std::vector<uint8_t>> vec_Y_id(pp.RECEIVER_LEN);
@@ -149,21 +152,21 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN)
     }     
 
     PrintSplitLine('-');
-    std::cout << "[Private-ID from OPRF+PSU] Phase 2: execute PSU >>>" << std::endl;
+    std::cout << "[Private-ID from distributed OPRF+PSU] Phase 2: execute PSU >>>" << std::endl;
 
     std::vector<std::vector<uint8_t>> vec_union_id = mqRPMTPSU::Receive(io, pp.psu_part, vec_Y_id, ITEM_LEN); 
 
     size_t UNION_SIZE = vec_union_id.size(); 
     
     PrintSplitLine('-');
-    std::cout << "[Private-ID from OPRF+PSU] Phase 3: Receiver ===> vec_union_id >>> Sender";
+    std::cout << "[Private-ID from distributed OPRF+PSU] Phase 3: Receiver ===> vec_union_id >>> Sender";
     std::cout << " [" << (double)ITEM_LEN*UNION_SIZE/(1024*1024) << " MB]" << std::endl;
 
     io.SendBytesArray(vec_union_id); 
 
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
-    std::cout << "[Private-ID from OPRF+PSU]: Receiver side takes time = " 
+    std::cout << "[Private-ID from distributed OPRF+PSU]: Receiver side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
         
     PrintSplitLine('-');

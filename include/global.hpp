@@ -21,6 +21,7 @@ inline std::mt19937 global_built_in_prg(rd());
 */
 // inline const size_t NUMBER_OF_THREADS = NUMBER_OF_PHYSICAL_CORES;  
 inline const size_t NUMBER_OF_THREADS = 4;  
+
 inline const size_t CHECK_BUFFER_SIZE = 1024*8;
 
 // return the error message reported by OpenSSL
