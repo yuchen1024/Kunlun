@@ -18,7 +18,7 @@
  2. Substitute the unordered_map with bloom filter to do membership test (reduce communication cost).
 
  *****************************************************************************
- * @author     developed by Xiangling Zhang (slightly modified by Yu Chen)
+ * @author     developed by Xiangling Zhang (modified by Yu Chen)
  * @copyright  MIT license (see LICENSE file)
  *****************************************************************************/
 
@@ -35,11 +35,12 @@ using Serialization::operator>>;
 
 struct PP
 {
-    size_t LEN; // the length of the client's input vector
+    size_t INPUT_LEN; // the length of the client's input vector
+    size_t OUTPUT_LEN; // the output length \ell2 in bytes of hash function H2: {0,1}^w -> {0,1}^{\ell2}
+
     size_t matrix_height; // m (matrix_height = LEN)
     size_t log_matrix_height; // logm
     size_t matrix_width; // w
-    size_t OUTPUT_LEN; // the output length \ell2 in bytes of hash function H2: {0,1}^w -> {0,1}^{\ell2}
     size_t BATCH_SIZE; // the batch size dealing with the LEN loops, LEN % BATCH_SIZE = 0
     
     // a common PRG seed, used to generate a number of AES keys, PRG(common_seed) -> k0 || k1 || ... || kt
@@ -48,17 +49,17 @@ struct PP
     NPOT::PP npot_part;
 };
     
-PP Setup(size_t LOG_LEN, size_t statistical_security_parameter = 40)
+PP Setup(size_t LOG_INPUT_LEN, size_t statistical_security_parameter = 40)
 {
 	PP pp; 
-    pp.LEN = 1 << LOG_LEN; // LEN = 2^{LOG_LEN}
-    pp.matrix_height = pp.LEN;
-    pp.log_matrix_height = LOG_LEN;
+    pp.INPUT_LEN = 1 << LOG_INPUT_LEN; // LEN = 2^{LOG_LEN}
+    pp.matrix_height = pp.INPUT_LEN;
+    pp.log_matrix_height = LOG_INPUT_LEN;
     // the default statistical security parameter is 40
-    pp.OUTPUT_LEN = ((statistical_security_parameter + 2*LOG_LEN) + 7) >> 3; 
+    pp.OUTPUT_LEN = ((statistical_security_parameter + 2*LOG_INPUT_LEN) + 7) >> 3; 
 
     //customize BATCH_SIZE w.r.t. LOG_LEN
-    if(LOG_LEN < 10) pp.BATCH_SIZE = 1 << (LOG_LEN/2); 
+    if(LOG_INPUT_LEN < 10) pp.BATCH_SIZE = 1 << (LOG_INPUT_LEN/2); 
     else pp.BATCH_SIZE = 512;
 
     pp.npot_part = NPOT::Setup();
@@ -66,12 +67,12 @@ PP Setup(size_t LOG_LEN, size_t statistical_security_parameter = 40)
     pp.common_seed = PRG::SetSeed(fixed_seed, 0); 
 
     // parameters of matrix width for input set size in page 16 table 1
-    if (LOG_LEN <= 10) pp.matrix_width = 591;
-    else if (LOG_LEN <= 12) pp.matrix_width = 597;
-    else if (LOG_LEN <= 14) pp.matrix_width = 603;
-    else if (LOG_LEN <= 16) pp.matrix_width = 609;
-    else if (LOG_LEN <= 18) pp.matrix_width = 615;
-    else if (LOG_LEN <= 20) pp.matrix_width = 621;
+    if (LOG_INPUT_LEN <= 10) pp.matrix_width = 591;
+    else if (LOG_INPUT_LEN <= 12) pp.matrix_width = 597;
+    else if (LOG_INPUT_LEN <= 14) pp.matrix_width = 603;
+    else if (LOG_INPUT_LEN <= 16) pp.matrix_width = 609;
+    else if (LOG_INPUT_LEN <= 18) pp.matrix_width = 615;
+    else if (LOG_INPUT_LEN <= 20) pp.matrix_width = 621;
     else pp.matrix_width = 633;
         
 	return pp; 
@@ -80,13 +81,14 @@ PP Setup(size_t LOG_LEN, size_t statistical_security_parameter = 40)
 // serialize pp to stream
 std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 {
-    fout << pp.LEN; 
+    fout << pp.INPUT_LEN; 
+    fout << pp.OUTPUT_LEN; 
+
     fout << pp.matrix_height; 
     fout << pp.log_matrix_height; 
     fout << pp.matrix_width; 
-    fout << pp.OUTPUT_LEN; 
-    fout << pp.BATCH_SIZE; 
 
+    fout << pp.BATCH_SIZE; 
     fout << pp.common_seed; 
 
     fout << pp.npot_part;
@@ -97,13 +99,14 @@ std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 // deserialize pp from stream
 std::ifstream &operator>>(std::ifstream &fin, PP &pp)
 {
-    fin >> pp.LEN; 
+    fin >> pp.INPUT_LEN; 
+    fin >> pp.OUTPUT_LEN; 
+    
     fin >> pp.matrix_height; 
     fin >> pp.log_matrix_height; 
     fin >> pp.matrix_width; 
-    fin >> pp.OUTPUT_LEN; 
-    fin >> pp.BATCH_SIZE; 
 
+    fin >> pp.BATCH_SIZE; 
     fin >> pp.common_seed;
 
     fin >> pp.npot_part;
@@ -147,7 +150,7 @@ void PrintPP(const PP &pp)
 {
     PrintSplitLine('-'); 
     std::cout << "PP of OTE-based OPRF >>>" << std::endl;
-    std::cout << "input vector length = " << pp.LEN << std::endl; 
+    std::cout << "input vector length = " << pp.INPUT_LEN << std::endl; 
     std::cout << "matrix height = " << pp.matrix_height << std::endl; 
     std::cout << "log matrix height = " << pp.log_matrix_height << std::endl; 
     std::cout << "matrix width = " << pp.matrix_width << std::endl; 
