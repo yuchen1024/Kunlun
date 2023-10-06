@@ -78,11 +78,11 @@ public:
 	template <typename T>
 	void ReceiveInteger(T &n);
 
-	void SendBytesArray(const std::vector<std::vector<uint8_t>> &A); 
-	void ReceiveBytesArray(std::vector<std::vector<uint8_t>> &A); 
+	void SendBytesVector(const std::vector<std::vector<uint8_t>> &A); 
+	void ReceiveBytesVector(std::vector<std::vector<uint8_t>> &A); 
 
-	void SendStringArray(const std::vector<std::string>& A, size_t LEN); 
-	void ReceiveStringArray(std::vector<std::string> &A, size_t LEN); 
+	void SendStringVector(const std::vector<std::string>& A, size_t LEN); 
+	void ReceiveStringVector(std::vector<std::string> &A, size_t LEN); 
 };
 
 NetIO::NetIO(std::string party, std::string address, int port)
@@ -422,7 +422,7 @@ void NetIO::ReceiveBlock(block &a)
 
 
 // NUM = length of array; LEN = length of each item
-void NetIO::SendBytesArray(const std::vector<std::vector<uint8_t>>& A) 
+void NetIO::SendBytesVector(const std::vector<std::vector<uint8_t>>& A) 
 {
 	size_t NUM = A.size(); 
 	size_t LEN = A[0].size(); 
@@ -438,7 +438,7 @@ void NetIO::SendBytesArray(const std::vector<std::vector<uint8_t>>& A)
 	delete[] buffer; 
 }
 
-void NetIO::ReceiveBytesArray(std::vector<std::vector<uint8_t>> &A) 
+void NetIO::ReceiveBytesVector(std::vector<std::vector<uint8_t>> &A) 
 {
 	size_t NUM, LEN; 
 	ReceiveInteger(NUM);
@@ -455,8 +455,8 @@ void NetIO::ReceiveBytesArray(std::vector<std::vector<uint8_t>> &A)
 	delete[] buffer; 
 }
 
-// NUM = length of array; LEN = length of each item
-void NetIO::SendStringArray(const std::vector<std::string>& A, size_t LEN) 
+// NUM = length of vector; LEN = length of each item
+void NetIO::SendStringVector(const std::vector<std::string>& A, size_t LEN) 
 {
 	size_t NUM = A.size(); 
 	SendInteger(NUM);
@@ -470,7 +470,7 @@ void NetIO::SendStringArray(const std::vector<std::string>& A, size_t LEN)
 	delete[] buffer; 
 }
 
-void NetIO::ReceiveStringArray(std::vector<std::string> &A, size_t LEN) 
+void NetIO::ReceiveStringVector(std::vector<std::string> &A, size_t LEN) 
 {
 	size_t NUM; 
 	ReceiveInteger(NUM);  

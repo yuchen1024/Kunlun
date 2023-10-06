@@ -168,7 +168,7 @@ int main()
     std::getline(std::cin, party); // first the server, then the client
     PrintSplitLine('-'); 
 
-    size_t ITEM_LEN = pp.oprf_part.OUTPUT_LEN; // byte length of each item
+    size_t ITEM_LEN = pp.oprf_part.RANGE_SIZE; // byte length of each item
     
     if(party == "sender"){
         NetIO server_io("server", "", 8080);

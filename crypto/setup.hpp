@@ -38,7 +38,7 @@ void CRYPTO_Initialize()
     
     #ifdef USING_CURVE_25519
         PrintSplitLine('-');  
-        std::cout << "accelerate EC exponentiation operations using curve25519" << std::endl; 
+        std::cout << "when it is applicable: accelerate EC exponentiation operations using curve25519" << std::endl; 
     #endif
 
     PrintSplitLine('-');  

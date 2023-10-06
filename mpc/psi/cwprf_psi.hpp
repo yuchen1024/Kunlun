@@ -145,7 +145,7 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_Y)
             std::string(&vec_Fk1k2_X[i].px[0], &vec_Fk1k2_X[i].px[0]+pp.TRUNCATE_LEN); 
     }
 
-    io.SendStringArray(vec_TRUNCATE_Fk1k2_X, pp.TRUNCATE_LEN); 
+    io.SendStringVector(vec_TRUNCATE_Fk1k2_X, pp.TRUNCATE_LEN); 
     std::cout <<"cwPRF-based PSI [step 3]: Sender ===> Truncate(F_k1k2(x_i)) ===> Receiver";
     std::cout << " [" << pp.TRUNCATE_LEN*pp.RECEIVER_LEN/(1024*1024) << " MB]" << std::endl;
 
@@ -197,7 +197,7 @@ std::vector<block> Receive(NetIO &io, PP &pp, std::vector<block> &vec_X)
     }
 
     std::vector<std::string> vec_TRUNCATE_Fk1k2_X; 
-    io.ReceiveStringArray(vec_TRUNCATE_Fk1k2_X, pp.TRUNCATE_LEN); 
+    io.ReceiveStringVector(vec_TRUNCATE_Fk1k2_X, pp.TRUNCATE_LEN); 
     std::unordered_set<std::string> S;
     for(auto i = 0; i < pp.SENDER_LEN; i++){
         S.insert(std::string(&vec_Fk2k1_Y[i].px[0], &vec_Fk2k1_Y[i].px[0]+pp.TRUNCATE_LEN)); 

@@ -147,6 +147,22 @@ std::string ECPointToString(const ECPoint &A)
     return str; 
 }
 
+std::vector<uint8_t> ECPointToBytes(const ECPoint &A) 
+{ 
+    int thread_num = omp_get_thread_num();
+    unsigned char input[POINT_COMPRESSED_BYTE_LEN];
+    unsigned char output[HASH_OUTPUT_LEN]; 
+    EC_POINT_point2oct(group, A.point_ptr, POINT_CONVERSION_COMPRESSED, input, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
+    
+    size_t HASH_INPUT_LEN = POINT_COMPRESSED_BYTE_LEN;
+    BasicHash(input, HASH_INPUT_LEN, output);
+
+    std::vector<uint8_t> result(HASH_OUTPUT_LEN); 
+    memcpy(result.data(), output, HASH_OUTPUT_LEN);
+
+    return result; 
+}
+
 
 block BlocksToBlock(const std::vector<block> &input_block)
 {

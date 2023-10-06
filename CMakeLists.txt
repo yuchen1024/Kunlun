@@ -111,8 +111,11 @@ ADD_EXECUTABLE(test_mqrpmt_private_id test/test_mqrpmt_private_id.cpp)
 TARGET_LINK_LIBRARIES(test_mqrpmt_private_id ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # oprf
-ADD_EXECUTABLE(test_oteoprf test/test_oteoprf.cpp)
-TARGET_LINK_LIBRARIES(test_oteoprf ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+ADD_EXECUTABLE(test_ddh_oprf test/test_ddh_oprf.cpp)
+TARGET_LINK_LIBRARIES(test_ddh_oprf ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_ote_oprf test/test_ote_oprf.cpp)
+TARGET_LINK_LIBRARIES(test_ote_oprf ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # peqt
 ADD_EXECUTABLE(test_peqt test/test_peqt.cpp)

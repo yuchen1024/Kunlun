@@ -103,7 +103,7 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN)
     std::cout << "[Private-ID from distributed OPRF+PSU] Phase 1: compute sender's ID using distributed OPRF (run OPRF twice)>>>" << std::endl;
 
     // first act as server: compute F_k1(X)
-    std::vector<std::vector<uint8_t>> k1 = OPRF::Server(io, pp.oprf_part); 
+    std::vector<uint8_t> k1 = OPRF::Server(io, pp.oprf_part); 
     std::vector<std::vector<uint8_t>> vec_Fk1_X = OPRF::Evaluate(pp.oprf_part, k1, vec_X, pp.SENDER_LEN); 
     // then act as client: compute F_k2(X)
     std::vector<std::vector<uint8_t>> vec_Fk2_X = OPRF::Client(io, pp.oprf_part, vec_X, pp.SENDER_LEN); 
@@ -118,7 +118,7 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN)
     mqRPMTPSU::Send(io, pp.psu_part, vec_X_id, ITEM_LEN);
 
     std::vector<std::vector<uint8_t>> vec_union_id; 
-    io.ReceiveBytesArray(vec_union_id); 
+    io.ReceiveBytesVector(vec_union_id); 
     
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -141,7 +141,7 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN)
     std::vector<std::vector<uint8_t>> vec_Fk1_Y = OPRF::Client(io, pp.oprf_part, vec_Y, pp.RECEIVER_LEN); 
 
     // then act as server: compute F_k2(Y)
-    std::vector<std::vector<uint8_t>> k2 = OPRF::Server(io, pp.oprf_part);     
+    std::vector<uint8_t> k2 = OPRF::Server(io, pp.oprf_part);     
     std::vector<std::vector<uint8_t>> vec_Fk2_Y = OPRF::Evaluate(pp.oprf_part, k2, vec_Y, pp.RECEIVER_LEN);  
 
     // compute F_k(Y) = F_k1(Y) xor F_k2(Y)
@@ -162,7 +162,7 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN)
     std::cout << "[Private-ID from distributed OPRF+PSU] Phase 3: Receiver ===> vec_union_id >>> Sender";
     std::cout << " [" << (double)ITEM_LEN*UNION_SIZE/(1024*1024) << " MB]" << std::endl;
 
-    io.SendBytesArray(vec_union_id); 
+    io.SendBytesVector(vec_union_id); 
 
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;

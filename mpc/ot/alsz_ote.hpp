@@ -488,7 +488,7 @@ void OnesidedSendByteVector(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>>
     {
         vec_outer_C[i] = OTP::Enc(vec_K1[i], vec_m[i]);
     }
-    io.SendBytesArray(vec_outer_C); 
+    io.SendBytesVector(vec_outer_C); 
 
     size_t ITEM_LEN = vec_outer_C[0].size();
     std::cout << "ALSZ OTE [step 3]: Sender ===> vec_C ===> Receiver" << " [" 
@@ -519,7 +519,7 @@ std::vector<std::vector<uint8_t>> OnesidedReceiveByteVector(NetIO &io, PP &pp,
     RandomReceive(io, pp, vec_K, vec_receiver_selection_bit, EXTEND_LEN);
 
     std::vector<std::vector<uint8_t>> vec_outer_C; 
-    io.ReceiveBytesArray(vec_outer_C);
+    io.ReceiveBytesVector(vec_outer_C);
 
     std::vector<std::vector<uint8_t>> vec_result;
     for(auto i = 0; i < EXTEND_LEN; i++){        
@@ -571,8 +571,8 @@ void SendByteVector(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_m0
         vec_outer_C0[i] = OTP::Enc(vec_K0[i], vec_m0[i]);
         vec_outer_C1[i] = OTP::Enc(vec_K1[i], vec_m1[i]);
     }
-    io.SendBytesArray(vec_outer_C0);
-    io.SendBytesArray(vec_outer_C1);
+    io.SendBytesVector(vec_outer_C0);
+    io.SendBytesVector(vec_outer_C1);
 
     size_t ITEM_LEN = vec_outer_C0[0].size();
     std::cout << "ALSZ OTE [step 3]: Sender ===> (vec_C0, vec_C1） ===> Receiver" << " [" 
@@ -603,8 +603,8 @@ std::vector<std::vector<uint8_t>> ReceiveByteVector(NetIO &io, PP &pp, std::vect
 
     std::vector<std::vector<uint8_t>> vec_outer_C0; 
     std::vector<std::vector<uint8_t>> vec_outer_C1; 
-    io.ReceiveBytesArray(vec_outer_C0);
-    io.ReceiveBytesArray(vec_outer_C1);
+    io.ReceiveBytesVector(vec_outer_C0);
+    io.ReceiveBytesVector(vec_outer_C1);
 
     std::vector<std::vector<uint8_t>> vec_result;
     for(auto i = 0; i < EXTEND_LEN; i++){        
