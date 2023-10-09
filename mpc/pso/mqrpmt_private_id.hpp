@@ -3,14 +3,14 @@
 
 #include "../pso/mqrpmt_psu.hpp"
 #include "../oprf/ote_oprf.hpp"
-
+#include "../oprf/vole_oprf.hpp"
 
 /*
 ** implement Private-ID based on distributed OPRF and PSU
 */
 
-#define OPRF OTEOPRF
-//#define OPRF VOLEOPRF
+//#define OPRF OTEOPRF
+#define OPRF VOLEOPRF
 
 namespace mqRPMTPrivateID{
 
@@ -19,7 +19,7 @@ using Serialization::operator>>;
 
 struct PP
 {
-    OTEOPRF::PP oprf_part; 
+    OPRF::PP oprf_part; 
     mqRPMTPSU::PP psu_part; 
 
     size_t LOG_SENDER_LEN; 

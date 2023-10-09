@@ -9,8 +9,8 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#include "../include/std.inc"
-#include "../crypto/block.hpp"
+#include "../../include/std.inc"
+#include "../../crypto/block.hpp"
 #include <vector>
 struct divider
 {

@@ -16,7 +16,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include "../crypto/prg.hpp"
+#include "../../crypto/prg.hpp"
 #include "./utils.h"
 
 // A generic matrix class template that stores a matrix of values of type T.

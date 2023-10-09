@@ -61,6 +61,9 @@ endif()
 
 configure_file(${PROJECT_SOURCE_DIR}/config/config.h.in ${PROJECT_SOURCE_DIR}/config/config.h @ONLY)
 
+# vole
+ADD_EXECUTABLE(test_vole test/test_vole.cpp)
+TARGET_LINK_LIBRARIES(test_vole ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # netio
 ADD_EXECUTABLE(test_netio test/test_netio.cpp)
@@ -116,6 +119,9 @@ TARGET_LINK_LIBRARIES(test_ddh_oprf ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_ote_oprf test/test_ote_oprf.cpp)
 TARGET_LINK_LIBRARIES(test_ote_oprf ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_vole_oprf test/test_vole_oprf.cpp)
+TARGET_LINK_LIBRARIES(test_vole_oprf ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # peqt
 ADD_EXECUTABLE(test_peqt test/test_peqt.cpp)
