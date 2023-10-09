@@ -5,8 +5,8 @@
 */
 
 
-#ifndef KUNLUN_BAXOS_H_
-#define KUNLUN_BAXOS_H_
+#ifndef KUNLUN_BAXOS_HPP_
+#define KUNLUN_BAXOS_HPP_
 #include "paxos.hpp"
 #include "okvs_utility.hpp"
 
