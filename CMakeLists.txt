@@ -65,6 +65,10 @@ configure_file(${PROJECT_SOURCE_DIR}/config/config.h.in ${PROJECT_SOURCE_DIR}/co
 ADD_EXECUTABLE(test_vole test/test_vole.cpp)
 TARGET_LINK_LIBRARIES(test_vole ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
+# cryptocurrency
+ADD_EXECUTABLE(test_okvs test/test_okvs.cpp)
+TARGET_LINK_LIBRARIES(test_okvs ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
 # netio
 ADD_EXECUTABLE(test_netio test/test_netio.cpp)
 TARGET_LINK_LIBRARIES(test_netio ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)

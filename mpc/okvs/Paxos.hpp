@@ -6,8 +6,8 @@
 ** (3) fix two overflow issues when the weight is not 3
 */
 
-#ifndef KUNLUN_PAXOS_H_
-#define KUNLUN_PAXOS_H_
+#ifndef KUNLUN_PAXOS_HPP_
+#define KUNLUN_PAXOS_HPP_
 
 #include <algorithm>
 #include <type_traits>
@@ -17,7 +17,7 @@
 #include <iostream>
 #include <vector>
 #include "../../crypto/prg.hpp"
-#include "./utils.h"
+#include "okvs_utility.hpp"
 
 // A generic matrix class template that stores a matrix of values of type T.
 // It provides methods for resizing the matrix, setting the values of its rows,

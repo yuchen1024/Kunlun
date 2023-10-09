@@ -7,8 +7,9 @@
 
 #ifndef KUNLUN_BAXOS_H_
 #define KUNLUN_BAXOS_H_
-#include "Paxos.hpp"
-#include "utils.h"
+#include "paxos.hpp"
+#include "okvs_utility.hpp"
+
 #include <future>
 template <DenseType dense_type = binary>
 class Baxos
