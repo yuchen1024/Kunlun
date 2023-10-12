@@ -36,8 +36,8 @@ namespace VOLE {
 
 	//(1) VOLE = baseVOLE + tmpVOLE
 	//A obtains vec_A and vec_C, B obtains vec_B and delta, satisfying vec_B = vec_C + vec_A*delta.
-	std::vector<block> VOLE_A(NetIO &A_io, uint64_t N_item, std::vector<block>& vec_C, uint64_t t = 397);
-	void VOLE_B(NetIO &B_io, uint64_t N_item, std::vector<block>& vec_B, block delta, uint64_t t =397);
+	std::vector<block> VOLE_A(NetIO &A_io, uint64_t N_item, std::vector<block>& vec_C, uint64_t t = 128);
+	void VOLE_B(NetIO &B_io, uint64_t N_item, std::vector<block>& vec_B, block delta, uint64_t t = 128);
 	
 	
 	// (2) tmpVOLE = t * spVOLE + ExConvCode
@@ -52,11 +52,11 @@ namespace VOLE {
 	
 	
 	
-	/* why set t = 397?
+	/*  the range of t is [128,248]:
 	** for:  t = std::max<uint64_t>(128, -double(secParam) / d);
 	** d = std::log2(1 - 2 * minDistRatio);
-	** in EC Code, we set a = 24, w = 7, minDistRatio = 0.1, secParam = 128;
-	** so t = 397; 
+	** in EC Code, we set a = 24, w = 21, minDistRatio = 0.15, secParam = 128;
+	** so t_max = 248; 
 	*/
 	
 	//(1) VOLE = baseVOLE + tmpVOLE
