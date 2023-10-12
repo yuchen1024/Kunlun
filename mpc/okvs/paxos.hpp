@@ -240,6 +240,7 @@ public:
             return min_node.col_idx;
          }
       }
+      return 0;
    }
 
    // two auxiliary variables used for quick modulo calculation using round-up division.
