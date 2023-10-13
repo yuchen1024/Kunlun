@@ -22,12 +22,7 @@ In detail, we implement the protocol in Figure:7 without consistency check.
 #ifndef VOLE_HPP
 #define VOLE_HPP
 #include<cmath>
-#include<iostream>
-#include<vector>
-#include "../ot/iknp_ote.hpp"
 #include "../../crypto/setup.hpp"
-#include "../../crypto/aes.hpp"
-#include"../../crypto/block.hpp"
 #include"basevole.hpp"
 #include"exconvcode.hpp"
 
@@ -53,7 +48,7 @@ namespace VOLE {
 	
 	
 	/*  the range of t is [128,248]:
-	** for:  t = std::max<uint64_t>(128, -double(secParam) / d);
+	** for:  t_max = std::max<uint64_t>(128, -double(secParam) / d);
 	** d = std::log2(1 - 2 * minDistRatio);
 	** in EC Code, we set a = 24, w = 21, minDistRatio = 0.15, secParam = 128;
 	** so t_max = 248; 
@@ -126,24 +121,24 @@ namespace VOLE {
 		// send t blocks to R 
 		server_io.SendBlocks(vec_sendtoR.data(),t);
 		
-		// send vec_m0, vec_m1 to R by IKNPOTE
+		// send vec_m0, vec_m1 to R by ALSZOTE 
 		uint64_t EXTEND_LEN;
 		if(selection_len % 128){
 			uint64_t add_mod =128 - (selection_len % 128);
 			EXTEND_LEN = selection_len + add_mod;
 		}
 		else{EXTEND_LEN = selection_len;}
-    		std::string pp_filename = "iknpote.pp"; 
-    		IKNPOTE::PP pp; 
+    		std::string pp_filename = "alszote.pp"; 
+    		ALSZOTE::PP pp; 
     		size_t BASE_LEN = 128;
     		if(!FileExist(pp_filename)){
-        		pp = IKNPOTE::Setup(BASE_LEN); 
-        		IKNPOTE::SavePP(pp, pp_filename); 
+        		pp = ALSZOTE::Setup(BASE_LEN); 
+        		ALSZOTE::SavePP(pp, pp_filename); 
     		}
     		else{
-        		IKNPOTE::FetchPP(pp, pp_filename);
+        		ALSZOTE::FetchPP(pp, pp_filename);
     		}
-    		IKNPOTE::Send(server_io, pp, vec_m0, vec_m1, EXTEND_LEN);
+    		ALSZOTE::Send(server_io, pp, vec_m0, vec_m1, EXTEND_LEN);
 
         	
 		// set seed for ECCode
@@ -209,26 +204,26 @@ namespace VOLE {
 		
 		// receive vec_total_m by vec_select_bit
 		std::vector<block> vec_total_m;
-    		std::string pp_filename = "iknpote.pp"; 
-    		IKNPOTE::PP pp; 
+    		std::string pp_filename = "alszote.pp"; 
+    		ALSZOTE::PP pp; 
     		size_t BASE_LEN = 128;
     		if(!FileExist(pp_filename)){
-        		pp = IKNPOTE::Setup(BASE_LEN); 
-        		IKNPOTE::SavePP(pp, pp_filename); 
+        		pp = ALSZOTE::Setup(BASE_LEN); 
+        		ALSZOTE::SavePP(pp, pp_filename); 
     		}
     		else{
-        		IKNPOTE::FetchPP(pp, pp_filename);
+        		ALSZOTE::FetchPP(pp, pp_filename);
     		} 	
 		uint64_t EXTEND_LEN;
 		if(select_len % 128){
 			uint64_t add_mod =128 - (select_len % 128);
 			EXTEND_LEN = select_len + add_mod;
 			
-			vec_total_m = IKNPOTE::Receive(client_io, pp, vec_select_bit, EXTEND_LEN);
+			vec_total_m = ALSZOTE::Receive(client_io, pp, vec_select_bit, EXTEND_LEN);
 			vec_total_m.resize(select_len);
 		}
 		else{
-			vec_total_m = IKNPOTE::Receive(client_io, pp, vec_select_bit, select_len);
+			vec_total_m = ALSZOTE::Receive(client_io, pp, vec_select_bit, select_len);
 		
 		}	
 
