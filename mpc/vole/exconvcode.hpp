@@ -26,7 +26,7 @@ dualEncode(vec_x) = expand(accumulate(vec_x))
 #include <assert.h>
 #include"../../crypto/block.hpp"
 #include"../../crypto/prg.hpp"
-#include <omp.h>
+
 namespace VOLE {
 	std::vector<uint32_t> GenRandomMod(uint32_t mmod, uint32_t len, PRG::Seed seed = PRG::SetSeed());
 
