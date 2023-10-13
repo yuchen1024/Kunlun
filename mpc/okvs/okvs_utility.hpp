@@ -413,7 +413,7 @@ inline void doMod32(uint64_t *vals, divider *divider, const uint64_t &modVal)
     vals[i + 31] -= temp64h[3] * modVal;
 }
 template <typename T1,typename T2>
-inline T1 gf128_mul(const T1 x, const T2 y){}
+inline T1 gf128_mul(const T1 x, const T2 y){return T1();}
 
 __attribute__((target("pclmul,sse2")))
 inline block gf128_mul(const block x, const block y)
@@ -709,6 +709,7 @@ inline uint64_t hashtable_bin_size(uint64_t bin_num, uint64_t item_num, uint8_t 
         auto B = std::ceil(std::pow(2, b0));
         return B;
     }
+    return 0;
 }
 
 #include <string>

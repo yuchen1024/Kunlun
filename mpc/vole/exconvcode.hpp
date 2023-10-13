@@ -39,7 +39,7 @@ namespace VOLE {
 		uint32_t expanderWeight;
 		uint32_t accumulatorSize;
 	public:
-		void config(PRG::Seed seed, uint32_t mR = 2, uint32_t mExpanderWeight = 7, uint32_t mAccumulatorSize = 24);
+		void config(PRG::Seed seed, uint32_t mR = 2, uint32_t mExpanderWeight = 21, uint32_t mAccumulatorSize = 24);
 
 		// e[0,1...,k-1] = G * e 
 		
