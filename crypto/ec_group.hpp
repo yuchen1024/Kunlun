@@ -13,9 +13,9 @@
 ** will save bandwidth by half at the cost of expensive decompression 
 */
 
-#define USING_CURVE_25519
 inline int curve_id = NID_X9_62_prime256v1;  
 //#define ECPOINT_COMPRESSED
+#define ENABLE_CURVE25519_ACCELERATION
 
 inline EC_GROUP *group;
 const inline EC_POINT *generator; 

@@ -97,7 +97,7 @@ void FetchPP(PP &pp, std::string pp_filename)
     fin.close(); 
 }
 
-#ifndef USING_CURVE_25519
+#ifndef ENABLE_CURVE25519_ACCELERATION
 std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
 {
     if(pp.SERVER_LEN != vec_Y.size()){

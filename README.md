@@ -195,27 +195,15 @@ inline const size_t NUMBER_OF_THREADS = 1;
 ```
 
 ## Elliptic curve setting
-- Kunlun not only support all EC curves provided by OpenSSL, but also support the hidden curve25519.    
+- Kunlun supports all EC curves provided by OpenSSL. The global setting of EC curves lies at "crypto/ec_group.hpp" line 16-18. 
 
-- The global setting of EC curves lies at "crypto/ec_group.hpp" line 16-18
-
-- curve25519 can significantly improve EC exponentiation operations, 
-  but does not support EC add operations. 
-  In sum, curve25519 is not full-fledged, 
-  and thus ordinary EC curves are always necessary for base OT. 
-  One can decide whether using curve25519 to accelerate EC exponentiation operations 
-  by turn on/off line 16    
 ```
-#define USING_CURVE_25519 
+inline int curve_id = NID_X9_62_prime256v1; // choose other curves by specifying curve-ID  
+#define ECPOINT_COMPRESSED                  // comment this line to enable uncompressed representation
+#define ENABLE_CURVE25519_ACCELERATION      // (un)comment this line to enable curve25519 acceleration
 ```
 
-- choose other curves by curve-ID
-```
-//#define USING_CURVE_25519 // comment this line
-inline int curve_id = NID_X9_62_prime256v1;  
-#define ECPOINT_COMPRESSED // comment this line to enable uncompressed representation
-```
-
+Note: curve25519 can significantly improve EC exponentiation operations, but does not support EC add operations. Kunlun provides the option of using curve25519 to improve performance of applications (like cwPRF) which only need EC exponentiation operations. But, since curve25519 is not full-fledged, ordinary EC curves are always necessary for base Naor-Pinkas OT. Therefore, users must specify one ordinary EC curve.    
 
 ## Evolution and Updates Log
 
