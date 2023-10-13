@@ -21,10 +21,9 @@ In detail, we implement the protocol in Figure:15 with p = p^r = 2^128.
 #define BASEVOLE_HPP
 #include <vector>
 #include <iostream>
-#include <omp.h>
+#include "../ot/alsz_ote.hpp"
 #include "../../crypto/aes.hpp"
 #include"../../crypto/block.hpp"
-
 
 
 namespace VOLE {
@@ -217,18 +216,18 @@ namespace VOLE {
 		std::vector<block> vec_k1 = PRG::GenRandomBlocks(seed_k, EXTEND_LEN);
 		
 		// send vec_k0,vec_k1 to OT 
-		IKNPOTE::PP pp;
-		std::string pp_filename = "iknpote.pp"; 
+		ALSZOTE::PP pp;
+		std::string pp_filename = "alszote.pp"; 
     		if(!FileExist(pp_filename)){
-        		pp = IKNPOTE::Setup(BASE_LEN); 
-        		IKNPOTE::SavePP(pp, pp_filename); 
+        		pp = ALSZOTE::Setup(BASE_LEN); 
+        		ALSZOTE::SavePP(pp, pp_filename); 
     		}
     		else{
-        		IKNPOTE::FetchPP(pp, pp_filename);
+        		ALSZOTE::FetchPP(pp, pp_filename);
     		}
 
 		
-		IKNPOTE::Send(server_io, pp, vec_k0, vec_k1, EXTEND_LEN);
+		ALSZOTE::Send(server_io, pp, vec_k0, vec_k1, EXTEND_LEN);
 		
 		
 		// how to do the following in parallel
@@ -307,16 +306,16 @@ namespace VOLE {
 		}
 
 		// use vec_delta_bit to receive 128 K from OT 
-		IKNPOTE::PP pp;
-		std::string pp_filename = "iknpote.pp"; 
+		ALSZOTE::PP pp;
+		std::string pp_filename = "alszote.pp"; 
     		if(!FileExist(pp_filename)){
-        		pp = IKNPOTE::Setup(BASE_LEN); 
-        		IKNPOTE::SavePP(pp, pp_filename); 
+        		pp = ALSZOTE::Setup(BASE_LEN); 
+        		ALSZOTE::SavePP(pp, pp_filename); 
     		}
     		else{
-        		IKNPOTE::FetchPP(pp, pp_filename);
+        		ALSZOTE::FetchPP(pp, pp_filename);
     		}
-		std::vector<block> vec_k = IKNPOTE::Receive(client_io, pp, vec_select_bit, EXTEND_LEN);
+		std::vector<block> vec_k = ALSZOTE::Receive(client_io, pp, vec_select_bit, EXTEND_LEN);
 		
 		// set fixed seed for PRG 
 		PRG::Seed prg_seed = PRG::SetSeed(fixed_seed, 0);
