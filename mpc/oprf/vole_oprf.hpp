@@ -1,15 +1,11 @@
 /* vole_oprf = VOLE + OKVS  */
 
+#include "../../netio/stream_channel.hpp"
+#include "../../utility/print.hpp"
 #include "../okvs/baxos.hpp"
 #include"../vole/vole.hpp"
 
-#include <iostream>
-#include <vector>
-#include "../../netio/stream_channel.hpp"
-#include "../../utility/print.hpp"
-#include "../../crypto/block.hpp"
-
-inline std::vector<std::vector<uint8_t>> Block_TO_U8(std::vector<block> Vec){
+inline std::vector<std::vector<uint8_t>> BlockToV8(std::vector<block> Vec){
         auto size=Vec.size();
         std::vector<std::vector<uint8_t>> ans(size,std::vector<uint8_t>(16));
         for(auto i=0;i<size;i++){
@@ -18,7 +14,7 @@ inline std::vector<std::vector<uint8_t>> Block_TO_U8(std::vector<block> Vec){
         return ans;
     }
 
-inline std::vector<block> U8_TO_Block(std::vector<std::vector<uint8_t>> matrixx){
+inline std::vector<block> V8ToBlock(std::vector<std::vector<uint8_t>> matrixx){
 	auto size = matrixx.size();
 	std::vector<block> ans(size);
 	for(auto i=0;i<size;i++){
@@ -26,7 +22,7 @@ inline std::vector<block> U8_TO_Block(std::vector<std::vector<uint8_t>> matrixx)
 	}
 	return ans;
 }
-inline std::vector<uint8_t> Block_TO_Byte(std::vector<block> Vec){
+inline std::vector<uint8_t> BlockToByte(std::vector<block> Vec){
         auto size=Vec.size();
         std::vector<uint8_t> ans(size*16);
         for(auto i=0;i<size;i++){
@@ -35,7 +31,7 @@ inline std::vector<uint8_t> Block_TO_Byte(std::vector<block> Vec){
         return ans;
     }
 
-inline std::vector<block> Byte_TO_Block(std::vector<uint8_t> matrixx){
+inline std::vector<block> ByteToBlock(std::vector<uint8_t> matrixx){
 	auto size = matrixx.size()/16;
 	std::vector<block> ans(size);
 	for(auto i=0;i<size;i++){
@@ -90,7 +86,7 @@ namespace VOLEOPRF
         
         return pp;
     }
-    std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_NUM)
+    std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_NUM)
     {
         auto start_time = std::chrono::steady_clock::now();
         // the seed used to generate the initial random data
@@ -107,7 +103,7 @@ namespace VOLEOPRF
         std::vector<block> vec_zero(ITEM_NUM,a0);
         
         std::vector<block> P(size);
-        pp.okvs.solve(vec_Y, vec_zero, P, nullptr, pp.thread_num);
+        pp.okvs.solve(vec_X, vec_zero, P, nullptr, pp.thread_num);
 
         // Fig 4.Step 3:VOLE
         std::vector<block> A;
@@ -143,18 +139,18 @@ namespace VOLEOPRF
 
         // Prepare for Fig 4.Step 6 Decode(C,x)
         std::vector<block> output(ITEM_NUM);
-        pp.okvs.decode(vec_Y, output, C, pp.thread_num);
+        pp.okvs.decode(vec_X, output, C, pp.thread_num);
         auto end_time = std::chrono::steady_clock::now();
         
     	PrintSplitLine('-');
-    std::cout << "VOLE-based OPRF[Step 1]: Receiver ===> vec_A ===> Sender [" 
+    std::cout << "VOLE-based OPRF [step 1]: Receiver ===> vec_A ===> Sender [" 
               << (double)(P.size())/(1 << 16) << " MB]" << std::endl; 
                      
         auto running_time = end_time - start_time;
-        std::cout << "VOLE-based OPRF[Step 2]: Receiver side takes time "
-                  << std::chrono::duration<double, std::milli>(running_time).count() << " ms to calculate vec_A and vec_Fk_Y." << std::endl;
+        std::cout << "VOLE-based OPRF [step 2]: Receiver side takes "
+                  << std::chrono::duration<double, std::milli>(running_time).count() << " ms to calculate vec_A and Fk_X." << std::endl;
         PrintSplitLine('-');
-        return Block_TO_U8(output);
+        return BlockToV8(output);
     }
 
     std::vector<uint8_t> Server(NetIO &io, PP &pp)
@@ -211,37 +207,37 @@ namespace VOLEOPRF
 
         auto end_time = std::chrono::steady_clock::now();
         auto running_time = end_time - start_time;
-        std::cout << "VOLE-based OPRF[Step 3]: Sender side takes: "
+        std::cout << "VOLE-based OPRF [step 3]: Sender side takes "
                   << std::chrono::duration<double, std::milli>(running_time).count() << " ms to calculate OPRF_KEY." << std::endl;
-        return Block_TO_Byte(K);
+        return BlockToByte(K);
         
     }
 
-    std::vector<std::vector<uint8_t>> Evaluate(PP &pp, std::vector<uint8_t> &oprf_key, std::vector<block> &vec_X, size_t ITEM_NUM)
+    std::vector<std::vector<uint8_t>> Evaluate(PP &pp, std::vector<uint8_t> &oprf_key, std::vector<block> &vec_Y, size_t ITEM_NUM)
     
     {
         
         //transform byte to block
-        std::vector<block> block_oprf_key = Byte_TO_Block(oprf_key);
+        std::vector<block> block_oprf_key = ByteToBlock(oprf_key);
         
         std::vector<block> output(ITEM_NUM);
         auto start_time = std::chrono::steady_clock::now();
-        pp.okvs.decode(vec_X, output, block_oprf_key, 1);
+        pp.okvs.decode(vec_Y, output, block_oprf_key, 1);
 
         // transform block to byte
         //u8_oprf_key = Block_TO_Byte(oprf_key);
         
         auto end_time = std::chrono::steady_clock::now();
         auto running_time = end_time - start_time;
-        std::cout << "VOLE-based OPRF[Step 4]: Sender side takes: "
-                  << std::chrono::duration<double, std::milli>(running_time).count() << " ms to calculate vec_Fk_X." << std::endl;
+        std::cout << "VOLE-based OPRF [step 4]: Sender side takes "
+                  << std::chrono::duration<double, std::milli>(running_time).count() << " ms to calculate Fk_Y." << std::endl;
         PrintSplitLine('-');
-        return Block_TO_U8(output);
+        return BlockToV8(output);
     }
     
     //Client1, Server1 and Evaluate1 just for test_voleoprf.cpp
 
-    std::vector<block> Client1(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_NUM)
+    std::vector<block> Client1(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_NUM)
     {
         
         // the seed used to generate the initial random data
@@ -258,7 +254,7 @@ namespace VOLEOPRF
         std::vector<block> vec_zero(ITEM_NUM,a0);
         
         std::vector<block> P(size);
-        pp.okvs.solve(vec_Y, vec_zero, P, nullptr, pp.thread_num);
+        pp.okvs.solve(vec_X, vec_zero, P, nullptr, pp.thread_num);
 
         // Fig 4.Step 3:VOLE
         std::vector<block> A;
@@ -294,7 +290,7 @@ namespace VOLEOPRF
 
         // Prepare for Fig 4.Step 6 Decode(C,x)
         std::vector<block> output(ITEM_NUM);
-        pp.okvs.decode(vec_Y, output, C, pp.thread_num);
+        pp.okvs.decode(vec_X, output, C, pp.thread_num);
         
     	PrintSplitLine('-');
     std::cout << "VOLE-based OPRF: Receiver ===> vector_A ===> Sender [" 
@@ -355,16 +351,16 @@ namespace VOLEOPRF
             *K_pointer ^= gf128_mul(Delta, *P_pointer);
         }
         
-        return Block_TO_Byte(K);
+        return BlockToByte(K);
     }
 
     
-    std::vector<block> Evaluate1(PP &pp, std::vector<uint8_t> &oprf_key, std::vector<block> &vec_X, size_t ITEM_NUM)
+    std::vector<block> Evaluate1(PP &pp, std::vector<uint8_t> &oprf_key, std::vector<block> &vec_Y, size_t ITEM_NUM)
     {
   
-        std::vector<block> block_oprf_key = Byte_TO_Block(oprf_key);
+        std::vector<block> block_oprf_key = ByteToBlock(oprf_key);
         std::vector<block> output(ITEM_NUM);
-        pp.okvs.decode(vec_X, output, block_oprf_key, 1);
+        pp.okvs.decode(vec_Y, output, block_oprf_key, 1);
 
         return output;
     }
