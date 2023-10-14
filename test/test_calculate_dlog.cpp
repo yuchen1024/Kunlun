@@ -27,7 +27,7 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     LoadTable(table_filename, RANGE_LEN, TRADEOFF_NUM); 
     
     BigInt x[TEST_NUM];                        // scalars  
-    BigInt x_prime[TEST_NUM];                  // dlog scalars
+    BigInt x_real[TEST_NUM];                  // dlog scalars
     ECPoint Y[TEST_NUM];  
     BigInt MAX = BigInt(bn_2).Exp(RANGE_LEN);
     for(auto i = 0; i < TEST_NUM; i++)
@@ -40,7 +40,7 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     auto start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        ShanksDLOG(g, Y[i], RANGE_LEN, TRADEOFF_NUM, x_prime[i]); 
+        ShanksDLOG(g, Y[i], RANGE_LEN, TRADEOFF_NUM, x_real[i]); 
     }
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -49,7 +49,7 @@ void benchmark_dlog(size_t RANGE_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 
     for(auto i = 0; i < TEST_NUM; i++)
     {        
-        if(x[i] != x_prime[i]){ 
+        if(x[i] != x_real[i]){ 
             std::cout << "dlog fails at test case " << i << std::endl;
         } 
     }

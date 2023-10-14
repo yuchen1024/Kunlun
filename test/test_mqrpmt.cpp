@@ -153,13 +153,13 @@ int main()
   
     if(party == "server"){
         NetIO server("server", "", 8080);
-        std::vector<uint8_t> vec_indication_bit_prime;
+        std::vector<uint8_t> vec_indication_bit_real;
         
-        vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y);
+        vec_indication_bit_real = cwPRFmqRPMT::Server(server, pp, testcase.vec_Y);
 
         size_t HAMMING_WEIGHT = 0;
         for(auto i = 0; i < pp.CLIENT_LEN; i++){
-            if(vec_indication_bit_prime[i] == 1) HAMMING_WEIGHT++; 
+            if(vec_indication_bit_real[i] == 1) HAMMING_WEIGHT++; 
         } 
         std::cout << "correct Hamming weight = " << testcase.HAMMING_WEIGHT << std::endl;
         std::cout << "real Hamming weight = " << HAMMING_WEIGHT << std::endl;

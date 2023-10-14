@@ -62,7 +62,7 @@ void SavePP(PP &pp, std::string pp_filename)
     if(!fout)
     {
         std::cerr << pp_filename << " open error" << std::endl;
-        exit(1); 
+        exit(1);  
     }
     fout << pp; 
     fout.close(); 

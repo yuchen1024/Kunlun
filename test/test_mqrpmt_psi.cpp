@@ -3,10 +3,10 @@
 
 
 struct TestCase{
-    size_t LOG_SENDER_LEN; 
-    size_t LOG_RECEIVER_LEN; 
-    size_t SENDER_LEN; 
-    size_t RECEIVER_LEN; 
+    size_t LOG_SENDER_ITEM_NUM; 
+    size_t LOG_RECEIVER_ITEM_NUM; 
+    size_t SENDER_ITEM_NUM; 
+    size_t RECEIVER_ITEM_NUM; 
     std::vector<block> vec_X; // sender's set
     std::vector<block> vec_Y; // receiver's set
 
@@ -18,32 +18,32 @@ struct TestCase{
 };
 
 // LEN is the cardinality of two sets
-TestCase GenTestCase(size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
+TestCase GenTestCase(size_t LOG_SENDER_ITEM_NUM, size_t LOG_RECEIVER_ITEM_NUM)
 {
     TestCase testcase;
 
-    testcase.LOG_SENDER_LEN = LOG_SENDER_LEN; 
-    testcase.LOG_RECEIVER_LEN = LOG_RECEIVER_LEN; 
-    testcase.SENDER_LEN = size_t(pow(2, testcase.LOG_SENDER_LEN));  
-    testcase.RECEIVER_LEN = size_t(pow(2, testcase.LOG_RECEIVER_LEN)); 
+    testcase.LOG_SENDER_ITEM_NUM = LOG_SENDER_ITEM_NUM; 
+    testcase.LOG_RECEIVER_ITEM_NUM = LOG_RECEIVER_ITEM_NUM; 
+    testcase.SENDER_ITEM_NUM = size_t(pow(2, testcase.LOG_SENDER_ITEM_NUM));  
+    testcase.RECEIVER_ITEM_NUM = size_t(pow(2, testcase.LOG_RECEIVER_ITEM_NUM)); 
 
     PRG::Seed seed = PRG::SetSeed(nullptr, 0); // initialize PRG
-    testcase.vec_X = PRG::GenRandomBlocks(seed, testcase.SENDER_LEN);
-    testcase.vec_Y = PRG::GenRandomBlocks(seed, testcase.RECEIVER_LEN);
+    testcase.vec_X = PRG::GenRandomBlocks(seed, testcase.SENDER_ITEM_NUM);
+    testcase.vec_Y = PRG::GenRandomBlocks(seed, testcase.RECEIVER_ITEM_NUM);
 
     // set the Hamming weight to be a half of the max possible intersection size
-    testcase.HAMMING_WEIGHT = std::min(testcase.SENDER_LEN, testcase.RECEIVER_LEN)/2;
+    testcase.HAMMING_WEIGHT = std::min(testcase.SENDER_ITEM_NUM, testcase.RECEIVER_ITEM_NUM)/2;
 
     // generate a random indication bit vector conditioned on given Hamming weight
-    testcase.vec_indication_bit.resize(testcase.SENDER_LEN);  
-    for(auto i = 0; i < testcase.SENDER_LEN; i++){
+    testcase.vec_indication_bit.resize(testcase.SENDER_ITEM_NUM);  
+    for(auto i = 0; i < testcase.SENDER_ITEM_NUM; i++){
         if(i < testcase.HAMMING_WEIGHT) testcase.vec_indication_bit[i] = 1; 
         else testcase.vec_indication_bit[i] = 0; 
     }
     std::shuffle(testcase.vec_indication_bit.begin(), testcase.vec_indication_bit.end(), global_built_in_prg);
 
     // adjust vec_X and vec_Y
-    for(auto i = 0, j = 0; i < testcase.SENDER_LEN; i++){
+    for(auto i = 0, j = 0; i < testcase.SENDER_ITEM_NUM; i++){
         if(testcase.vec_indication_bit[i] == 1){
             testcase.vec_X[i] = testcase.vec_Y[j];
             testcase.vec_intersection.emplace_back(testcase.vec_Y[j]); 
@@ -60,8 +60,8 @@ void PrintTestCase(TestCase testcase)
 {
     PrintSplitLine('-'); 
     std::cout << "TESTCASE INFO >>>" << std::endl;
-    std::cout << "Sender's set size = " << testcase.SENDER_LEN << std::endl;
-    std::cout << "Receiver's set size = " << testcase.RECEIVER_LEN << std::endl;
+    std::cout << "Sender's set size = " << testcase.SENDER_ITEM_NUM << std::endl;
+    std::cout << "Receiver's set size = " << testcase.RECEIVER_ITEM_NUM << std::endl;
     std::cout << "Intersection cardinality = " << testcase.HAMMING_WEIGHT << std::endl; 
     PrintSplitLine('-'); 
 }
@@ -76,10 +76,10 @@ void SaveTestCase(TestCase &testcase, std::string testcase_filename)
         exit(1); 
     }
 
-    fout << testcase.LOG_SENDER_LEN; 
-    fout << testcase.LOG_RECEIVER_LEN; 
-    fout << testcase.SENDER_LEN; 
-    fout << testcase.RECEIVER_LEN; 
+    fout << testcase.LOG_SENDER_ITEM_NUM; 
+    fout << testcase.LOG_RECEIVER_ITEM_NUM; 
+    fout << testcase.SENDER_ITEM_NUM; 
+    fout << testcase.RECEIVER_ITEM_NUM; 
     fout << testcase.HAMMING_WEIGHT; 
      
     fout << testcase.vec_X; 
@@ -100,15 +100,15 @@ void FetchTestCase(TestCase &testcase, std::string testcase_filename)
         exit(1); 
     }
 
-    fin >> testcase.LOG_SENDER_LEN; 
-    fin >> testcase.LOG_RECEIVER_LEN; 
-    fin >> testcase.SENDER_LEN; 
-    fin >> testcase.RECEIVER_LEN;
+    fin >> testcase.LOG_SENDER_ITEM_NUM; 
+    fin >> testcase.LOG_RECEIVER_ITEM_NUM; 
+    fin >> testcase.SENDER_ITEM_NUM; 
+    fin >> testcase.RECEIVER_ITEM_NUM;
     fin >> testcase.HAMMING_WEIGHT; 
 
-    testcase.vec_X.resize(testcase.SENDER_LEN); 
-    testcase.vec_Y.resize(testcase.RECEIVER_LEN); 
-    testcase.vec_indication_bit.resize(testcase.SENDER_LEN); 
+    testcase.vec_X.resize(testcase.SENDER_ITEM_NUM); 
+    testcase.vec_Y.resize(testcase.RECEIVER_ITEM_NUM); 
+    testcase.vec_indication_bit.resize(testcase.SENDER_ITEM_NUM); 
     testcase.vec_intersection.resize(testcase.HAMMING_WEIGHT);   
 
     fin >> testcase.vec_X; 
@@ -136,10 +136,10 @@ int main()
         std::string filter_type = "bloom"; 
         size_t computational_security_parameter = 128;         
         size_t statistical_security_parameter = 40; 
-        size_t LOG_SENDER_LEN = 20;
-        size_t LOG_RECEIVER_LEN = 20;  
+        size_t LOG_SENDER_ITEM_NUM = 20;
+        size_t LOG_RECEIVER_ITEM_NUM = 20;  
         pp = mqRPMTPSI::Setup("bloom", computational_security_parameter, statistical_security_parameter, 
-                              LOG_SENDER_LEN, LOG_RECEIVER_LEN); 
+                              LOG_SENDER_ITEM_NUM, LOG_RECEIVER_ITEM_NUM); 
         mqRPMTPSI::SavePP(pp, pp_filename); 
     }
     else{
@@ -153,13 +153,13 @@ int main()
     TestCase testcase; 
     if(!FileExist(testcase_filename)){ 
         std::cout << testcase_filename << " does not exist" << std::endl; 
-        testcase = GenTestCase(pp.LOG_SENDER_LEN, pp.LOG_RECEIVER_LEN); 
+        testcase = GenTestCase(pp.LOG_SENDER_ITEM_NUM, pp.LOG_RECEIVER_ITEM_NUM); 
         SaveTestCase(testcase, testcase_filename); 
     }
     else{
         std::cout << testcase_filename << " already exist" << std::endl; 
         FetchTestCase(testcase, testcase_filename);
-        if((testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN) || (testcase.LOG_SENDER_LEN != pp.LOG_SENDER_LEN)){
+        if((testcase.LOG_SENDER_ITEM_NUM != pp.LOG_SENDER_ITEM_NUM) || (testcase.LOG_SENDER_ITEM_NUM != pp.LOG_SENDER_ITEM_NUM)){
             std::cerr << "testcase and public parameter do not match" << std::endl; 
         }
     }
@@ -178,9 +178,9 @@ int main()
 
     if(party == "receiver"){
         NetIO server("server", "", 8080);
-        std::vector<block> vec_intersection_prime = mqRPMTPSI::Receive(server, pp, testcase.vec_Y);
+        std::vector<block> vec_intersection_real = mqRPMTPSI::Receive(server, pp, testcase.vec_Y); // real result
         std::set<block, BlockCompare> set_diff_result = 
-            ComputeSetDifference(vec_intersection_prime, testcase.vec_intersection);  
+            ComputeSetDifference(vec_intersection_real, testcase.vec_intersection);  
 
         double error_probability = set_diff_result.size()/double(testcase.vec_intersection.size()); 
         std::cout << "mqRPMT-based PSI test succeeds with probability " << (1 - error_probability) << std::endl; 

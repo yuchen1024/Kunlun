@@ -19,20 +19,18 @@ struct PP
     ALSZOTE::PP ote_part; 
     cwPRFmqRPMT::PP mqrpmt_part; 
 
-
-    size_t LOG_SENDER_LEN; 
-    size_t LOG_RECEIVER_LEN; 
-    size_t SENDER_LEN; 
-    size_t RECEIVER_LEN; 
+    size_t LOG_SENDER_ITEM_NUM; 
+    size_t LOG_RECEIVER_ITEM_NUM; 
+    size_t SENDER_ITEM_NUM; 
+    size_t RECEIVER_ITEM_NUM; 
     size_t LOG_SUM_BOUND; // binary length of SUM_BOUND
     size_t LOG_VALUE_BOUND; // binary length of VALUE_BOUND
-
 };
 
 PP Setup(std::string filter_type, 
         size_t computational_security_parameter, 
         size_t statistical_security_parameter, 
-        size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN, 
+        size_t LOG_SENDER_ITEM_NUM, size_t LOG_RECEIVER_ITEM_NUM, 
         size_t LOG_SUM_BOUND, size_t LOG_VALUE_BOUND)
 {
     PP pp; 
@@ -40,20 +38,20 @@ PP Setup(std::string filter_type,
 
     // always having receiver plays the role of server, sender play the role of client
     pp.mqrpmt_part = cwPRFmqRPMT::Setup(filter_type, statistical_security_parameter, 
-                                        LOG_RECEIVER_LEN, LOG_SENDER_LEN);
+                                        LOG_RECEIVER_ITEM_NUM, LOG_SENDER_ITEM_NUM);
 
-    pp.LOG_SENDER_LEN = LOG_SENDER_LEN;
-    pp.LOG_RECEIVER_LEN = LOG_RECEIVER_LEN; 
+    pp.LOG_SENDER_ITEM_NUM = LOG_SENDER_ITEM_NUM;
+    pp.LOG_RECEIVER_ITEM_NUM = LOG_RECEIVER_ITEM_NUM; 
 
-    pp.SENDER_LEN = size_t(pow(2, pp.LOG_SENDER_LEN));
-    pp.RECEIVER_LEN = size_t(pow(2, pp.LOG_RECEIVER_LEN)); 
+    pp.SENDER_ITEM_NUM = size_t(pow(2, pp.LOG_SENDER_ITEM_NUM));
+    pp.RECEIVER_ITEM_NUM = size_t(pow(2, pp.LOG_RECEIVER_ITEM_NUM)); 
 
     if(LOG_SUM_BOUND%8 != 0){
         std::cerr << "LOG_SUM_BOUND must be mulitple of 8" << std::endl;
-        exit(0); 
+        exit(1); // EXIT_FAILURE  
     }
     pp.LOG_SUM_BOUND = LOG_SUM_BOUND; 
-    pp.LOG_VALUE_BOUND = pp.LOG_SUM_BOUND - pp.LOG_SENDER_LEN;  
+    pp.LOG_VALUE_BOUND = LOG_VALUE_BOUND; 
 
     return pp; 
 }
@@ -64,10 +62,10 @@ std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
     fout << pp.ote_part; 
     fout << pp.mqrpmt_part; 
 
-    fout << pp.LOG_SENDER_LEN; 
-    fout << pp.LOG_RECEIVER_LEN; 
-    fout << pp.SENDER_LEN; 
-    fout << pp.RECEIVER_LEN; 
+    fout << pp.LOG_SENDER_ITEM_NUM; 
+    fout << pp.LOG_RECEIVER_ITEM_NUM; 
+    fout << pp.SENDER_ITEM_NUM; 
+    fout << pp.RECEIVER_ITEM_NUM; 
     fout << pp.LOG_SUM_BOUND; 
     fout << pp.LOG_VALUE_BOUND;
 
@@ -96,10 +94,10 @@ std::ifstream &operator>>(std::ifstream &fin, PP &pp)
     fin >> pp.ote_part;
     fin >> pp.mqrpmt_part; 
 
-    fin >> pp.LOG_SENDER_LEN; 
-    fin >> pp.LOG_RECEIVER_LEN; 
-    fin >> pp.SENDER_LEN; 
-    fin >> pp.RECEIVER_LEN; 
+    fin >> pp.LOG_SENDER_ITEM_NUM; 
+    fin >> pp.LOG_RECEIVER_ITEM_NUM; 
+    fin >> pp.SENDER_ITEM_NUM; 
+    fin >> pp.RECEIVER_ITEM_NUM; 
     fin >> pp.LOG_SUM_BOUND; // must be divided by 8
     fin >> pp.LOG_VALUE_BOUND;
 
@@ -114,7 +112,7 @@ void FetchPP(PP &pp, std::string pp_filename)
     if(!fin)
     {
         std::cerr << pp_filename << " open error" << std::endl;
-        exit(1); 
+        exit(1); // EXIT_FAILURE 
     }
     fin >> pp; 
     fin.close(); 
@@ -123,20 +121,19 @@ void FetchPP(PP &pp, std::string pp_filename)
 
 std::tuple<size_t, BigInt> Send(NetIO &io, PP &pp, std::vector<block> &vec_X, std::vector<BigInt> &vec_v) 
 {
-    if(vec_X.size() != pp.SENDER_LEN){
+    if(vec_X.size() != pp.SENDER_ITEM_NUM){
         std::cerr << "|X| does not match public parameter" << std::endl; 
-        exit(1); 
+        exit(1); // EXIT_FAILURE 
     }
     
     BigInt VALUE_BOUND = BigInt(pow(2, pp.LOG_VALUE_BOUND)); 
     BigInt SUM_BOUND = BigInt(pow(2, pp.LOG_SUM_BOUND)); 
-    std::vector<BigInt> vec_r = GenRandomBigIntVectorLessThan(pp.SENDER_LEN, SUM_BOUND);
+    std::vector<BigInt> vec_r = GenRandomBigIntVectorLessThan(pp.SENDER_ITEM_NUM, SUM_BOUND);
     
     BigInt mask = bn_0;
     for(auto i = 0; i < vec_r.size(); i++){
         mask += vec_r[i];   
     }
-    //mask = mask % SUM_BOUND;
 
     auto start_time = std::chrono::steady_clock::now(); 
         
@@ -145,21 +142,21 @@ std::tuple<size_t, BigInt> Send(NetIO &io, PP &pp, std::vector<block> &vec_X, st
     
     cwPRFmqRPMT::Client(io, pp.mqrpmt_part, vec_X);
 
-    for(auto i = 0; i < pp.SENDER_LEN; i++){
+    for(auto i = 0; i < pp.SENDER_ITEM_NUM; i++){
         vec_v[i] =  (vec_v[i] + vec_r[i]) % SUM_BOUND;   // v_i = r_i + v_i  
     } 
 
-    std::vector<std::vector<uint8_t>> vec_m0(pp.SENDER_LEN); 
-    std::vector<std::vector<uint8_t>> vec_m1(pp.SENDER_LEN); 
+    std::vector<std::vector<uint8_t>> vec_m0(pp.SENDER_ITEM_NUM); 
+    std::vector<std::vector<uint8_t>> vec_m1(pp.SENDER_ITEM_NUM); 
     
     #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
-    for(auto i = 0; i < pp.SENDER_LEN; i++){
+    for(auto i = 0; i < pp.SENDER_ITEM_NUM; i++){
         vec_m0[i] = vec_r[i].ToByteVector(pp.LOG_SUM_BOUND/8); 
         vec_m1[i] = vec_v[i].ToByteVector(pp.LOG_SUM_BOUND/8);
     }
 
     std::cout << "[mqRPMT-based PSI-card-sum] Phase 2: execute OTe >>>" << std::endl;
-    ALSZOTE::SendByteVector(io, pp.ote_part, vec_m0, vec_m1, pp.SENDER_LEN); 
+    ALSZOTE::SendByteVector(io, pp.ote_part, vec_m0, vec_m1, pp.SENDER_ITEM_NUM); 
 
     size_t CARDINALITY; 
     io.ReceiveInteger(CARDINALITY);
@@ -181,9 +178,9 @@ std::tuple<size_t, BigInt> Send(NetIO &io, PP &pp, std::vector<block> &vec_X, st
 
 size_t Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y) 
 {
-    if(vec_Y.size() != pp.RECEIVER_LEN){
+    if(vec_Y.size() != pp.RECEIVER_ITEM_NUM){
         std::cerr << "|Y| does not match public parameter" << std::endl; 
-        exit(1); 
+        exit(1); // EXIT_FAILURE 
     }
 
     auto start_time = std::chrono::steady_clock::now();     
@@ -195,7 +192,7 @@ size_t Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     std::vector<std::vector<uint8_t>> vec_result = ALSZOTE::ReceiveByteVector(io, pp.ote_part, 
         vec_indication_bit, vec_indication_bit.size());
 
-    std::vector<BigInt> vec_v(pp.RECEIVER_LEN); 
+    std::vector<BigInt> vec_v(pp.RECEIVER_ITEM_NUM); 
 
     size_t CARDINALITY = 0; 
     for(auto i = 0; i < vec_indication_bit.size(); i++){

@@ -19,7 +19,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     ECPoint pk[TEST_NUM];                      // pk
     BigInt sk[TEST_NUM];                       // sk
     BigInt m[TEST_NUM];                        // messages  
-    BigInt m_prime[TEST_NUM];                  // decrypted messages
+    BigInt m_real[TEST_NUM];                  // decrypted messages
     BigInt k[TEST_NUM];                        // scalars
     ElGamal::CT CT[TEST_NUM];            // CTs    
     ElGamal::CT CT_new[TEST_NUM];        // re-randomized CTs
@@ -70,7 +70,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        m_prime[i] = ElGamal::Dec(pp, sk[i], CT_new[i]); 
+        m_real[i] = ElGamal::Dec(pp, sk[i], CT_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -79,7 +79,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        if(m[i] != m_prime[i]){ 
+        if(m[i] != m_real[i]){ 
             std::cout << "decryption fails in the specified range" << std::endl;
         } 
     }
@@ -137,7 +137,7 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
     ECPoint pk;                      // pk
     BigInt sk;                       // sk
     BigInt m_random, m_left, m_right;                       // messages  
-    BigInt m_prime;                  // decrypted messages
+    BigInt m_real;                  // decrypted messages
     ElGamal::CT CT;            // CTs    
 
 
@@ -150,8 +150,8 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
 
     CT = ElGamal::Enc(pp, pk, m_random);
 
-    m_prime = ElGamal::Dec(pp, sk, CT); 
-    if(m_random != m_prime){ 
+    m_real = ElGamal::Dec(pp, sk, CT); 
+    if(m_random != m_real){ 
         std::cout << "decryption fails for random message" << std::endl;
     }
     else{
@@ -160,9 +160,9 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
 
     CT = ElGamal::Enc(pp, pk, m_left);
 
-    m_prime = ElGamal::Dec(pp, sk, CT); 
+    m_real = ElGamal::Dec(pp, sk, CT); 
 
-    if(m_left != m_prime){ 
+    if(m_left != m_real){ 
         std::cout << "decryption fails for left boundary" << std::endl;
     }
     else{
@@ -170,8 +170,8 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
     }
 
     CT = ElGamal::Enc(pp, pk, m_right);
-    m_prime = ElGamal::Dec(pp, sk, CT); 
-    if(m_right != m_prime){ 
+    m_real = ElGamal::Dec(pp, sk, CT); 
+    if(m_right != m_real){ 
         std::cout << "decryption fails for right boundary" << std::endl;
     }
     else{

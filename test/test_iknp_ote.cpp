@@ -141,9 +141,9 @@ int main()
     if(party == "receiver"){
         NetIO client_io("client", "127.0.0.1", 8080); 
 
-	    std::vector<block> vec_result_prime = IKNPOTE::Receive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
+	    std::vector<block> vec_result_real = IKNPOTE::Receive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
         
-        if(Block::Compare(testcase.vec_result, vec_result_prime) == true){
+        if(Block::Compare(testcase.vec_result, vec_result_real) == true){
 			std::cout << "two-sided IKNP OTE test succeeds" << std::endl; 
 		} 
         else{
@@ -158,10 +158,10 @@ int main()
 
     if(party == "one-sided receiver"){
         NetIO client_io("client", "127.0.0.1", 8080); 
-	    std::vector<block> vec_one_sided_result_prime = 
+	    std::vector<block> vec_one_sided_result_real = 
         IKNPOTE::OnesidedReceive(client_io, pp, testcase.vec_selection_bit, EXTEND_LEN);
         
-        if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_prime) == true){
+        if(Block::Compare(testcase.vec_one_sided_result, vec_one_sided_result_real) == true){
 			std::cout << "one-sided IKNP OTE test succeeds" << std::endl; 
 		} 
         else{

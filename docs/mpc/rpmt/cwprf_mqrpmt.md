@@ -71,7 +71,7 @@ std::vector<block> vec_Y = PRG::GenRandomBlocks(seed, LEN);
 if (party == "server")
 {
     NetIO server("server", "", 8080);
-    std::vector<uint8_t> vec_indication_bit_prime = cwPRFmqRPMT::Server(server, pp, vec_X, LEN);
+    std::vector<uint8_t> vec_indication_bit_real = cwPRFmqRPMT::Server(server, pp, vec_X, LEN);
 }
 
 if (party == "client")

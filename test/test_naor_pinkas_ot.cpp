@@ -109,8 +109,8 @@ int main()
 	if (party == "receiver")
 	{
 		NetIO receiver_io("server", "", 8080);
-		std::vector<block> vec_result_prime = Receive(receiver_io, pp, vec_selection_bit, NUM); 
-		if(Block::Compare(vec_result, vec_result_prime) == true){
+		std::vector<block> vec_result_real = Receive(receiver_io, pp, vec_selection_bit, NUM); 
+		if(Block::Compare(vec_result, vec_result_real) == true){
 			std::cout << "Naor-Pinkas OT test succeeds" << std::endl; 
 		} 
 	}

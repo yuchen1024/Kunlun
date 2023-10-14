@@ -150,9 +150,9 @@ int main()
     if (party == "receiver")
 	{
         NetIO client("client", "127.0.0.1", 8080);
-        std::vector<uint8_t> vec_indication_bit_prime = OPRFPSI::Receive(client, pp, testcase.vec_Y, pp.set_size);
+        std::vector<uint8_t> vec_indication_bit_real = OPRFPSI::Receive(client, pp, testcase.vec_Y, pp.set_size);
 
-        if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_prime))
+        if(CompareBits(testcase.vec_indication_bit, vec_indication_bit_real))
             std::cout << "PSI test succeeds" << std::endl; 
         else
             std::cout << "PSI test fails" << std::endl;

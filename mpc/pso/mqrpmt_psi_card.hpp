@@ -19,28 +19,28 @@ struct PP
     ALSZOTE::PP ote_part; 
     cwPRFmqRPMT::PP mqrpmt_part; 
 
-    size_t LOG_SENDER_LEN; 
-    size_t LOG_RECEIVER_LEN; 
-    size_t SENDER_LEN; 
-    size_t RECEIVER_LEN; 
+    size_t LOG_SENDER_ITEM_NUM; 
+    size_t LOG_RECEIVER_ITEM_NUM; 
+    size_t SENDER_ITEM_NUM; 
+    size_t RECEIVER_ITEM_NUM; 
 };
 
 PP Setup(std::string filter_type, 
         size_t computational_security_parameter, 
         size_t statistical_security_parameter, 
-        size_t LOG_SENDER_LEN, size_t LOG_RECEIVER_LEN)
+        size_t LOG_SENDER_ITEM_NUM, size_t LOG_RECEIVER_ITEM_NUM)
 {
     PP pp; 
     pp.ote_part = ALSZOTE::Setup(computational_security_parameter);
 
     // always having receiver plays the role of server, sender play the role of client
     pp.mqrpmt_part = cwPRFmqRPMT::Setup(filter_type, statistical_security_parameter, 
-                                        LOG_RECEIVER_LEN, LOG_SENDER_LEN);
+                                        LOG_RECEIVER_ITEM_NUM, LOG_SENDER_ITEM_NUM);
 
-    pp.LOG_SENDER_LEN = LOG_SENDER_LEN; 
-    pp.LOG_RECEIVER_LEN = LOG_RECEIVER_LEN; 
-    pp.SENDER_LEN = size_t(pow(2, pp.LOG_SENDER_LEN));
-    pp.RECEIVER_LEN = size_t(pow(2, pp.LOG_RECEIVER_LEN)); 
+    pp.LOG_SENDER_ITEM_NUM = LOG_SENDER_ITEM_NUM; 
+    pp.LOG_RECEIVER_ITEM_NUM = LOG_RECEIVER_ITEM_NUM; 
+    pp.SENDER_ITEM_NUM = size_t(pow(2, pp.LOG_SENDER_ITEM_NUM));
+    pp.RECEIVER_ITEM_NUM = size_t(pow(2, pp.LOG_RECEIVER_ITEM_NUM)); 
 
     return pp; 
 }
@@ -51,10 +51,10 @@ std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
     fout << pp.ote_part; 
     fout << pp.mqrpmt_part; 
 
-    fout << pp.LOG_SENDER_LEN; 
-    fout << pp.LOG_RECEIVER_LEN; 
-    fout << pp.SENDER_LEN; 
-    fout << pp.RECEIVER_LEN; 
+    fout << pp.LOG_SENDER_ITEM_NUM; 
+    fout << pp.LOG_RECEIVER_ITEM_NUM; 
+    fout << pp.SENDER_ITEM_NUM; 
+    fout << pp.RECEIVER_ITEM_NUM; 
 
 	return fout; 
 }
@@ -67,7 +67,7 @@ void SavePP(PP &pp, std::string pp_filename)
     if(!fout)
     {
         std::cerr << pp_filename << " open error" << std::endl;
-        exit(1); 
+        exit(1); // EXIT_FAILURE  
     }
 
     fout << pp; 
@@ -81,10 +81,10 @@ std::ifstream &operator>>(std::ifstream &fin, PP &pp)
     fin >> pp.ote_part;
     fin >> pp.mqrpmt_part; 
 
-    fin >> pp.LOG_SENDER_LEN; 
-    fin >> pp.LOG_RECEIVER_LEN; 
-    fin >> pp.SENDER_LEN; 
-    fin >> pp.RECEIVER_LEN; 
+    fin >> pp.LOG_SENDER_ITEM_NUM; 
+    fin >> pp.LOG_RECEIVER_ITEM_NUM; 
+    fin >> pp.SENDER_ITEM_NUM; 
+    fin >> pp.RECEIVER_ITEM_NUM; 
 
 	return fin; 
 }
@@ -97,7 +97,7 @@ void FetchPP(PP &pp, std::string pp_filename)
     if(!fin)
     {
         std::cerr << pp_filename << " open error" << std::endl;
-        exit(1); 
+        exit(1); // EXIT_FAILURE  
     }
     fin >> pp; 
     fin.close(); 
@@ -106,9 +106,9 @@ void FetchPP(PP &pp, std::string pp_filename)
 
 void Send(NetIO &io, PP &pp, std::vector<block> &vec_X) 
 {
-    if(vec_X.size() != pp.SENDER_LEN){
+    if(vec_X.size() != pp.SENDER_ITEM_NUM){
         std::cerr << "|X| does not match public parameter" << std::endl; 
-        exit(1); 
+        exit(1); // EXIT_FAILURE  
     }
     
     auto start_time = std::chrono::steady_clock::now(); 
@@ -126,9 +126,9 @@ void Send(NetIO &io, PP &pp, std::vector<block> &vec_X)
 
 size_t Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y) 
 {
-    if(vec_Y.size() != pp.RECEIVER_LEN){
+    if(vec_Y.size() != pp.RECEIVER_ITEM_NUM){
         std::cerr << "|Y| does not match public parameter" << std::endl; 
-        exit(1); 
+        exit(1); // EXIT_FAILURE  
     }
 
     auto start_time = std::chrono::steady_clock::now(); 
@@ -151,7 +151,6 @@ size_t Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y)
         
     return INTERSECTION_CARDINALITY;
 }
-
 
 }
 #endif
