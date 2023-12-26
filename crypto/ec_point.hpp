@@ -479,19 +479,19 @@ auto ECPoint_Lexical_Compare = [](ECPoint A, ECPoint B){
     return A.ToByteString() < B.ToByteString(); 
 };
 
-// define ECPoint on curve 25519
-struct EC25519Point{
-    uint8_t px[32];
-};
+// // define ECPoint on curve 25519
+// struct EC25519Point{
+//     uint8_t px[32];
+// };
 
-/* 
-** due to unclear reasons, x25519 is not available for outside invoke 
-** here we do some hacking to make it public accessable
-** interface for curve 25519 multiplication
-*/
-extern "C"
-{
-void x25519_scalar_mulx(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[32]);
-}
+// /* 
+// ** due to unclear reasons, x25519 is not available for outside invoke 
+// ** here we do some hacking to make it public accessable
+// ** interface for curve 25519 multiplication
+// */
+// extern "C"
+// {
+// void x25519_scalar_mulx(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[32]);
+// }
 
 #endif  // KUNLUN_EC_POINT_HPP_

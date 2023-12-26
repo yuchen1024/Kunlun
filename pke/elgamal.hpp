@@ -1,19 +1,27 @@
 #ifndef ELGAMAL_HPP_
 #define ELGAMAL_HPP_
 
-#include "calculate_dlog.hpp"
+#include "../crypto/ec_point.hpp"
+#include "../crypto/ec_25519.hpp"
+#include "../crypto/prg.hpp"
+#include "../utility/print.hpp"
+
+/*
+ * x25519 method implies PKE, but since x25519 is not full-fledged
+ * the addition on EC curve is not well-defined
+ * and thus does not obey distributive law w.r.t. exponentiation
+ * therefore, it does not support re-randomization and homomorphic operations 
+*/
 
 namespace ElGamal{
  
 using Serialization::operator<<; 
 using Serialization::operator>>; 
 
+#ifndef ENABLE_X25519_ACCELERATION
 // define the structure of PP
 struct PP
-{
-    size_t MSG_LEN; // the length of message space, also the length of the DLOG interval  
-    BigInt MSG_SIZE; // the size of message space
-    size_t TRADEOFF_NUM; // default value = 0; tunning it in [0, RANGE_LEN/2], ++ leads bigger table and less time 
+{ 
     ECPoint g; // random generator 
 };
 
@@ -21,33 +29,21 @@ struct PP
 struct CT
 {
     ECPoint X; // X = g^r 
-    ECPoint Y; // Y = pk^r + g^m  
+    ECPoint Y; // Y = pk^r + M  
 };
 
-
-// define the structure of multi-recipients one-message ciphertext (MR denotes multiple recipients)
-struct MRCT
-{
-    ECPoint X; // X = g^r
-    std::vector<ECPoint> vec_Y; // Y = pk_i^r g^m 
-};
 
 std::ofstream &operator<<(std::ofstream &fout, const ElGamal::PP &pp)
 {
-    fout << pp.MSG_LEN << pp.TRADEOFF_NUM;
-    fout << pp.MSG_SIZE; 
     fout << pp.g; 
     return fout; 
 }
 
 std::ifstream &operator>>(std::ifstream &fin, ElGamal::PP &pp)
 {
-    fin >> pp.MSG_LEN >> pp.TRADEOFF_NUM; 
-    fin >> pp.MSG_SIZE;
     fin >> pp.g; 
     return fin;
 }
-
 
 std::ofstream &operator<<(std::ofstream &fout, const CT &ct)
 {
@@ -61,17 +57,6 @@ std::ifstream &operator>>(std::ifstream &fin, CT &ct)
     return fin;  
 } 
 
-std::ofstream &operator<<(std::ofstream &fout, const MRCT &ct)
-{
-    fout << ct.X << ct.vec_Y; 
-    return fout; 
-} 
-
-std::ifstream &operator>>(std::ifstream &fin, MRCT &ct)
-{
-    fin >> ct.X >> ct.vec_Y;
-    return fin;  
-} 
 
 // compare two ciphertexts
 bool operator==(const CT& ct_left, const CT& ct_right)
@@ -79,11 +64,8 @@ bool operator==(const CT& ct_left, const CT& ct_right)
     return (ct_left.X == ct_right.X) && (ct_left.Y == ct_right.Y);  
 }
 
-// define serialization interfaces
 void PrintPP(const PP &pp)
 {
-    std::cout << "the length of message space = " << pp.MSG_LEN << std::endl; 
-    std::cout << "the trade-off parameter for fast decryption = " << pp.TRADEOFF_NUM << std::endl;
     pp.g.Print("pp.g"); 
 } 
 
@@ -93,51 +75,12 @@ void PrintCT(const CT &ct)
     ct.Y.Print("CT.Y");
 } 
 
-void PrintCT(const MRCT &ct)
-{
-    std::string note;
-    ct.X.Print("CT.X");
-
-    for(auto i = 0; i < ct.vec_Y.size(); i++){
-        note = "CT.Y" + std::to_string(i);
-        ct.vec_Y[i].Print(note);
-    }
-
-} 
-
-std::string CTToByteString(CT &ct)
-{
-    std::string str = ct.X.ToByteString() + ct.Y.ToByteString(); 
-    return str;
-}
-
-
-std::string MRCTToByteString(MRCT &ct)
-{
-    std::string str; 
-    str += ct.X.ToByteString(); 
-    for(auto i = 0; i < ct.vec_Y.size(); i++){
-        str += ct.vec_Y[i].ToByteString(); 
-    }
-    return str;
-}
-
-
 // core algorithms
 
 /* Setup algorithm */ 
-PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
+PP Setup()
 { 
     PP pp; 
-    pp.MSG_LEN = MSG_LEN; 
-    pp.TRADEOFF_NUM = TRADEOFF_NUM; 
-    /* set the message space to 2^{MSG_LEN} */
-    pp.MSG_SIZE = BigInt(size_t(pow(2, pp.MSG_LEN))); 
-
-    #ifdef PRINT
-        std::cout << "message space = [0, ";   
-        std::cout << BN_bn2hex(pp.MSG_SIZE.bn_ptr) << ')' << std::endl; 
-    #endif
   
     pp.g = ECPoint(generator); 
 
@@ -149,25 +92,6 @@ PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
     return pp;
 }
 
-
-/* initialize the hashmap to accelerate decryption over Zp */
-void Initialize(PP &pp)
-{
-    std::cout << "initialize ElGamal PKE >>>" << std::endl; 
-
-    CheckDlogParameters(pp.MSG_LEN, pp.TRADEOFF_NUM); 
- 
-    std::string table_filename = GetTableFileName(pp.g, pp.MSG_LEN, pp.TRADEOFF_NUM);      
-    /* generate and save table */
-    if(FileExist(table_filename) == false){
-        std::cout << table_filename << " does not exist" << std::endl;
-        BuildSaveTable(pp.g, pp.MSG_LEN, pp.TRADEOFF_NUM, table_filename);
-    }
-    
-    // load the table from file 
-    std::cout << table_filename << " already exists" << std::endl;
-    LoadTable(table_filename, pp.MSG_LEN, pp.TRADEOFF_NUM); 
-}
 
 /* KeyGen algorithm */ 
 std::tuple<ECPoint, BigInt> KeyGen(const PP &pp)
@@ -186,7 +110,7 @@ std::tuple<ECPoint, BigInt> KeyGen(const PP &pp)
 
 
 /* Encryption algorithm: compute CT = Enc(pk, m; r) */ 
-CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)
+CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m)
 { 
     CT ct;
     // generate the random coins 
@@ -194,11 +118,7 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)
 
     // begin encryption
     ct.X = pp.g * r; // X = g^r
-    
-    // vectormul using wNAF method, which is fast than naive ct.Y = pk * r + pp.g * m;  
-    std::vector<ECPoint> vec_A{pk, pp.g}; 
-    std::vector<BigInt> vec_a{r, m};
-    ct.Y = ECPointVectorMul(vec_A, vec_a);     // Y = pk^r g^m
+    ct.Y = pk * r + m;     // Y = pk^r g^m
 
     #ifdef DEBUG
         std::cout << "ElGamal encryption finishes >>>"<< std::endl;
@@ -209,14 +129,12 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)
 }
 
 /* Encryption algorithm: compute CT = Enc(pk, m; r): with explicit randomness */ 
-CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r)
+CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
 { 
     CT ct; 
     // begin encryption
     ct.X = pp.g * r; // X = g^r
-    std::vector<ECPoint> vec_A{pk, pp.g}; 
-    std::vector<BigInt> vec_a{r, m};
-    ct.Y = ECPointVectorMul(vec_A, vec_a); // Y = g^r h^m
+    ct.Y = pk * r + m; // Y = g^r m
 
     #ifdef DEBUG
         std::cout << "ElGamal encryption finishes >>>"<< std::endl;
@@ -226,138 +144,146 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r)
     return ct; 
 }
 
-// add a method to encrypt message in G
-CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
-{ 
-    CT ct; 
-    // begin encryption
-    ct.X = pp.g * r; // X = g^r
-    ct.Y = pk * r + m; // Y = pk^r + m
-    return ct;
-}
-
-
-// add an method to decrypt message in G
-ECPoint DecECPoint(const PP &pp, const BigInt &sk, const CT &ct)
+// decrypt 
+ECPoint Dec(const PP &pp, const BigInt &sk, const CT &ct)
 { 
     return ct.Y - ct.X * sk; 
 }
 
-
-/* Decryption algorithm: compute m = Dec(sk, CT) */ 
-BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
+#else
+// define the structure of PP
+struct PP
 { 
-    BigInt m;
-    //begin decryption  
-    ECPoint M = ct.Y - ct.X * sk; // M = Y - X^sk = g^m 
+    EC25519Point g; // random generator 
+};
 
-    bool SUCCESS = ShanksDLOG(pp.g, M, pp.MSG_LEN, pp.TRADEOFF_NUM, m); 
-    if(SUCCESS == false)
-    {
-        std::cout << "decyption fails in the specified range" << std::endl; 
-        exit(EXIT_FAILURE); 
-    }  
-    return m; 
+// define the structure of ciphertext
+struct CT
+{
+    EC25519Point X; // X = g^r 
+    EC25519Point Y; // Y = pk^r + M  
+};
+
+
+std::ofstream &operator<<(std::ofstream &fout, const ElGamal::PP &pp)
+{
+    fout << pp.g; 
+    return fout; 
 }
 
+std::ifstream &operator>>(std::ifstream &fin, ElGamal::PP &pp)
+{
+    fin >> pp.g; 
+    return fin;
+}
 
-/* 
-** re-encrypt ciphertext CT with given randomness r 
-** run by the secret key owner
-*/ 
-CT ReEnc(const PP &pp, const ECPoint &pk, const BigInt &sk, const CT &ct, const BigInt &r)
+std::ofstream &operator<<(std::ofstream &fout, const CT &ct)
+{
+    fout << ct.X << ct.Y; 
+    return fout; 
+} 
+
+std::ifstream &operator>>(std::ifstream &fin, CT &ct)
+{
+    fin >> ct.X >> ct.Y;
+    return fin;  
+} 
+
+
+void PrintPP(const PP &pp)
+{
+    pp.g.Print("pp.g"); 
+} 
+
+void PrintCT(const CT &ct)
+{
+    ct.X.Print("CT.X");
+    ct.Y.Print("CT.Y");
+} 
+
+// core algorithms
+
+/* Setup algorithm */ 
+PP Setup()
 { 
-    CT ct_new; 
-    // begin partial decryption  
-    ECPoint M = ct.Y - ct.X * sk; // M = Y - X^sk = g^m
+    PP pp; 
 
-    // begin re-encryption with the given randomness 
-    ct_new.X = pp.g * r; // CT_new.X = g^r 
-    ct_new.Y = pk * r + M; // CT_new.Y = pk^r + M 
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
+    GenRandomBytes(seed, pp.g.px, 32);  // pick a random generator
 
-    #ifdef DEBUG
-        std::cout << "refresh ciphertext succeeds >>>"<< std::endl;
-        PrintCT(ct_new); 
+    #ifdef PRINT
+        std::cout << "generate the public parameters for ElGamal >>>" << std::endl; 
+        PrintPP(pp); 
     #endif
 
-    return ct_new;
+    return pp;
 }
 
-/* 
-** re-rand ciphertext CT  
-** run by anyone
-*/ 
-CT ReRand(const PP &pp, const ECPoint &pk, const CT &ct)
-{ 
-    CT ct_new; 
-    BigInt r = GenRandomBigIntLessThan(order); 
 
-    // begin re-encryption with the given randomness 
-    ct_new.X = ct.X + pp.g * r; // ct_new.X = ct.X + g^r 
-    ct_new.Y = ct.Y + pk * r; // ct_new.Y = ct.Y + pk^r 
+/* KeyGen algorithm */ 
+std::tuple<EC25519Point, std::vector<uint8_t>> KeyGen(const PP &pp)
+{ 
+    std::vector<uint8_t> sk(32); 
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
+    GenRandomBytes(seed, sk.data(), 32);  // pick a random generator
+    EC25519Point pk = pp.g * sk; // pk = g^sk  
+
+    #ifdef PRINT
+        std::cout << "key generation finished >>>" << std::endl;  
+        pk.Print("pk"); 
+        PrintBytes("sk", sk.data, 32); 
+    #endif
+    
+    return {pk, sk}; 
+}
+
+
+/* Encryption algorithm: compute CT = Enc(pk, m; r) */ 
+CT Enc(const PP &pp, const EC25519Point &pk, const EC25519Point &m)
+{ 
+    CT ct;
+    // generate the random coins 
+    std::vector<uint8_t> r(32); 
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
+    GenRandomBytes(seed, r.data(), 32);  // pick a random number
+
+    // begin encryption
+    ct.X = pp.g * r; // X = g^r
+    ct.Y = pk * r ^ m; // Y = pk^r g^m
 
     #ifdef DEBUG
-        std::cout << "rerand ciphertext succeeds >>>" << std::endl;
-        PrintCT(ct_new); 
+        std::cout << "ElGamal encryption finishes >>>"<< std::endl;
+        PrintCT(ct); 
     #endif
 
-    return ct_new;
+    return ct;
 }
 
-
-/* homomorphic add */
-CT HomoAdd(CT &ct1, CT &ct2)
+/* Encryption algorithm: compute CT = Enc(pk, m; r): with explicit randomness */ 
+CT Enc(const PP &pp, const EC25519Point &pk, const EC25519Point &m, const std::vector<uint8_t> &r)
 { 
-    CT ct_result; 
-    ct_result.X = ct1.X + ct2.X;  
-    ct_result.Y = ct1.Y + ct2.Y;
-    return ct_result;  
-}
+    CT ct; 
+    // begin encryption
+    ct.X = pp.g * r; // X = g^r
+    ct.Y = pk * r ^ m; // Y = g^r m
 
-/* homomorphic sub */
-CT HomoSub(CT &ct1, CT &ct2)
-{ 
-    CT ct_result; 
-    ct_result.X = ct1.X - ct2.X;  
-    ct_result.Y = ct1.Y - ct2.Y;
-    return ct_result;   
-}
-
-/* scalar operation */
-CT ScalarMul(CT &ct, const BigInt &k)
-{ 
-    CT ct_result;
-    ct_result.X = ct.X * k;  
-    ct_result.Y = ct.Y * k;
-    return ct_result;   
-}
-
-
-/* 
-* Encryption algorithm (2-recipients 1-message) with given random coins
-* output X1 = pk1^r, X2 = pk2^r, Y = g^r h^m
-* Here we make the randomness explict for the ease of generating the ZKP 
-*/
-
-
-MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, const BigInt &r)
-{  
-    MRCT ct; 
-    ct.X = pp.g * r; // Y = g^r
-    ECPoint M = pp.g * m; // M = g^m
-    size_t n = vec_pk.size(); 
-    for(auto i = 0; i < n; i++){
-        ct.vec_Y.emplace_back(vec_pk[i] * r + M); 
-    }
     #ifdef DEBUG
-        std::cout << n <<"-recipient 1-message ElGamal encryption finishes >>>"<< std::endl;
+        std::cout << "ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
 
     return ct; 
 }
 
+// decrypt
+EC25519Point Dec(const PP &pp, const std::vector<uint8_t> &sk, const CT &ct)
+{ 
+    return ct.Y ^ ct.X * sk; 
 }
+#endif
+
+}
+
 # endif
 
 

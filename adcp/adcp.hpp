@@ -4,7 +4,7 @@ this hpp implements the ADCP functionality
 #ifndef ADCP_HPP_
 #define ADCP_HPP_
 
-#include "../pke/twisted_elgamal.hpp"        // implement Twisted ElGamal  
+#include "../pke/twisted_exponential_elgamal.hpp"        // implement Twisted ElGamal  
 #include "../zkp/nizk/nizk_plaintext_equality.hpp" // NIZKPoK for plaintext equality
 #include "../zkp/nizk/nizk_plaintext_knowledge.hpp"        // NIZKPoK for ciphertext/honest encryption 
 #include "../zkp/nizk/nizk_dlog_equality.hpp"      // NIZKPoK for dlog equality
@@ -29,7 +29,7 @@ struct PP{
     BigInt MAXIMUM_COINS; 
 
     Bullet::PP bullet_part; 
-    TwistedElGamal::PP enc_part;
+    TwistedExponentialElGamal::PP enc_part;
 
     ECPoint pka; // supervisor's pk
 };
@@ -43,7 +43,7 @@ struct Account{
     std::string identity;     // id
     ECPoint pk;              // public key
     BigInt sk;              // secret key
-    TwistedElGamal::CT balance_ct;  // current balance
+    TwistedExponentialElGamal::CT balance_ct;  // current balance
     BigInt m;               // dangerous (should only be used for speeding up the proof generation)
     BigInt sn; 
 };
@@ -52,14 +52,14 @@ struct Account{
 struct ToOneCTx{
     BigInt sn;                        // serial number: uniquely defines a transaction
     // memo information
-    TwistedElGamal::CT sender_balance_ct;        // the current balance of pk1 (not necessarily included)
+    TwistedExponentialElGamal::CT sender_balance_ct;        // the current balance of pk1 (not necessarily included)
     ECPoint pks, pkr;      // sender = pk1, receiver = pk2
-    TwistedElGamal::MRCT transfer_ct;    // transfer = (X0 = pks^r, X1 = pkr^r, X2 = pka^r Y = g^r h^v) 
+    TwistedExponentialElGamal::MRCT transfer_ct;    // transfer = (X0 = pks^r, X1 = pkr^r, X2 = pka^r Y = g^r h^v) 
 
     // validity proof
     PlaintextEquality::Proof plaintext_equality_proof;     // NIZKPoK for transfer ciphertext (X1, X2, Y)
     Bullet::Proof bullet_right_solvent_proof;      // aggregated range proof for v and m-v lie in the right range 
-    TwistedElGamal::CT refresh_sender_updated_balance_ct;  // fresh encryption of updated balance (randomness is known)
+    TwistedExponentialElGamal::CT refresh_sender_updated_balance_ct;  // fresh encryption of updated balance (randomness is known)
     PlaintextKnowledge::Proof plaintext_knowledge_proof; // NIZKPoK for refresh ciphertext (X^*, Y^*)
     DLOGEquality::Proof correct_refresh_proof;     // fresh updated balance is correct
 };
@@ -88,7 +88,7 @@ void PrintAccount(Account &Acct)
     std::cout << Acct.identity << " account information >>> " << std::endl;     
     Acct.pk.Print("pk"); 
     std::cout << "encrypted balance:" << std::endl; 
-    TwistedElGamal::PrintCT(Acct.balance_ct);  // current balance
+    TwistedExponentialElGamal::PrintCT(Acct.balance_ct);  // current balance
     Acct.m.PrintInDec("m"); 
     Acct.sn.Print("sn"); 
     PrintSplitLine('-'); 
@@ -102,7 +102,7 @@ void PrintCTx(ToOneCTx &newCTx)
     std::cout << ctx_file << " content >>>>>>" << std::endl; 
 
     std::cout << "current sender balance >>>" << std::endl; 
-    TwistedElGamal::PrintCT(newCTx.sender_balance_ct);
+    TwistedExponentialElGamal::PrintCT(newCTx.sender_balance_ct);
     std::cout << std::endl; 
 
     newCTx.pks.Print("sender's public key"); 
@@ -110,7 +110,7 @@ void PrintCTx(ToOneCTx &newCTx)
     std::cout << std::endl;  
 
     std::cout << "transfer >>>" << std::endl;
-    TwistedElGamal::PrintCT(newCTx.transfer_ct);
+    TwistedExponentialElGamal::PrintCT(newCTx.transfer_ct);
     std::cout << std::endl; 
 
     std::cout << "NIZKPoK for plaintext equality >>>" << std::endl; 
@@ -118,7 +118,7 @@ void PrintCTx(ToOneCTx &newCTx)
     std::cout << std::endl; 
 
     std::cout << "refresh updated balance >>>" << std::endl;
-    TwistedElGamal::PrintCT(newCTx.refresh_sender_updated_balance_ct); 
+    TwistedExponentialElGamal::PrintCT(newCTx.refresh_sender_updated_balance_ct); 
     std::cout << std::endl;
 
     std::cout << "NIZKPoK for refreshing correctness >>>" << std::endl; 
@@ -283,9 +283,9 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
     pp.bullet_part = Bullet::Setup(LOG_MAXIMUM_COINS, MAX_AGG_NUM); 
     
     size_t TRADEOFF_NUM = 7;
-    pp.enc_part = TwistedElGamal::Setup(LOG_MAXIMUM_COINS, TRADEOFF_NUM);  
+    pp.enc_part = TwistedExponentialElGamal::Setup(LOG_MAXIMUM_COINS, TRADEOFF_NUM);  
 
-    std::tie(pp.pka, sp.ska) = TwistedElGamal::KeyGen(pp.enc_part);
+    std::tie(pp.pka, sp.ska) = TwistedExponentialElGamal::KeyGen(pp.enc_part);
 
     return {pp, sp};
 }
@@ -294,7 +294,7 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
 void Initialize(PP &pp)
 {
     std::cout << "initialize ADCP >>>" << std::endl;  
-    TwistedElGamal::Initialize(pp.enc_part); 
+    TwistedExponentialElGamal::Initialize(pp.enc_part); 
     PrintSplitLine('-'); 
 }
 
@@ -305,13 +305,13 @@ Account CreateAccount(PP &pp, std::string identity, BigInt &init_balance, BigInt
     newAcct.identity = identity;
     newAcct.sn = init_sn;  
 
-    std::tie(newAcct.pk, newAcct.sk) = TwistedElGamal::KeyGen(pp.enc_part); // generate a keypair
+    std::tie(newAcct.pk, newAcct.sk) = TwistedExponentialElGamal::KeyGen(pp.enc_part); // generate a keypair
 
     newAcct.m = init_balance; 
 
     // initialize account balance with 0 coins
     BigInt r = Hash::StringToBigInt(newAcct.identity); 
-    newAcct.balance_ct = TwistedElGamal::Enc(pp.enc_part, newAcct.pk, init_balance, r);
+    newAcct.balance_ct = TwistedExponentialElGamal::Enc(pp.enc_part, newAcct.pk, init_balance, r);
 
     #ifdef DEMO
         std::cout << identity << "'s ADCP account creation succeeds" << std::endl;
@@ -330,26 +330,19 @@ bool UpdateAccount(PP &pp, ToOneCTx &newCTx, Account &Acct_sender, Account &Acct
 {    
     std::cout << "update accounts >>>" << std::endl;
     
-    TwistedElGamal::CT c_out; 
+    TwistedExponentialElGamal::CT c_out; 
     c_out.X = newCTx.transfer_ct.vec_X[0]; c_out.Y = newCTx.transfer_ct.Y;
-    TwistedElGamal::CT c_in; 
+    TwistedExponentialElGamal::CT c_in; 
     c_in.X = newCTx.transfer_ct.vec_X[1]; c_in.Y = newCTx.transfer_ct.Y;
 
     // update sender's balance
-    Acct_sender.balance_ct = TwistedElGamal::HomoSub(Acct_sender.balance_ct, c_out); 
-    // ECPoint temp = Acct_sender.balance_ct.Y - Acct_sender.balance_ct.X * Acct_sender.sk.ModInverse(order); 
-    // BigInt m; 
-    // temp.Print(); 
-    // pp.enc_part.h.Print(); 
-
-    // bool SUCCESS = ShanksDLOG(pp.enc_part.h, temp, pp.enc_part.MSG_LEN, pp.enc_part.TRADEOFF_NUM, m); 
-    // m.PrintInDec("m");
-    Acct_sender.m = TwistedElGamal::Dec(pp.enc_part, Acct_sender.sk, Acct_sender.balance_ct); 
+    Acct_sender.balance_ct = TwistedExponentialElGamal::HomoSub(Acct_sender.balance_ct, c_out); 
+    Acct_sender.m = TwistedExponentialElGamal::Dec(pp.enc_part, Acct_sender.sk, Acct_sender.balance_ct); 
     SaveAccount(Acct_sender, Acct_sender.identity+".account"); 
 
     // update receiver's balance
-    Acct_receiver.balance_ct = TwistedElGamal::HomoAdd(Acct_receiver.balance_ct, c_in); 
-    Acct_receiver.m = TwistedElGamal::Dec(pp.enc_part, Acct_receiver.sk, Acct_receiver.balance_ct);
+    Acct_receiver.balance_ct = TwistedExponentialElGamal::HomoAdd(Acct_receiver.balance_ct, c_in); 
+    Acct_receiver.m = TwistedExponentialElGamal::Dec(pp.enc_part, Acct_receiver.sk, Acct_receiver.balance_ct);
     SaveAccount(Acct_receiver, Acct_receiver.identity+".account"); 
         
     return true; 
@@ -358,7 +351,7 @@ bool UpdateAccount(PP &pp, ToOneCTx &newCTx, Account &Acct_sender, Account &Acct
 /* reveal the balance */ 
 BigInt RevealBalance(PP &pp, Account &Acct)
 {
-    return TwistedElGamal::Dec(pp.enc_part, Acct.sk, Acct.balance_ct); 
+    return TwistedExponentialElGamal::Dec(pp.enc_part, Acct.sk, Acct.balance_ct); 
 }
 
 /* supervisor opens CTx */
@@ -368,10 +361,10 @@ BigInt SuperviseCTx(SP &sp, PP &pp, ToOneCTx &ctx)
     auto start_time = std::chrono::steady_clock::now(); 
 
 
-    TwistedElGamal::CT ct; 
+    TwistedExponentialElGamal::CT ct; 
     ct.X = ctx.transfer_ct.vec_X[2];
     ct.Y = ctx.transfer_ct.Y;  
-    BigInt v = TwistedElGamal::Dec(pp.enc_part, sp.ska, ct); 
+    BigInt v = TwistedExponentialElGamal::Dec(pp.enc_part, sp.ska, ct); 
 
     std::cout << ctx.pks.ToHexString() << " transfers " << BN_bn2dec(v.bn_ptr) 
     << " coins to " << ctx.pkr.ToHexString() << std::endl; 
@@ -387,11 +380,11 @@ std::string ExtractToSignMessageFromCTx(ToOneCTx &newCTx)
 {
     std::string str;
     str += newCTx.sn.ToHexString() + newCTx.pks.ToByteString() + newCTx.pkr.ToByteString(); 
-    str += TwistedElGamal::CTToByteString(newCTx.sender_balance_ct);  
-    str += TwistedElGamal::MRCTToByteString(newCTx.transfer_ct);   
+    str += TwistedExponentialElGamal::CTToByteString(newCTx.sender_balance_ct);  
+    str += TwistedExponentialElGamal::MRCTToByteString(newCTx.transfer_ct);   
     str += PlaintextEquality::ProofToByteString(newCTx.plaintext_equality_proof);  
     str += Bullet::ProofToByteString(newCTx.bullet_right_solvent_proof);   
-    str += TwistedElGamal::CTToByteString(newCTx.refresh_sender_updated_balance_ct);  
+    str += TwistedExponentialElGamal::CTToByteString(newCTx.refresh_sender_updated_balance_ct);  
     str += PlaintextKnowledge::ProofToByteString(newCTx.plaintext_knowledge_proof); 
     return str;
 }
@@ -421,8 +414,8 @@ ToOneCTx CreateCTx(PP &pp, Account &Acct_sender, BigInt &v, ECPoint &pkr)
 
     std::vector<ECPoint> vec_pk = {newCTx.pks, newCTx.pkr, pp.pka}; 
     BigInt r = GenRandomBigIntLessThan(order);
-    newCTx.transfer_ct = TwistedElGamal::Enc(pp.enc_part, vec_pk, v, r); 
-    // TwistedElGamal::PrintCT(newCTx.transfer_ct); 
+    newCTx.transfer_ct = TwistedExponentialElGamal::Enc(pp.enc_part, vec_pk, v, r); 
+    // TwistedExponentialElGamal::PrintCT(newCTx.transfer_ct); 
 
     #ifdef DEMO
         std::cout << "2. generate NIZKPoK for plaintext equality" << std::endl;  
@@ -450,7 +443,7 @@ ToOneCTx CreateCTx(PP &pp, Account &Acct_sender, BigInt &v, ECPoint &pkr)
     #endif
     // compute the updated balance
 
-    TwistedElGamal::CT sender_updated_balance_ct; 
+    TwistedExponentialElGamal::CT sender_updated_balance_ct; 
     newCTx.sender_balance_ct = Acct_sender.balance_ct;
     sender_updated_balance_ct.X = newCTx.sender_balance_ct.X - newCTx.transfer_ct.vec_X[0];
     sender_updated_balance_ct.Y = newCTx.sender_balance_ct.Y - newCTx.transfer_ct.Y;     
@@ -460,7 +453,7 @@ ToOneCTx CreateCTx(PP &pp, Account &Acct_sender, BigInt &v, ECPoint &pkr)
     #endif
     // refresh the updated balance (with random coins r^*)
     BigInt r_star = GenRandomBigIntLessThan(order);    
-    newCTx.refresh_sender_updated_balance_ct = TwistedElGamal::ReEnc(pp.enc_part, Acct_sender.pk, Acct_sender.sk, 
+    newCTx.refresh_sender_updated_balance_ct = TwistedExponentialElGamal::ReEnc(pp.enc_part, Acct_sender.pk, Acct_sender.sk, 
                                                                      sender_updated_balance_ct, r_star);
 
     #ifdef DEMO
@@ -583,7 +576,7 @@ bool VerifyCTx(PP &pp, ToOneCTx &newCTx)
 
     // check condition 4
 
-    TwistedElGamal::CT updated_sender_balance_ct; 
+    TwistedExponentialElGamal::CT updated_sender_balance_ct; 
     updated_sender_balance_ct.X = newCTx.sender_balance_ct.X - newCTx.transfer_ct.vec_X[0]; 
     updated_sender_balance_ct.Y = newCTx.sender_balance_ct.Y - newCTx.transfer_ct.Y; 
 
@@ -769,17 +762,17 @@ DLOGEquality::Proof JustifyPolicy(PP &pp, Account &Acct_user, ToOneCTx &ctx1, To
     dlogeq_instance.g1 = pp.enc_part.g;     // g1 = g 
     dlogeq_instance.h1 = Acct_user.pk; // g2 = pk = g^sk
 
-    TwistedElGamal::CT ct_in; 
+    TwistedExponentialElGamal::CT ct_in; 
     ct_in.X = ctx1.transfer_ct.vec_X[1]; 
     ct_in.Y = ctx1.transfer_ct.Y; 
-    ct_in = TwistedElGamal::ScalarMul(ct_in, policy.t1); 
+    ct_in = TwistedExponentialElGamal::ScalarMul(ct_in, policy.t1); 
     
-    TwistedElGamal::CT ct_out; 
+    TwistedExponentialElGamal::CT ct_out; 
     ct_out.X = ctx2.transfer_ct.vec_X[0]; 
     ct_out.Y = ctx2.transfer_ct.Y; 
-    ct_out = TwistedElGamal::ScalarMul(ct_out, policy.t2); 
+    ct_out = TwistedExponentialElGamal::ScalarMul(ct_out, policy.t2); 
 
-    TwistedElGamal::CT ct_diff = TwistedElGamal::HomoSub(ct_in, ct_out);  
+    TwistedExponentialElGamal::CT ct_diff = TwistedExponentialElGamal::HomoSub(ct_in, ct_out);  
 
     dlogeq_instance.g2 = ct_diff.Y; 
     dlogeq_instance.h2 = ct_diff.X; 
@@ -815,17 +808,17 @@ bool AuditPolicy(PP &pp, ECPoint pk, ToOneCTx &ctx1, ToOneCTx &ctx2,
     dlogeq_instance.g1 = pp.enc_part.g;     // g1 = g 
     dlogeq_instance.h1 = pk; // g2 = pk = g^sk
 
-    TwistedElGamal::CT ct_in; 
+    TwistedExponentialElGamal::CT ct_in; 
     ct_in.X = ctx1.transfer_ct.vec_X[1]; 
     ct_in.Y = ctx1.transfer_ct.Y; 
-    ct_in = TwistedElGamal::ScalarMul(ct_in, policy.t1); 
+    ct_in = TwistedExponentialElGamal::ScalarMul(ct_in, policy.t1); 
     
-    TwistedElGamal::CT ct_out; 
+    TwistedExponentialElGamal::CT ct_out; 
     ct_out.X = ctx2.transfer_ct.vec_X[0]; 
     ct_out.Y = ctx2.transfer_ct.Y; 
-    ct_out = TwistedElGamal::ScalarMul(ct_out, policy.t2);  
+    ct_out = TwistedExponentialElGamal::ScalarMul(ct_out, policy.t2);  
 
-    TwistedElGamal::CT ct_diff = TwistedElGamal::HomoSub(ct_in, ct_out);  
+    TwistedExponentialElGamal::CT ct_diff = TwistedExponentialElGamal::HomoSub(ct_in, ct_out);  
 
     dlogeq_instance.g2 = ct_diff.Y; 
     dlogeq_instance.h2 = ct_diff.X; 
@@ -868,15 +861,15 @@ bool JustifyPolicy(PP &pp, Account &Acct_user, std::vector<ToOneCTx> &ctx_set,
 
     auto start_time = std::chrono::steady_clock::now(); 
 
-    TwistedElGamal::CT ct_sum;
+    TwistedExponentialElGamal::CT ct_sum;
     ct_sum.X.SetInfinity();
     ct_sum.Y.SetInfinity(); 
-    TwistedElGamal::CT ct_temp; 
+    TwistedExponentialElGamal::CT ct_temp; 
     for(auto i = 0; i < ctx_set.size(); i++)
     {
         ct_temp.X = ctx_set[i].transfer_ct.vec_X[0]; 
         ct_temp.Y = ctx_set[i].transfer_ct.Y;
-        ct_sum = TwistedElGamal::HomoAdd(ct_sum, ct_temp); 
+        ct_sum = TwistedExponentialElGamal::HomoAdd(ct_sum, ct_temp); 
     } 
  
     Gadget::PP gadget_pp = Gadget::Setup(pp.enc_part, pp.bullet_part);
@@ -912,15 +905,15 @@ bool AuditPolicy(PP &pp, ECPoint pk, std::vector<ToOneCTx> &ctx_set,
 
     auto start_time = std::chrono::steady_clock::now(); 
 
-    TwistedElGamal::CT ct_sum;
+    TwistedExponentialElGamal::CT ct_sum;
     ct_sum.X.SetInfinity();
     ct_sum.Y.SetInfinity(); 
-    TwistedElGamal::CT ct_temp; 
+    TwistedExponentialElGamal::CT ct_temp; 
     for(auto i = 0; i < ctx_set.size(); i++)
     {
         ct_temp.X = ctx_set[i].transfer_ct.vec_X[0]; 
         ct_temp.Y = ctx_set[i].transfer_ct.Y;
-        ct_sum = TwistedElGamal::HomoAdd(ct_sum, ct_temp); 
+        ct_sum = TwistedExponentialElGamal::HomoAdd(ct_sum, ct_temp); 
     } 
  
     Gadget::PP gadget_pp = Gadget::Setup(pp.enc_part, pp.bullet_part);
@@ -957,14 +950,14 @@ bool AuditPolicy(PP &pp, ECPoint pk, std::vector<ToOneCTx> &ctx_set,
 struct ToManyCTx{
     BigInt sn;                        // serial number: uniquely defines a transaction
     // memo information
-    TwistedElGamal::CT sender_balance_ct;        // the current balance of pk1 (not necessarily included)
+    TwistedExponentialElGamal::CT sender_balance_ct;        // the current balance of pk1 (not necessarily included)
     ECPoint pks;      // sender = pks
-    TwistedElGamal::CT sender_transfer_ct;
+    TwistedExponentialElGamal::CT sender_transfer_ct;
     std::vector<ECPoint> vec_pkr;  
-    std::vector<TwistedElGamal::MRCT> vec_receiver_transfer_ct;    // (X0 = pka^r, X1 = pkr^r, Y = g^r h^v)  
+    std::vector<TwistedExponentialElGamal::MRCT> vec_receiver_transfer_ct;    // (X0 = pka^r, X1 = pkr^r, Y = g^r h^v)  
 
     // validity proof
-    TwistedElGamal::CT refresh_sender_updated_balance_ct;  // fresh encryption of updated balance (randomness is known)
+    TwistedExponentialElGamal::CT refresh_sender_updated_balance_ct;  // fresh encryption of updated balance (randomness is known)
     PlaintextKnowledge::Proof plaintext_knowledge_proof; // NIZKPoK for refresh ciphertext (X^*, Y^*)
     DLOGEquality::Proof correct_refresh_proof;     // fresh updated balance is correct
 
@@ -1020,10 +1013,10 @@ std::string ExtractToSignMessageFromCTx(ToManyCTx &newCTx)
         str += newCTx.vec_pkr[i].ToByteString();
     }
 
-    str += TwistedElGamal::CTToByteString(newCTx.sender_balance_ct);  
-    str += TwistedElGamal::CTToByteString(newCTx.sender_transfer_ct);  
+    str += TwistedExponentialElGamal::CTToByteString(newCTx.sender_balance_ct);  
+    str += TwistedExponentialElGamal::CTToByteString(newCTx.sender_transfer_ct);  
     for(auto i = 0; i < newCTx.vec_receiver_transfer_ct.size(); i++){
-        str += TwistedElGamal::MRCTToByteString(newCTx.vec_receiver_transfer_ct[i]);
+        str += TwistedExponentialElGamal::MRCTToByteString(newCTx.vec_receiver_transfer_ct[i]);
     }
 
     for(auto i = 0; i < newCTx.vec_plaintext_equality_proof.size(); i++){
@@ -1031,7 +1024,7 @@ std::string ExtractToSignMessageFromCTx(ToManyCTx &newCTx)
     }
    
     str += Bullet::ProofToByteString(newCTx.bullet_right_solvent_proof);   
-    str += TwistedElGamal::CTToByteString(newCTx.refresh_sender_updated_balance_ct);  
+    str += TwistedExponentialElGamal::CTToByteString(newCTx.refresh_sender_updated_balance_ct);  
     str += PlaintextKnowledge::ProofToByteString(newCTx.plaintext_knowledge_proof); 
 
     str += DLOGKnowledge::ProofToByteString(newCTx.balance_proof); 
@@ -1075,7 +1068,7 @@ ToManyCTx CreateCTx(PP &pp, Account &Acct_sender, std::vector<BigInt> &vec_v, st
 
     BigInt r; 
     r = GenRandomBigIntLessThan(order); 
-    newCTx.sender_transfer_ct = TwistedElGamal::Enc(pp.enc_part, newCTx.pks, v, r); 
+    newCTx.sender_transfer_ct = TwistedExponentialElGamal::Enc(pp.enc_part, newCTx.pks, v, r); 
 
     std::vector<ECPoint> vec_pk(2); 
     std::vector<BigInt> vec_r(n); 
@@ -1084,7 +1077,7 @@ ToManyCTx CreateCTx(PP &pp, Account &Acct_sender, std::vector<BigInt> &vec_v, st
         vec_pk[0] = vec_pkr[i];
         vec_pk[1] = pp.pka;
         vec_r[i] = GenRandomBigIntLessThan(order);
-        newCTx.vec_receiver_transfer_ct[i] = TwistedElGamal::Enc(pp.enc_part, vec_pk, vec_v[i], vec_r[i]); 
+        newCTx.vec_receiver_transfer_ct[i] = TwistedExponentialElGamal::Enc(pp.enc_part, vec_pk, vec_v[i], vec_r[i]); 
     }
 
     #ifdef DEMO
@@ -1111,7 +1104,7 @@ ToManyCTx CreateCTx(PP &pp, Account &Acct_sender, std::vector<BigInt> &vec_v, st
     #endif
     // compute the updated balance
     newCTx.sender_balance_ct = Acct_sender.balance_ct; 
-    TwistedElGamal::CT sender_updated_balance_ct = TwistedElGamal::HomoSub(newCTx.sender_balance_ct, newCTx.sender_transfer_ct);
+    TwistedExponentialElGamal::CT sender_updated_balance_ct = TwistedExponentialElGamal::HomoSub(newCTx.sender_balance_ct, newCTx.sender_transfer_ct);
   
 
     #ifdef DEMO
@@ -1120,7 +1113,7 @@ ToManyCTx CreateCTx(PP &pp, Account &Acct_sender, std::vector<BigInt> &vec_v, st
 
     // refresh the updated balance (with random coins r^*)
     BigInt r_star = GenRandomBigIntLessThan(order);    
-    newCTx.refresh_sender_updated_balance_ct = TwistedElGamal::ReEnc(pp.enc_part, Acct_sender.pk, Acct_sender.sk, 
+    newCTx.refresh_sender_updated_balance_ct = TwistedExponentialElGamal::ReEnc(pp.enc_part, Acct_sender.pk, Acct_sender.sk, 
                                                                      sender_updated_balance_ct, r_star);
 
     #ifdef DEMO
@@ -1309,7 +1302,7 @@ bool VerifyCTx(PP &pp, ToManyCTx &newCTx)
 
     DLOGEquality::Instance dlog_equality_instance; 
 
-    TwistedElGamal::CT sender_updated_balance_ct = TwistedElGamal::HomoSub(newCTx.sender_balance_ct, newCTx.sender_transfer_ct);
+    TwistedExponentialElGamal::CT sender_updated_balance_ct = TwistedExponentialElGamal::HomoSub(newCTx.sender_balance_ct, newCTx.sender_transfer_ct);
 
     dlog_equality_instance.g1 = sender_updated_balance_ct.Y - newCTx.refresh_sender_updated_balance_ct.Y; 
     dlog_equality_instance.h1 = sender_updated_balance_ct.X - newCTx.refresh_sender_updated_balance_ct.X; 
@@ -1351,7 +1344,7 @@ void PrintCTx(ToManyCTx &newCTx)
     std::cout << ctx_file << " content >>>>>>" << std::endl; 
 
     std::cout << "current sender balance >>>" << std::endl; 
-    TwistedElGamal::PrintCT(newCTx.sender_balance_ct);
+    TwistedExponentialElGamal::PrintCT(newCTx.sender_balance_ct);
     std::cout << std::endl; 
 
     newCTx.pks.Print("sender's public key"); 
@@ -1361,12 +1354,12 @@ void PrintCTx(ToManyCTx &newCTx)
 
 
     std::cout << "sender's transfer ct >>>" << std::endl;
-    TwistedElGamal::PrintCT(newCTx.sender_transfer_ct);
+    TwistedExponentialElGamal::PrintCT(newCTx.sender_transfer_ct);
     std::cout << std::endl;
 
     std::cout << "receiver's transfer ct >>>" << std::endl; 
     for(auto i = 0; i < newCTx.vec_receiver_transfer_ct.size(); i++){
-        TwistedElGamal::PrintCT(newCTx.vec_receiver_transfer_ct[i]); 
+        TwistedExponentialElGamal::PrintCT(newCTx.vec_receiver_transfer_ct[i]); 
         std::cout << std::endl;
     } 
 
@@ -1385,7 +1378,7 @@ void PrintCTx(ToManyCTx &newCTx)
     std::cout << std::endl;
 
     std::cout << "refresh updated balance >>>" << std::endl;
-    TwistedElGamal::PrintCT(newCTx.refresh_sender_updated_balance_ct); 
+    TwistedExponentialElGamal::PrintCT(newCTx.refresh_sender_updated_balance_ct); 
     std::cout << std::endl;
 
     std::cout << "NIZKPoK of refresh updated balance >>>" << std::endl; 
@@ -1405,17 +1398,17 @@ bool UpdateAccount(PP &pp, ToManyCTx &newCTx, Account &Acct_sender, std::vector<
     Acct_sender.sn = Acct_sender.sn + bn_1;
 
     // update sender's balance
-    Acct_sender.balance_ct = TwistedElGamal::HomoSub(Acct_sender.balance_ct, newCTx.sender_transfer_ct); 
-    Acct_sender.m = TwistedElGamal::Dec(pp.enc_part, Acct_sender.sk, Acct_sender.balance_ct); 
+    Acct_sender.balance_ct = TwistedExponentialElGamal::HomoSub(Acct_sender.balance_ct, newCTx.sender_transfer_ct); 
+    Acct_sender.m = TwistedExponentialElGamal::Dec(pp.enc_part, Acct_sender.sk, Acct_sender.balance_ct); 
     SaveAccount(Acct_sender, Acct_sender.identity+".account"); 
 
-    TwistedElGamal::CT c_in; 
+    TwistedExponentialElGamal::CT c_in; 
     for(auto i = 0; i < vec_Acct_receiver.size(); i++){
         c_in.X = newCTx.vec_receiver_transfer_ct[i].vec_X[0]; 
         c_in.Y = newCTx.vec_receiver_transfer_ct[i].Y;
         // update receiver's balance
-        vec_Acct_receiver[i].balance_ct = TwistedElGamal::HomoAdd(vec_Acct_receiver[i].balance_ct, c_in); 
-        vec_Acct_receiver[i].m = TwistedElGamal::Dec(pp.enc_part, vec_Acct_receiver[i].sk, vec_Acct_receiver[i].balance_ct);
+        vec_Acct_receiver[i].balance_ct = TwistedExponentialElGamal::HomoAdd(vec_Acct_receiver[i].balance_ct, c_in); 
+        vec_Acct_receiver[i].m = TwistedExponentialElGamal::Dec(pp.enc_part, vec_Acct_receiver[i].sk, vec_Acct_receiver[i].balance_ct);
         SaveAccount(vec_Acct_receiver[i], vec_Acct_receiver[i].identity+".account"); 
     }
 
@@ -1462,11 +1455,11 @@ std::vector<BigInt> SuperviseCTx(SP &sp, PP &pp, ToManyCTx &ctx)
 
     std::cout << ctx.pks.ToHexString() << " transfers "; 
     std::cout << std::endl;
-    TwistedElGamal::CT ct; 
+    TwistedExponentialElGamal::CT ct; 
     for(auto i = 0; i < n; i++){
         ct.X = ctx.vec_receiver_transfer_ct[i].vec_X[1];
         ct.Y = ctx.vec_receiver_transfer_ct[i].Y;  
-        vec_v[i] = TwistedElGamal::Dec(pp.enc_part, sp.ska, ct);
+        vec_v[i] = TwistedExponentialElGamal::Dec(pp.enc_part, sp.ska, ct);
         std::cout << BN_bn2dec(vec_v[i].bn_ptr) << " coins to " << ctx.vec_pkr[i].ToHexString() << std::endl; 
     } 
 

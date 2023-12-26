@@ -22,11 +22,20 @@ void PrintSplitLine(char ch)
 // print uint_8 in hex
 void PrintBytes(uint8_t* A, size_t LEN)
 {
-    for(auto i = 0; i < LEN; i++)
-        std::cout << std::hex << +A[i] << " ";
-    std::cout << std::endl;
+    for (auto i = 0; i < LEN; i++) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(A[i]);
+    }
+    std::cout << std::dec << std::endl; // 
 }
 
+void PrintBytes(std::string note, uint8_t* A, size_t LEN)
+{
+    std::cout << note << " = "; 
+    for (auto i = 0; i < LEN; i++) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(A[i]);
+    }
+    std::cout << std::dec << std::endl; // 
+}
 
 void PrintBitMatrix(uint8_t *M, size_t ROW_NUM, size_t COLUMN_NUM)
 {

@@ -10,6 +10,7 @@
 #include "../include/std.inc"
 #include "../utility/serialization.hpp"
 #include "../crypto/ec_point.hpp" // cause we need to insert EC Point to filter
+#include "../crypto/ec_25519.hpp"
 #include "../utility/murmurhash3.hpp"
 
 //00000001 00000010 00000100 00001000 00010000 00100000 01000000 10000000
@@ -87,13 +88,13 @@ BloomFilter() {};
 
 BloomFilter(size_t max_element_num, size_t statistical_security_parameter)
 {
-   //desired_false_positive_probability = 1/2^{statistical_security_parameter/2};
+   //desired_false_positive_probability = 1/2^{statistical_security_parameter};
    //hash_num = static_cast<size_t>(-log2(desired_false_positive_probability));
-   hash_num = statistical_security_parameter/2; 
+   hash_num = statistical_security_parameter; 
    random_seed = static_cast<uint32_t>(0xA5A5A5A55A5A5A5A * 0xA5A5A5A5 + 1); 
    vec_salt = GenUniqueSaltVector(hash_num, random_seed);   
    //table_size = static_cast<uint32_t>(max_element_num * (-1.44 * log2(desired_false_positive_probability)));
-   table_size = static_cast<uint32_t>(max_element_num * (1.44 * statistical_security_parameter/2));
+   table_size = static_cast<uint32_t>(max_element_num * (1.44 * statistical_security_parameter));
    // the following operation is very important => make table size = 8*n 
    table_size = ((table_size+0x07) >> 3) << 3; // (table_size+7)/8*8
 

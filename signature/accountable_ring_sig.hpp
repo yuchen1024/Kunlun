@@ -1,7 +1,7 @@
 /***********************************************************************************
 this hpp implements and improves the scheme in ESORICS 2015
 Short Accountable Ring Signatures Based on DDH
-by replacing ElGamal with twisted ElGamal
+by replacing Exponential ElGamal with twisted Exponential ElGamal
 ***********************************************************************************/
 #ifndef ACCOUNTABLE_RING_SIG_HPP_
 #define ACCOUNTABLE_RING_SIG_HPP_
@@ -15,7 +15,7 @@ namespace AccountableRingSig{
 struct PP
 {
     Pedersen::PP com_part;
-    TwistedElGamal::PP enc_part; 
+    TwistedExponentialElGamal::PP enc_part; 
     ECPoint ek;  
 };
 
@@ -36,7 +36,7 @@ struct Signature
 {
     EncRelation::Proof correct_encryption_proof; 
     BigInt z_s, z_t;   
-    TwistedElGamal::CT ct_vk, ct_s;  
+    TwistedExponentialElGamal::CT ct_vk, ct_s;  
 };
  
 
@@ -51,9 +51,9 @@ std::tuple<PP, SP> Setup(size_t N_max)
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
     size_t DEC_THREAD_NUM = 8;
-    pp.enc_part = TwistedElGamal::Setup(MSG_LEN, TRADEOFF_NUM);
+    pp.enc_part = TwistedExponentialElGamal::Setup(MSG_LEN, TRADEOFF_NUM);
     
-    std::tie(pp.ek, sp.dk) = TwistedElGamal::KeyGen(pp.enc_part); 
+    std::tie(pp.ek, sp.dk) = TwistedExponentialElGamal::KeyGen(pp.enc_part); 
     return {pp, sp}; 
 }
 
@@ -81,17 +81,17 @@ Signature Sign(PP &pp, BigInt &sk, std::vector<ECPoint> &vec_R, std::string &mes
     if(l == N) std::cerr << "sk does not match the vk ring" << std::endl; 
 
     BigInt r = GenRandomBigIntLessThan(order); 
-    sigma.ct_vk = TwistedElGamal::Enc(pp.enc_part, pp.ek, vk, r); 
+    sigma.ct_vk = TwistedExponentialElGamal::Enc(pp.enc_part, pp.ek, vk, r); 
     
     BigInt t = GenRandomBigIntLessThan(order); 
     BigInt s = GenRandomBigIntLessThan(order); 
-    sigma.ct_s = TwistedElGamal::Enc(pp.enc_part, pp.ek, pp.enc_part.g * s, t); 
+    sigma.ct_s = TwistedExponentialElGamal::Enc(pp.enc_part, pp.ek, pp.enc_part.g * s, t); 
 
     
-    std::vector<TwistedElGamal::CT> vec_CT(N); 
+    std::vector<TwistedExponentialElGamal::CT> vec_CT(N); 
     for(auto i = 0; i < N; i++){
-        vec_CT[i] = TwistedElGamal::Enc(pp.enc_part, pp.ek, vec_R[i], bn_0); 
-        vec_CT[i] = TwistedElGamal::HomoSub(sigma.ct_vk, vec_CT[i]); 
+        vec_CT[i] = TwistedExponentialElGamal::Enc(pp.enc_part, pp.ek, vec_R[i], bn_0); 
+        vec_CT[i] = TwistedExponentialElGamal::HomoSub(sigma.ct_vk, vec_CT[i]); 
     }
 
     size_t n = 2;
@@ -123,10 +123,10 @@ bool Verify(PP &pp, std::vector<ECPoint> &vec_R, std::string &message, Signature
 {
     size_t N = vec_R.size();
 
-    std::vector<TwistedElGamal::CT> vec_CT(N); 
+    std::vector<TwistedExponentialElGamal::CT> vec_CT(N); 
     for(auto i = 0; i < N; i++){
-        vec_CT[i] = TwistedElGamal::Enc(pp.enc_part, pp.ek, vec_R[i], bn_0); 
-        vec_CT[i] = TwistedElGamal::HomoSub(sigma.ct_vk, vec_CT[i]); 
+        vec_CT[i] = TwistedExponentialElGamal::Enc(pp.enc_part, pp.ek, vec_R[i], bn_0); 
+        vec_CT[i] = TwistedExponentialElGamal::HomoSub(sigma.ct_vk, vec_CT[i]); 
     }
 
     size_t n = 2;
@@ -143,9 +143,9 @@ bool Verify(PP &pp, std::vector<ECPoint> &vec_R, std::string &message, Signature
 
     BigInt x = Hash::StringToBigInt(transcript_str);
 
-    TwistedElGamal::CT ct_left = TwistedElGamal::ScalarMul(sigma.ct_vk, x); 
-    ct_left = TwistedElGamal::HomoAdd(ct_left, sigma.ct_s); 
-    TwistedElGamal::CT ct_right = TwistedElGamal::Enc(pp.enc_part, pp.ek, pp.enc_part.g * sigma.z_s, sigma.z_t); 
+    TwistedExponentialElGamal::CT ct_left = TwistedExponentialElGamal::ScalarMul(sigma.ct_vk, x); 
+    ct_left = TwistedExponentialElGamal::HomoAdd(ct_left, sigma.ct_s); 
+    TwistedExponentialElGamal::CT ct_right = TwistedExponentialElGamal::Enc(pp.enc_part, pp.ek, pp.enc_part.g * sigma.z_s, sigma.z_t); 
     vec_condition[1] = (ct_left == ct_right); 
 
     bool Validity = vec_condition[0] && vec_condition[1]; 
@@ -170,7 +170,7 @@ bool Verify(PP &pp, std::vector<ECPoint> &vec_R, std::string &message, Signature
 std::tuple<ECPoint, DLOGEquality::Proof> Open(PP &pp, SP &sp, std::vector<ECPoint> &vec_R, Signature &sigma)
 {
     DLOGEquality::Proof correct_decryption_proof;
-    ECPoint vk = TwistedElGamal::DecECPoint(pp.enc_part, sp.dk, sigma.ct_vk); 
+    ECPoint vk = TwistedExponentialElGamal::DecECPoint(pp.enc_part, sp.dk, sigma.ct_vk); 
     size_t N = vec_R.size();
     size_t l = N;  
     for(auto i = 0; i < N; i++){

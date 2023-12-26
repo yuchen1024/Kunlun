@@ -1,9 +1,9 @@
-#ifndef TWISTED_ELGAMAL_HPP_
-#define TWISTED_ELGAMAL_HPP_
+#ifndef TWISTED_EXPONENTIAL_ELGAMAL_HPP_
+#define TWISTED_EXPONENTIAL_ELGAMAL_HPP_
 
 #include "calculate_dlog.hpp"
 
-namespace TwistedElGamal{
+namespace TwistedExponentialElGamal{
 
 using Serialization::operator<<; 
 using Serialization::operator>>; 
@@ -83,7 +83,7 @@ std::string MRCTToByteString(MRCT &ct)
 }
 
 
-std::ofstream &operator<<(std::ofstream &fout, const TwistedElGamal::PP &pp)
+std::ofstream &operator<<(std::ofstream &fout, const TwistedExponentialElGamal::PP &pp)
 {
     fout << pp.MSG_LEN << pp.TRADEOFF_NUM;
     fout << pp.MSG_SIZE; 
@@ -91,7 +91,7 @@ std::ofstream &operator<<(std::ofstream &fout, const TwistedElGamal::PP &pp)
     return fout; 
 }
 
-std::ifstream &operator>>(std::ifstream &fin, TwistedElGamal::PP &pp)
+std::ifstream &operator>>(std::ifstream &fin, TwistedExponentialElGamal::PP &pp)
 {
     fin >> pp.MSG_LEN >> pp.TRADEOFF_NUM; 
     fin >> pp.MSG_SIZE;
@@ -148,7 +148,7 @@ PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
     pp.h = Hash::StringToECPoint(pp.g.ToByteString());   
 
     #ifdef DEBUG
-        std::cout << "generate the public parameters for twisted ElGamal >>>" << std::endl; 
+        std::cout << "generate the public parameters for twisted exponential ElGamal >>>" << std::endl; 
         PrintPP(pp); 
     #endif
 
@@ -159,7 +159,7 @@ PP Setup(size_t MSG_LEN, size_t TRADEOFF_NUM)
 /* initialize the hashmap to accelerate decryption */
 void Initialize(PP &pp)
 {
-    std::cout << "initialize Twisted ElGamal PKE >>>" << std::endl; 
+    std::cout << "initialize twisted exponential ElGamal PKE >>>" << std::endl; 
 
     CheckDlogParameters(pp.MSG_LEN, pp.TRADEOFF_NUM); 
  
@@ -207,7 +207,7 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m)
     ct.Y = ECPointVectorMul(vec_A, vec_a);     // Y = g^r h^m
 
     #ifdef DEBUG
-        std::cout << "twisted ElGamal encryption finishes >>>"<< std::endl;
+        std::cout << "twisted exponential ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
 
@@ -226,28 +226,11 @@ CT Enc(const PP &pp, const ECPoint &pk, const BigInt &m, const BigInt &r)
     ct.Y = ECPointVectorMul(vec_A, vec_a); // CT.Y = pp.g * r + pp.h * m; 
 
     #ifdef DEBUG
-        std::cout << "twisted ElGamal encryption finishes >>>"<< std::endl;
+        std::cout << "twisted exponential ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
 
     return ct; 
-}
-
-// add an method to encrypt message in G
-CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
-{ 
-    CT ct; 
-    // begin encryption
-    ct.X = pk * r; // X = pk^r
-    ct.Y = pp.g * r + m; // Y = g^r m
-    return ct;
-}
-
-
-// add an method to decrypt message in G
-ECPoint DecECPoint(const PP &pp, const BigInt &sk, const CT &ct)
-{ 
-    return ct.Y - ct.X * sk.ModInverse(order); 
 }
 
 
@@ -266,6 +249,25 @@ BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
     }  
     return m; 
 }
+
+
+// add an method to encrypt message in G
+CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
+{ 
+    CT ct; 
+    // begin encryption
+    ct.X = pk * r; // X = pk^r
+    ct.Y = pp.g * r + m; // Y = g^r m
+    return ct;
+}
+
+
+// add an method to decrypt message in G
+ECPoint DecECPoint(const PP &pp, const BigInt &sk, const CT &ct)
+{ 
+    return ct.Y - ct.X * sk.ModInverse(order); 
+}
+
 
 /* 
 ** re-encrypt ciphertext CT with given randomness r 
@@ -357,7 +359,7 @@ MRCT Enc(const PP &pp, const std::vector<ECPoint> &vec_pk, const BigInt &m, cons
     ct.Y = pp.g * r + pp.h * m; // Y = g^r h^m
    
     #ifdef DEBUG
-        std::cout << n <<"-recipient 1-message twisted ElGamal encryption finishes >>>"<< std::endl;
+        std::cout << n <<"-recipient 1-message twisted exponential ElGamal encryption finishes >>>"<< std::endl;
         PrintCT(ct); 
     #endif
 

@@ -6,7 +6,7 @@ this hpp implements NIZKPoK for twisted ElGamal ciphertext
 
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"
-#include "../../pke/twisted_elgamal.hpp"
+#include "../../pke/twisted_exponential_elgamal.hpp"
 
 namespace PlaintextKnowledge{
 // define structure of PT_EQ_Proof
@@ -24,7 +24,7 @@ struct PP
 struct Instance
 {
     ECPoint pk; 
-    TwistedElGamal::CT ct; 
+    TwistedExponentialElGamal::CT ct; 
 };
 
 // structure of witness 
@@ -88,7 +88,7 @@ std::string ProofToByteString(Proof &proof)
 
 
 /*  Setup algorithm */
-PP Setup(TwistedElGamal::PP pp_enc)
+PP Setup(TwistedExponentialElGamal::PP pp_enc)
 { 
     PP pp;
     pp.g = pp_enc.g;

@@ -15,6 +15,7 @@
 
 #include "../include/std.inc"
 #include "../crypto/ec_point.hpp"
+#include "../crypto/ec_25519.hpp"
 
 inline const size_t NETWORK_BUFFER_SIZE = 1024*1024;
 inline const size_t FILE_BUFFER_SIZE = 1024*16;
@@ -338,6 +339,7 @@ void NetIO::ReceiveEC25519Points(EC25519Point* A, size_t LEN)
 	}
 	delete[] buffer; 
 }
+
 
 
 void NetIO::SendECPoint(const ECPoint &A) 

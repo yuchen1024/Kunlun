@@ -15,7 +15,7 @@ void GenRandomGadget1InstanceWitness(Gadget::PP &pp, Gadget::Instance &instance,
     witness.m = GenRandomBigIntLessThan(bn_range_size);
 
     instance.pk = GenRandomGenerator();
-    instance.ct = TwistedElGamal::Enc(pp.enc_part, instance.pk, witness.m, witness.r); 
+    instance.ct = TwistedExponentialElGamal::Enc(pp.enc_part, instance.pk, witness.m, witness.r); 
     std::cout << "random gadget-1 instance witness generation finished" << std::endl;
     witness.m.Print("plaintext");  
     PrintSplitLine('-');
@@ -30,10 +30,10 @@ void GenRandomGadget2InstanceWitness(Gadget::PP &pp, Gadget::Instance &instance,
     std::cout << "range = [" << 0 << "," << BN_bn2hex(bn_range_size.bn_ptr) <<")" << std::endl;
 
 
-    std::tie(instance.pk, witness.sk) = TwistedElGamal::KeyGen(pp.enc_part); 
+    std::tie(instance.pk, witness.sk) = TwistedExponentialElGamal::KeyGen(pp.enc_part); 
 
     BigInt m = GenRandomBigIntLessThan(bn_range_size);
-    TwistedElGamal::CT ct = TwistedElGamal::Enc(pp.enc_part, instance.pk, m);  
+    TwistedExponentialElGamal::CT ct = TwistedExponentialElGamal::Enc(pp.enc_part, instance.pk, m);  
  
     instance.ct = ct;  
     std::cout << "random gadget-2 instance witness pair generation finished" << std::endl;
@@ -53,7 +53,7 @@ void test_gadget1(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN, si
     Bullet::PP pp_bullet = Bullet::Setup(RANGE_LEN, AGG_NUM); 
     size_t DEC_THREAD_NUM = 8; 
     size_t TRADEOFF_NUM = 7;
-    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(RANGE_LEN, TRADEOFF_NUM); 
+    TwistedExponentialElGamal::PP pp_enc = TwistedExponentialElGamal::Setup(RANGE_LEN, TRADEOFF_NUM); 
 
     Gadget::PP pp = Gadget::Setup(pp_enc, pp_bullet);
     Gadget::Instance instance; 
@@ -94,7 +94,7 @@ void test_gadget2(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN, si
     Bullet::PP pp_bullet = Bullet::Setup(RANGE_LEN, AGG_NUM); 
     size_t DEC_THREAD_NUM = 8; 
     size_t TRADEOFF_NUM = 7;
-    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(RANGE_LEN, TRADEOFF_NUM); 
+    TwistedExponentialElGamal::PP pp_enc = TwistedExponentialElGamal::Setup(RANGE_LEN, TRADEOFF_NUM); 
     Gadget::PP pp = Gadget::Setup(pp_enc, pp_bullet);
     Gadget::Instance instance; 
     Gadget::Witness_type2 witness; 

@@ -9,7 +9,7 @@ in the range [LEFT_BOUND, RIGHT_BOUND)
 #ifndef GADGET_RANGE_PROOF_HPP
 #define GADGET_RANGE_PROOF_HPP
 
-#include "../pke/twisted_elgamal.hpp"        // implement Twisted ElGamal  
+#include "../pke/twisted_exponential_elgamal.hpp"        // import Twisted Exponential ElGamal  
 #include "../zkp/nizk/nizk_plaintext_equality.hpp" // NIZKPoK for plaintext equality
 #include "../zkp/nizk/nizk_plaintext_knowledge.hpp"        // NIZKPoK for ciphertext/honest encryption 
 #include "../zkp/nizk/nizk_dlog_equality.hpp"      // NIZKPoK for dlog equality
@@ -22,14 +22,14 @@ using Serialization::operator<<;
 using Serialization::operator>>; 
 
 struct PP{     
-    TwistedElGamal::PP enc_part; 
+    TwistedExponentialElGamal::PP enc_part; 
     Bullet::PP bullet_part; 
 
 };
 
 struct Instance{
     ECPoint pk; 
-    TwistedElGamal::CT ct;
+    TwistedExponentialElGamal::CT ct;
 };
 
 struct Witness_type1{
@@ -47,7 +47,7 @@ struct Witness_type2{
 };
 
 struct Proof_type2{
-    TwistedElGamal::CT refresh_ct; 
+    TwistedExponentialElGamal::CT refresh_ct; 
     DLOGEquality::Proof dlogeq_proof;  
     PlaintextKnowledge::Proof ptke_proof; 
     Bullet::Proof bullet_proof;     
@@ -87,7 +87,7 @@ bool CheckRange(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN)
     else return true;  
 } 
 
-PP Setup(TwistedElGamal::PP &pp_enc, Bullet::PP &pp_bullet)
+PP Setup(TwistedExponentialElGamal::PP &pp_enc, Bullet::PP &pp_bullet)
 {
     PP pp;
     pp.enc_part = pp_enc;
@@ -171,14 +171,14 @@ void Prove(PP &pp, Instance &instance, BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND,
     if(encoding2index_map.empty() == true)
     {
         std::cout << "the hashmap is empty" << std::endl; 
-        TwistedElGamal::Initialize(pp.enc_part);
+        TwistedExponentialElGamal::Initialize(pp.enc_part);
     }
 
 
     BigInt r_star = GenRandomBigIntLessThan(order); 
-    proof.refresh_ct = TwistedElGamal::ReEnc(pp.enc_part, instance.pk, witness.sk, instance.ct, r_star); 
+    proof.refresh_ct = TwistedExponentialElGamal::ReEnc(pp.enc_part, instance.pk, witness.sk, instance.ct, r_star); 
 
-    BigInt m = TwistedElGamal::Dec(pp.enc_part, witness.sk, instance.ct); 
+    BigInt m = TwistedExponentialElGamal::Dec(pp.enc_part, witness.sk, instance.ct); 
 
     DLOGEquality::PP dlogeq_pp = DLOGEquality::Setup();
     DLOGEquality::Instance dlogeq_instance;

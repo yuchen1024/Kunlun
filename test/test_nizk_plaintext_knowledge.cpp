@@ -1,6 +1,6 @@
 //#define DEBUG
 
-#include "../pke/twisted_elgamal.hpp"
+#include "../pke/twisted_exponential_elgamal.hpp"
 #include "../zkp/nizk/nizk_plaintext_knowledge.hpp"
 #include "../crypto/setup.hpp"
 
@@ -15,18 +15,18 @@ void GenRandomEncInstanceWitness(PlaintextKnowledge::PP &pp, PlaintextKnowledge:
     witness.v = GenRandomBigIntLessThan(order);
 
     instance.pk = GenRandomGenerator(); 
-    TwistedElGamal::PP pp_enc; 
+    TwistedExponentialElGamal::PP pp_enc; 
     pp_enc.g = pp.g; 
     pp_enc.h = pp.h;  
 
-    instance.ct = TwistedElGamal::Enc(pp_enc, instance.pk, witness.v, witness.r); 
+    instance.ct = TwistedExponentialElGamal::Enc(pp_enc, instance.pk, witness.v, witness.r); 
 }
 
 void test_nizk_plaintext_knowledge()
 {
     std::cout << "begin the test of NIZKPoK for plaintext knowledge >>>" << std::endl; 
     
-    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(32, 7); 
+    TwistedExponentialElGamal::PP pp_enc = TwistedExponentialElGamal::Setup(32, 7); 
     PlaintextKnowledge::PP pp = PlaintextKnowledge::Setup(pp_enc);
     PlaintextKnowledge::Instance instance;
     PlaintextKnowledge::Witness witness; 

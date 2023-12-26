@@ -20,7 +20,7 @@ void GenRandomEncInstanceWitness(EncRelation::PP &pp, EncRelation::Instance &ins
     instance.ek = GenRandomECPoint(); 
 
     for(auto i = 0; i < N; i++){         
-        instance.vec_CT[i] = TwistedElGamal::Enc(pp.enc_part, instance.ek, vec_m[i], vec_r[i]); 
+        instance.vec_CT[i] = TwistedExponentialElGamal::Enc(pp.enc_part, instance.ek, vec_m[i], vec_r[i]); 
     }
 
     if (flag == true)
@@ -28,7 +28,7 @@ void GenRandomEncInstanceWitness(EncRelation::PP &pp, EncRelation::Instance &ins
         std::cout << "generate " << N <<" well-formed ciphertexts >>>" << std::endl;
         ECPoint m; 
         m.SetInfinity();
-        instance.vec_CT[witness.l] = TwistedElGamal::Enc(pp.enc_part, instance.ek, m, vec_r[witness.l]); 
+        instance.vec_CT[witness.l] = TwistedExponentialElGamal::Enc(pp.enc_part, instance.ek, m, vec_r[witness.l]); 
     } 
     else
     {
@@ -50,7 +50,7 @@ void test_nizk_enc_relation(bool flag)
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
     size_t DEC_THREAD_NUM = 8;
-    TwistedElGamal::PP enc_pp = TwistedElGamal::Setup(MSG_LEN, TRADEOFF_NUM); 
+    TwistedExponentialElGamal::PP enc_pp = TwistedExponentialElGamal::Setup(MSG_LEN, TRADEOFF_NUM); 
 
 
     size_t n = 2;

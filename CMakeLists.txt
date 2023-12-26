@@ -99,8 +99,12 @@ ADD_EXECUTABLE(test_cwprf_psi test/test_cwprf_psi.cpp)
 TARGET_LINK_LIBRARIES(test_cwprf_psi ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 # pso
-ADD_EXECUTABLE(test_mqrpmt test/test_mqrpmt.cpp)
-TARGET_LINK_LIBRARIES(test_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+ADD_EXECUTABLE(test_cwprf_mqrpmt test/test_cwprf_mqrpmt.cpp)
+TARGET_LINK_LIBRARIES(test_cwprf_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+# ADD_EXECUTABLE(test_poprf_mqrpmt test/test_poprf_mqrpmt.cpp)
+# TARGET_LINK_LIBRARIES(test_poprf_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
 
 ADD_EXECUTABLE(test_mqrpmt_psi test/test_mqrpmt_psi.cpp)
 TARGET_LINK_LIBRARIES(test_mqrpmt_psi ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
@@ -136,8 +140,11 @@ ADD_EXECUTABLE(test_misc test/test_misc.cpp)
 TARGET_LINK_LIBRARIES(test_misc ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
   
 # pke  
-ADD_EXECUTABLE(test_twisted_elgamal test/test_twisted_elgamal.cpp)
-TARGET_LINK_LIBRARIES(test_twisted_elgamal ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+ADD_EXECUTABLE(test_twisted_exponential_elgamal test/test_twisted_exponential_elgamal.cpp)
+TARGET_LINK_LIBRARIES(test_twisted_exponential_elgamal ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
+
+ADD_EXECUTABLE(test_exponential_elgamal test/test_exponential_elgamal.cpp)
+TARGET_LINK_LIBRARIES(test_exponential_elgamal ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_elgamal test/test_elgamal.cpp)
 TARGET_LINK_LIBRARIES(test_elgamal ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)

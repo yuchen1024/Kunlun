@@ -84,7 +84,8 @@
         "clocale": "cpp",
         "compare": "cpp",
         "concepts": "cpp",
-        "__verbose_abort": "cpp"
+        "__verbose_abort": "cpp",
+        "charconv": "cpp"
     },
     "cmake.configureOnOpen": false
 }

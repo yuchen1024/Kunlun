@@ -104,8 +104,8 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    #ifdef ENABLE_CURVE25519_ACCELERATION
-        std::cerr << "enable curve25519 acceleration" << std::endl;
+    #ifdef ENABLE_X25519_ACCELERATION
+        std::cerr << "enable x25519 acceleration powered by Curve25519" << std::endl;
     #endif
 
     PrintSplitLine('-'); 

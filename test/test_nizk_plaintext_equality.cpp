@@ -1,6 +1,6 @@
 #define DEBUG
 
-#include "../pke/twisted_elgamal.hpp"
+#include "../pke/twisted_exponential_elgamal.hpp"
 #include "../zkp/nizk/nizk_plaintext_equality.hpp"
 #include "../crypto/setup.hpp"
 
@@ -23,11 +23,11 @@ void GenRandomTripleEncInstanceWitness(PlaintextEquality::PP &pp, PlaintextEqual
     }
 
 
-    TwistedElGamal::PP enc_pp; 
+    TwistedExponentialElGamal::PP enc_pp; 
     enc_pp.g = pp.g; 
     enc_pp.h = pp.h; 
      
-    instance.ct = TwistedElGamal::Enc(enc_pp, instance.vec_pk, witness.v, witness.r); 
+    instance.ct = TwistedExponentialElGamal::Enc(enc_pp, instance.vec_pk, witness.v, witness.r); 
     
 
     if(flag == false){
@@ -41,7 +41,7 @@ void test_nizk_plaintext_equality(bool flag)
     PrintSplitLine('-');  
     std::cout << "begin the test of NIZKPoK for plaintext equality >>>" << std::endl; 
 
-    TwistedElGamal::PP pp_enc = TwistedElGamal::Setup(32, 7); 
+    TwistedExponentialElGamal::PP pp_enc = TwistedExponentialElGamal::Setup(32, 7); 
     PlaintextEquality::PP pp = PlaintextEquality::Setup(pp_enc);
     PlaintextEquality::Instance instance; 
     PlaintextEquality::Witness witness; 

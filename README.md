@@ -100,7 +100,8 @@ if reporting cannot find "opensslv.h" error, try to install libssl-dev
 - /crypto: C++ wrapper for OpenSSL
   * setup.hpp: initialize crypto environments, including big number, elliptic curves, and aes
   * ec_group.hpp: initialize ec group environment, define compressed-point on-off, precomputation on-off 
-  * ec_point.hpp: class for EC_POINT
+  * ec_point.hpp: class for EC_POINT of ordinary EC curves 
+  * ec_25519.hpp: class for x25519 method of specific Curve25519 
   * bigint.hpp: class for BIGNUM, also include initialization of big num
   * hash.hpp: all kinds of cryptographic hash functions
   * aes.hpp: implement AES using SSE, as well as initialization of aes
@@ -109,9 +110,10 @@ if reporting cannot find "opensslv.h" error, try to install libssl-dev
   * block.hpp: __m128i related algorithms (necessary for exploiting SSE)
 
 - /pke: public key encryption schemes
-  * twisted_elgamal.hpp
-  * elgamal.hpp
-  * calculate_dlog.hpp
+  * twisted_exponential_elgamal.hpp
+  * exponential_elgamal.hpp
+  * elgamal.hpp: standard ElGamal PKE whose message space is G 
+  * calculate_dlog.hpp: implement optimized general Shank's algorithm
 
 - /signature
   * schnorr.hpp
@@ -137,6 +139,7 @@ if reporting cannot find "opensslv.h" error, try to install libssl-dev
   - /oprf
     * ote_oprf: OTE-based OPRF
     * ddh_oprf: DDH-based (permuted)-OPRF
+    * vole_oprf: VOLE-based OPRF
 
   - /rpmt
     * cwprf_mqrpmt.hpp: mq-RPMT from commutative weak PRF
@@ -147,6 +150,17 @@ if reporting cannot find "opensslv.h" error, try to install libssl-dev
     * mqrpmt_psi_card_sum.hpp: intersection sum and cardinality 
     * mqrpmt_psu.hpp: union
     * mqrpmt_private_id.hpp: private-id protocol based on OTE-based OPRF and cwPRF-based mqRPMT
+
+  - /okvs
+    * baxos.hpp
+    * ovks_utility.hpp
+    * paxos.hpp
+
+  - /vole
+    * basevole.hpp
+    * exconvcode.hpp
+    * vole.hpp
+  
 
 - zkp
   - /nizk: associated sigma protocol for twisted elgamal; obtained via Fiat-Shamir transform  
@@ -200,10 +214,10 @@ inline const size_t NUMBER_OF_THREADS = 1;
 ```
 inline int curve_id = NID_X9_62_prime256v1; // choose other curves by specifying curve-ID  
 #define ECPOINT_COMPRESSED                  // comment this line to enable uncompressed representation
-#define ENABLE_CURVE25519_ACCELERATION      // (un)comment this line to enable curve25519 acceleration
+#define ENABLE_X25519_ACCELERATION      // (un)comment this line to enable x25519 acceleration method
 ```
 
-Note: curve25519 can significantly improve EC exponentiation operations, but does not support EC add operations. Kunlun provides the option of using curve25519 to improve performance of applications (like cwPRF) which only need EC exponentiation operations. But, since curve25519 is not full-fledged, ordinary EC curves are always necessary for base Naor-Pinkas OT. Therefore, users must specify one ordinary EC curve.    
+Note: x22519 is an efficnet DDH-based non-interactive key exchange (NIKE) protocol based on curve25519. The essense of x25519 is exactly cwPRF. Its remarkable efficency is attained by performing "somehow EC exponentiation" with only X-coordinates (perhaps x25519 name after it). However, in x25519 the EC exponetiation is not standard, and EC addition is not well-defined. We stress that curve25519 certainly support standard EC exponentiation and addition, but x25519 method does not. Kunlun provides the option of using x25519 method to improve performance of applications when it is applicable (involving only cwPRF). But, since x25519 method is not full-fledged, ordinary EC curves are always necessary for base Naor-Pinkas OT. Therefore, users must specify one ordinary EC curve when implementing ECC.    
 
 ## Evolution and Updates Log
 

@@ -8,7 +8,7 @@ by replacing ElGamal with twisted ElGamal
 
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"
-#include "../../pke/twisted_elgamal.hpp"
+#include "../../pke/twisted_exponential_elgamal.hpp"
 #include "../../commitment/pedersen.hpp"
 #include "../../utility/polymul.hpp"
 
@@ -21,14 +21,14 @@ using Serialization::operator>>;
 struct PP
 {
     Pedersen::PP com_part;
-    TwistedElGamal::PP enc_part;  
+    TwistedExponentialElGamal::PP enc_part;  
     size_t n, m; 
 };
 
 // structure of instance (pk_1,...,pk_n, Xi = pk_i^r, Y = g^r h^v)
 struct Instance
 {
-    std::vector<TwistedElGamal::CT> vec_CT; // N ciphertexts: one constains encryption of 0  
+    std::vector<TwistedExponentialElGamal::CT> vec_CT; // N ciphertexts: one constains encryption of 0  
     ECPoint ek; 
 };
 
@@ -45,7 +45,7 @@ struct Proof
 {
     ECPoint B; 
     BigInt z;
-    std::vector<TwistedElGamal::CT> vec_G; 
+    std::vector<TwistedExponentialElGamal::CT> vec_G; 
     // proof of bit constraint
     ECPoint A, C, D; 
     std::vector<BigInt> vec_f; 
@@ -54,7 +54,7 @@ struct Proof
  
 
 /* Setup algorithm */ 
-PP Setup(Pedersen::PP &com_pp, TwistedElGamal::PP &enc_pp, size_t n)
+PP Setup(Pedersen::PP &com_pp, TwistedExponentialElGamal::PP &enc_pp, size_t n)
 { 
     PP pp; 
     pp.com_part = com_pp;
@@ -145,11 +145,11 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
     std::vector<BigInt> vec_rho = GenRandomBigIntVectorLessThan(pp.m, order);
 
     proof.vec_G.resize(pp.m);
-    std::vector<TwistedElGamal::CT> vec_mask_CT(pp.m);
+    std::vector<TwistedExponentialElGamal::CT> vec_mask_CT(pp.m);
     ECPoint m; 
     m.SetInfinity(); 
     for(auto i = 0; i < pp.m; i++){
-        vec_mask_CT[i] = TwistedElGamal::Enc(pp.enc_part, instance.ek, m, vec_rho[i]); 
+        vec_mask_CT[i] = TwistedExponentialElGamal::Enc(pp.enc_part, instance.ek, m, vec_rho[i]); 
     }
 
     // prepare the polynomial p(i)
@@ -171,10 +171,10 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
 
     for(auto k = 0; k < pp.m; k++){
         for(auto i = 0; i < N; i++){
-            TwistedElGamal::CT temp_ct = TwistedElGamal::ScalarMul(instance.vec_CT[i], P[i][k]); 
-            proof.vec_G[k] = TwistedElGamal::HomoAdd(proof.vec_G[k], temp_ct);
+            TwistedExponentialElGamal::CT temp_ct = TwistedExponentialElGamal::ScalarMul(instance.vec_CT[i], P[i][k]); 
+            proof.vec_G[k] = TwistedExponentialElGamal::HomoAdd(proof.vec_G[k], temp_ct);
         }
-        proof.vec_G[k] = TwistedElGamal::HomoAdd(proof.vec_G[k], vec_mask_CT[k]);
+        proof.vec_G[k] = TwistedExponentialElGamal::HomoAdd(proof.vec_G[k], vec_mask_CT[k]);
     }
 
     std::vector<BigInt> exp_x(pp.m+1);
@@ -237,20 +237,20 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     // check condition 3
     ECPoint m; 
     m.SetInfinity();
-    TwistedElGamal::CT ct_right = TwistedElGamal::Enc(pp.enc_part, instance.ek, m, proof.z);  
-    TwistedElGamal::CT ct_left; 
+    TwistedExponentialElGamal::CT ct_right = TwistedExponentialElGamal::Enc(pp.enc_part, instance.ek, m, proof.z);  
+    TwistedExponentialElGamal::CT ct_left; 
     ct_left.X.SetInfinity();
     ct_left.Y.SetInfinity();
 
-    std::vector<TwistedElGamal::CT> vec_CT(N); 
+    std::vector<TwistedExponentialElGamal::CT> vec_CT(N); 
     for(auto i = 0; i < N; i++){
         BigInt product = bn_1; 
         std::vector<size_t> vec_index = Decompose(i, pp.n, pp.m);
         for(auto j = 0; j < pp.m; j++){
             product = (product * proof.vec_f[j*pp.n + vec_index[j]]) % order;
         }
-        vec_CT[i] = TwistedElGamal::ScalarMul(instance.vec_CT[i], product); 
-        ct_left = TwistedElGamal::HomoAdd(ct_left, vec_CT[i]);
+        vec_CT[i] = TwistedExponentialElGamal::ScalarMul(instance.vec_CT[i], product); 
+        ct_left = TwistedExponentialElGamal::HomoAdd(ct_left, vec_CT[i]);
     }
 
     std::vector<BigInt> exp_x(pp.m);
@@ -260,8 +260,8 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     }
 
     for(auto k = 0; k < pp.m; k++){
-        TwistedElGamal::CT ct_temp = TwistedElGamal::ScalarMul(proof.vec_G[k], exp_x[k]); 
-        ct_left = TwistedElGamal::HomoSub(ct_left, ct_temp);
+        TwistedExponentialElGamal::CT ct_temp = TwistedExponentialElGamal::ScalarMul(proof.vec_G[k], exp_x[k]); 
+        ct_left = TwistedExponentialElGamal::HomoSub(ct_left, ct_temp);
     }
 
 

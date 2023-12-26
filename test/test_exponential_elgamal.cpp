@@ -1,6 +1,6 @@
 //#define DEBUG
 #include "../crypto/setup.hpp"
-#include "../pke/twisted_elgamal.hpp"
+#include "../pke/exponential_elgamal.hpp"
 
 void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
 {
@@ -12,8 +12,8 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     std::cout << "TEST_NUM = " << TEST_NUM << std::endl;
     PrintSplitLine('-'); 
 
-    TwistedElGamal::PP pp = TwistedElGamal::Setup(MSG_LEN, TRADEOFF_NUM);
-    TwistedElGamal::Initialize(pp); 
+    ExponentialElGamal::PP pp = ExponentialElGamal::Setup(MSG_LEN, TRADEOFF_NUM);
+    ExponentialElGamal::Initialize(pp); 
     PrintSplitLine('-'); 
 
     ECPoint pk[TEST_NUM];                      // pk
@@ -21,9 +21,9 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     BigInt m[TEST_NUM];                        // messages  
     BigInt m_real[TEST_NUM];                  // decrypted messages
     BigInt k[TEST_NUM];                        // scalars
-    TwistedElGamal::CT CT[TEST_NUM];            // CTs    
-    TwistedElGamal::CT CT_new[TEST_NUM];        // re-randomized CTs
-    TwistedElGamal::CT CT_result[TEST_NUM];     // homomorphic operation results
+    ExponentialElGamal::CT ct[TEST_NUM];            // cts    
+    ExponentialElGamal::CT ct_new[TEST_NUM];        // re-randomized cts
+    ExponentialElGamal::CT ct_result[TEST_NUM];     // homomorphic operation results
     BigInt r_new[TEST_NUM];                  // re-randomized randomness 
 
     for(auto i = 0; i < TEST_NUM; i++)
@@ -37,7 +37,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     auto start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        std::tie(pk[i], sk[i]) = TwistedElGamal::KeyGen(pp); 
+        std::tie(pk[i], sk[i]) = ExponentialElGamal::KeyGen(pp); 
     }
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -48,7 +48,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        CT[i] = TwistedElGamal::Enc(pp, pk[i], m[i]);
+        ct[i] = ExponentialElGamal::Enc(pp, pk[i], m[i]);
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -59,7 +59,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        CT_new[i] = TwistedElGamal::ReEnc(pp, pk[i], sk[i], CT[i], r_new[i]); 
+        ct_new[i] = ExponentialElGamal::ReEnc(pp, pk[i], sk[i], ct[i], r_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -70,7 +70,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        m_real[i] = TwistedElGamal::Dec(pp, sk[i], CT_new[i]); 
+        m_real[i] = ExponentialElGamal::Dec(pp, sk[i], ct_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -88,7 +88,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        CT_result[i] = TwistedElGamal::HomoAdd(CT[i], CT_new[i]); 
+        ct_result[i] = ExponentialElGamal::HomoAdd(ct[i], ct_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -99,7 +99,7 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        CT_result[i] = TwistedElGamal::HomoSub(CT[i], CT_new[i]); 
+        ct_result[i] = ExponentialElGamal::HomoSub(ct[i], ct_new[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
@@ -110,13 +110,14 @@ void benchmark_test(size_t MSG_LEN, size_t TRADEOFF_NUM, size_t TEST_NUM)
     start_time = std::chrono::steady_clock::now(); 
     for(auto i = 0; i < TEST_NUM; i++)
     {
-        CT_result[i] = TwistedElGamal::ScalarMul(CT[i], k[i]); 
+        ct_result[i] = ExponentialElGamal::ScalarMul(ct[i], k[i]); 
     }
     end_time = std::chrono::steady_clock::now(); 
     running_time = end_time - start_time;
     std::cout << "average scalar operation takes time = " 
     << std::chrono::duration <double, std::milli> (running_time).count()/TEST_NUM << " ms" << std::endl;
 }
+
 
 void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
 {
@@ -129,15 +130,15 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
 
     PrintSplitLine('-'); 
 
-    TwistedElGamal::PP pp = TwistedElGamal::Setup(MSG_LEN, TRADEOFF_NUM);
-    TwistedElGamal::Initialize(pp); 
+    ExponentialElGamal::PP pp = ExponentialElGamal::Setup(MSG_LEN, TRADEOFF_NUM);
+    ExponentialElGamal::Initialize(pp); 
     PrintSplitLine('-'); 
 
     ECPoint pk;                      // pk
     BigInt sk;                       // sk
     BigInt m_random, m_left, m_right;                       // messages  
     BigInt m_real;                  // decrypted messages
-    TwistedElGamal::CT CT;            // CTs    
+    ExponentialElGamal::CT CT;            // CTs    
 
 
     m_random = GenRandomBigIntLessThan(pp.MSG_SIZE); 
@@ -145,11 +146,11 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
     m_right = pp.MSG_SIZE - bn_1; 
 
     /* test keygen efficiency */ 
-    std::tie(pk, sk) = TwistedElGamal::KeyGen(pp); 
+    std::tie(pk, sk) = ExponentialElGamal::KeyGen(pp); 
 
-    CT = TwistedElGamal::Enc(pp, pk, m_random);
+    CT = ExponentialElGamal::Enc(pp, pk, m_random);
 
-    m_real = TwistedElGamal::Dec(pp, sk, CT); 
+    m_real = ExponentialElGamal::Dec(pp, sk, CT); 
     if(m_random != m_real){ 
         std::cout << "decryption fails for random message" << std::endl;
     }
@@ -157,9 +158,9 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
         std::cout << "decryption succeeds for random message" << std::endl;
     }
 
-    CT = TwistedElGamal::Enc(pp, pk, m_left);
+    CT = ExponentialElGamal::Enc(pp, pk, m_left);
 
-    m_real = TwistedElGamal::Dec(pp, sk, CT); 
+    m_real = ExponentialElGamal::Dec(pp, sk, CT); 
 
     if(m_left != m_real){ 
         std::cout << "decryption fails for left boundary" << std::endl;
@@ -168,8 +169,8 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
         std::cout << "decryption succeeds for left boundary" << std::endl;
     }
 
-    CT = TwistedElGamal::Enc(pp, pk, m_right);
-    m_real = TwistedElGamal::Dec(pp, sk, CT); 
+    CT = ExponentialElGamal::Enc(pp, pk, m_right);
+    m_real = ExponentialElGamal::Dec(pp, sk, CT); 
     if(m_right != m_real){ 
         std::cout << "decryption fails for right boundary" << std::endl;
     }
@@ -182,24 +183,25 @@ void function_test(size_t MSG_LEN, size_t TRADEOFF_NUM)
 
 int main()
 {  
-    CRYPTO_Initialize(); 
+    CRYPTO_Initialize();  
     
     std::ios::sync_with_stdio(false);
 
     PrintSplitLine('-'); 
-    std::cout << "Twisted ElGamal PKE test begins >>>>>>" << std::endl; 
+    std::cout << "Exponential ElGamal PKE test begins >>>>>>" << std::endl; 
+    PrintSplitLine('-'); 
 
 
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
     size_t TEST_NUM = 10000;
 
-    function_test(MSG_LEN, TRADEOFF_NUM);
+    function_test(MSG_LEN, TRADEOFF_NUM); 
+
     benchmark_test(MSG_LEN, TRADEOFF_NUM, TEST_NUM);
 
-    
     PrintSplitLine('-'); 
-    std::cout << "Twisted ElGamal PKE test finishes <<<<<<" << std::endl; 
+    std::cout << "Exponential ElGamal PKE test finishes <<<<<<" << std::endl; 
     PrintSplitLine('-'); 
 
     CRYPTO_Finalize(); 

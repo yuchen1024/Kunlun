@@ -10,6 +10,7 @@ this file includes commonly used head files
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <cstring>
