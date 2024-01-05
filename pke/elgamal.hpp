@@ -7,10 +7,11 @@
 #include "../utility/print.hpp"
 
 /*
- * x25519 method implies PKE, but since x25519 is not full-fledged
+ * x25519 NIKE protocol implies PKE, but x25519 is not full-fledged
  * the addition on EC curve is not well-defined
  * and thus does not obey distributive law w.r.t. exponentiation
  * therefore, it does not support re-randomization and homomorphic operations 
+ * when you need re-randomizable PKE, you should disable X25519_ACCELERATION
 */
 
 namespace ElGamal{
@@ -142,6 +143,27 @@ CT Enc(const PP &pp, const ECPoint &pk, const ECPoint &m, const BigInt &r)
     #endif
 
     return ct; 
+}
+
+/* 
+** re-rand ciphertext CT  
+** run by anyone
+*/ 
+CT ReRand(const PP &pp, const ECPoint &pk, const CT &ct)
+{ 
+    CT ct_new; 
+    BigInt r = GenRandomBigIntLessThan(order); 
+
+    // begin re-encryption with the given randomness 
+    ct_new.X = ct.X + pp.g * r; // ct_new.X = ct.X + g^r 
+    ct_new.Y = ct.Y + pk * r; // ct_new.Y = ct.Y + pk^r 
+
+    #ifdef DEBUG
+        std::cout << "rerand ciphertext succeeds >>>" << std::endl;
+        PrintCT(ct_new); 
+    #endif
+
+    return ct_new;
 }
 
 // decrypt 
