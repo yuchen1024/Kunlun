@@ -172,6 +172,40 @@ ECPoint Dec(const PP &pp, const BigInt &sk, const CT &ct)
     return ct.Y - ct.X * sk; 
 }
 
+
+std::vector<unsigned char> CTtoByteArray(ElGamal::CT &ct)
+{ 
+    int thread_num = omp_get_thread_num();
+	#ifdef ECPOINT_COMPRESSED
+		std::vector<unsigned char> buffer(POINT_COMPRESSED_BYTE_LEN*2);
+		EC_POINT_point2oct(group, ct.X.point_ptr, POINT_CONVERSION_COMPRESSED, buffer.data(), POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
+        EC_POINT_point2oct(group, ct.Y.point_ptr, POINT_CONVERSION_COMPRESSED, buffer.data()+POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
+	#else
+		std::vector<unsigned char> buffer(POINT_BYTE_LEN*2);
+		EC_POINT_point2oct(group, ct.X.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer.data(), POINT_BYTE_LEN, bn_ctx[thread_num]);
+        EC_POINT_point2oct(group, ct.X.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer.data()+POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx[thread_num]);
+ 
+	#endif
+
+    return buffer;            
+}
+ 
+ElGamal::CT ByteArraytoCT(std::vector<unsigned char> &buffer)
+{ 
+    ElGamal::CT ct; 
+    int thread_num = omp_get_thread_num();
+    #ifdef ECPOINT_COMPRESSED
+        EC_POINT_oct2point(group, ct.X.point_ptr, buffer.data(), POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
+        EC_POINT_oct2point(group, ct.Y.point_ptr, buffer.data()+POINT_COMPRESSED_BYTE_LEN, POINT_COMPRESSED_BYTE_LEN, bn_ctx[thread_num]);
+    #else
+        EC_POINT_oct2point(group, ct.X.point_ptr, buffer.data(), POINT_BYTE_LEN, bn_ctx[thread_num]); 
+        EC_POINT_oct2point(group, ct.Y.point_ptr, buffer.data()+POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx[thread_num]); 
+    #endif
+    
+    return ct;            
+}
+
+
 #else
 // define the structure of PP
 struct PP
