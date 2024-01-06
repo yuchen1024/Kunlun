@@ -183,7 +183,7 @@ std::vector<unsigned char> CTtoByteArray(ElGamal::CT &ct)
 	#else
 		std::vector<unsigned char> buffer(POINT_BYTE_LEN*2);
 		EC_POINT_point2oct(group, ct.X.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer.data(), POINT_BYTE_LEN, bn_ctx[thread_num]);
-        EC_POINT_point2oct(group, ct.X.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer.data()+POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx[thread_num]);
+        EC_POINT_point2oct(group, ct.Y.point_ptr, POINT_CONVERSION_UNCOMPRESSED, buffer.data()+POINT_BYTE_LEN, POINT_BYTE_LEN, bn_ctx[thread_num]);
  
 	#endif
 

@@ -18,7 +18,7 @@
 #include "../crypto/ec_25519.hpp"
 
 inline const size_t NETWORK_BUFFER_SIZE = 1024*1024;
-inline const size_t FILE_BUFFER_SIZE = 1024*16;
+//inline const size_t FILE_BUFFER_SIZE = 1024*16;
 
 class NetIO{ 
 public:
