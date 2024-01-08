@@ -105,6 +105,8 @@ TARGET_LINK_LIBRARIES(test_cwprf_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 # ADD_EXECUTABLE(test_poprf_mqrpmt test/test_poprf_mqrpmt.cpp)
 # TARGET_LINK_LIBRARIES(test_poprf_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
+ADD_EXECUTABLE(test_rrpke_mqrpmt test/test_rrpke_mqrpmt.cpp)
+TARGET_LINK_LIBRARIES(test_rrpke_mqrpmt ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)
 
 ADD_EXECUTABLE(test_mqrpmt_psi test/test_mqrpmt_psi.cpp)
 TARGET_LINK_LIBRARIES(test_mqrpmt_psi ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX)

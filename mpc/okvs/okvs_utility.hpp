@@ -12,6 +12,54 @@
 #include "../../include/std.inc"
 #include "../../crypto/block.hpp"
 #include <vector>
+
+// construct to support variabe value_type (by changing the length of var[]) 
+struct MyStruct
+{
+   block var[9];
+   MyStruct() : var() {} 
+   	
+   MyStruct operator^(const MyStruct &other) const
+   {
+      uint32_t len = sizeof(var)/sizeof(block);
+      MyStruct result;
+      for(auto i = 0; i < len; ++i){
+      	result.var[i] = var[i]^other.var[i];
+      }
+      return result;
+   }
+   
+   MyStruct &operator^=(const MyStruct &other)
+   {
+      uint32_t len = sizeof(var)/sizeof(block);
+      for(auto i = 0; i < len; ++i){
+      	var[i] ^= other.var[i];
+      }      
+      return *this;
+   }
+
+   bool operator!=(const MyStruct &other) const
+   {
+      uint32_t len = sizeof(var)/sizeof(block);
+      for(auto i = 0; i < len; ++i)
+      {
+      	if(!Block::Compare(var[i],other.var[i])){
+      		return true;
+      	}	
+      }	
+      return false;
+   }
+   
+   void printMyStruct(){
+   	uint32_t len = sizeof(var)/sizeof(block);
+   	for(auto i = 0; i < len; ++i){
+   		Block::PrintBlock(var[i]);
+   	}
+   	std::cout << "" << std::endl;
+   }
+   
+};
+
 struct divider
 {
     uint64_t magic;
@@ -444,6 +492,20 @@ inline block gf128_mul(const block x, const block y)
 
     return mul256_low;
 }
+
+// gf128_mul overload and return z : z.var[i] = gf128_mul(x.var[i], y)
+inline MyStruct gf128_mul(const MyStruct x, const block y)
+{
+	uint32_t len = sizeof(MyStruct)/sizeof(block);
+	block res[len];
+	for(auto i = 0; i< len; ++i){
+		res[i] = gf128_mul(((block*)(&x))[i],y);
+	}
+	return ((MyStruct*)(&res))[0];
+
+}
+
+
 
 inline block gf128_inv(const block x)
 {
