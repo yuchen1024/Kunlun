@@ -129,14 +129,12 @@ int main()
  
     if(!FileExist(pp_filename)){
         std::cout << pp_filename << " does not exist" << std::endl;
-        std::string filter_type = "bloom"; 
         size_t computational_security_parameter = 128;         
         size_t statistical_security_parameter = 40; 
         size_t LOG_SENDER_ITEM_NUM = 20;
         size_t LOG_RECEIVER_ITEM_NUM = 20;  
-        size_t LOG_INPUT_LEN = std::max(LOG_RECEIVER_ITEM_NUM, LOG_SENDER_ITEM_NUM); // set OPRF input length
-        pp = mqRPMTPrivateID::Setup(LOG_INPUT_LEN, "bloom", 
-                              computational_security_parameter, statistical_security_parameter, 
+        size_t LOG_PRF_INPUT_LEN = std::max(LOG_RECEIVER_ITEM_NUM, LOG_SENDER_ITEM_NUM); // set OPRF input length
+        pp = mqRPMTPrivateID::Setup(LOG_PRF_INPUT_LEN, computational_security_parameter, statistical_security_parameter, 
                               LOG_SENDER_ITEM_NUM, LOG_RECEIVER_ITEM_NUM); 
         mqRPMTPrivateID::SavePP(pp, pp_filename); 
     }

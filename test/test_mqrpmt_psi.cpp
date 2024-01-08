@@ -133,13 +133,11 @@ int main()
     mqRPMTPSI::PP pp;   
     if(!FileExist(pp_filename)){
         std::cout << pp_filename << " does not exist" << std::endl; 
-        std::string filter_type = "bloom"; 
         size_t computational_security_parameter = 128;         
         size_t statistical_security_parameter = 40; 
         size_t LOG_SENDER_ITEM_NUM = 20;
         size_t LOG_RECEIVER_ITEM_NUM = 20;  
-        pp = mqRPMTPSI::Setup("bloom", computational_security_parameter, statistical_security_parameter, 
-                              LOG_SENDER_ITEM_NUM, LOG_RECEIVER_ITEM_NUM); 
+        pp = mqRPMTPSI::Setup(computational_security_parameter, statistical_security_parameter, LOG_SENDER_ITEM_NUM, LOG_RECEIVER_ITEM_NUM); 
         mqRPMTPSI::SavePP(pp, pp_filename); 
     }
     else{

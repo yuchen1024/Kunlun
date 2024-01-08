@@ -27,17 +27,13 @@ struct PP
 };
 
 
-PP Setup(std::string filter_type, 
-        size_t computational_security_parameter, 
-        size_t statistical_security_parameter, 
-        size_t LOG_SENDER_ITEM_NUM, size_t LOG_RECEIVER_ITEM_NUM)
+PP Setup(size_t computational_security_parameter, size_t statistical_security_parameter, size_t LOG_SENDER_ITEM_NUM, size_t LOG_RECEIVER_ITEM_NUM)
 {
     PP pp; 
     pp.ote_part = ALSZOTE::Setup(computational_security_parameter);
 
     // always having receiver plays the role of server, sender play the role of client
-    pp.mqrpmt_part = cwPRFmqRPMT::Setup(filter_type, statistical_security_parameter, 
-                                        LOG_RECEIVER_ITEM_NUM, LOG_SENDER_ITEM_NUM);
+    pp.mqrpmt_part = cwPRFmqRPMT::Setup(statistical_security_parameter, LOG_RECEIVER_ITEM_NUM, LOG_SENDER_ITEM_NUM);
 
     pp.LOG_SENDER_ITEM_NUM = LOG_SENDER_ITEM_NUM; 
     pp.LOG_RECEIVER_ITEM_NUM = LOG_RECEIVER_ITEM_NUM; 

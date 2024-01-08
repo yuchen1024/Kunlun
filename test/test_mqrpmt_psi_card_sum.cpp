@@ -165,7 +165,6 @@ int main()
     mqRPMTPSIcardsum::PP pp; 
     if(!FileExist(pp_filename)){
         std::cout << pp_filename << " does not exist" << std::endl;
-        std::string filter_type = "bloom"; 
         size_t computational_security_parameter = 128;         
         size_t statistical_security_parameter = 40; 
         size_t LOG_SENDER_ITEM_NUM = 20;
@@ -174,10 +173,8 @@ int main()
         size_t LOG_SUM_BOUND = 32;  
         size_t LOG_VALUE_BOUND = LOG_SUM_BOUND - LOG_SENDER_ITEM_NUM; // value * sender_item_num \leq sum  
 
-        pp = mqRPMTPSIcardsum::Setup(filter_type, 
-                                     computational_security_parameter, statistical_security_parameter, 
-                                     LOG_SENDER_ITEM_NUM, LOG_RECEIVER_ITEM_NUM, 
-                                     LOG_SUM_BOUND, LOG_VALUE_BOUND); 
+        pp = mqRPMTPSIcardsum::Setup(computational_security_parameter, statistical_security_parameter, 
+                                     LOG_SENDER_ITEM_NUM, LOG_RECEIVER_ITEM_NUM, LOG_SUM_BOUND, LOG_VALUE_BOUND); 
         mqRPMTPSIcardsum::SavePP(pp, pp_filename); 
     }
     else{

@@ -38,7 +38,7 @@ void CRYPTO_Initialize()
     
     #ifdef ENABLE_X25519_ACCELERATION
         PrintSplitLine('-');  
-        std::cout << "accelerate EC exponentiation using x25519 method powerd by Curve25519 >>>" << std::endl; 
+        std::cout << "Accelerate ***somewhat*** EC exponentiation using x25519 method powerd by Curve25519 >>>" << std::endl; 
     #endif
 
     PrintSplitLine('-');  

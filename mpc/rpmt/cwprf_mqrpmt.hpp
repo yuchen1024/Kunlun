@@ -14,6 +14,9 @@
 ** cuckoo filter is not gurantteed to be safe here, cause the filter may reveal the order of X
 */
 
+
+#define BLOOMFILTER 
+
 namespace cwPRFmqRPMT{
     
 using Serialization::operator<<; 
@@ -21,20 +24,16 @@ using Serialization::operator>>;
 
 struct PP
 {
-    bool malicious = false;
-    std::string filter_type; // shuffle, bloom
     size_t statistical_security_parameter; // default=40 
-    
     size_t LOG_SERVER_LEN; 
     size_t SERVER_LEN; 
     size_t LOG_CLIENT_LEN; 
     size_t CLIENT_LEN; 
 };
 
-// seriazlize
+// serialize
 std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 {
-    fout << pp.filter_type;
     fout << pp.statistical_security_parameter; 
     fout << pp.LOG_SERVER_LEN;
     fout << pp.SERVER_LEN; 
@@ -47,9 +46,7 @@ std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 // load pp from file
 std::ifstream &operator>>(std::ifstream &fin, PP &pp)
 {
-    fin >> pp.filter_type;
     fin >> pp.statistical_security_parameter; 
-
     fin >> pp.LOG_SERVER_LEN;
     fin >> pp.SERVER_LEN;
     fin >> pp.LOG_CLIENT_LEN;
@@ -58,13 +55,9 @@ std::ifstream &operator>>(std::ifstream &fin, PP &pp)
     return fin; 
 }
 
-PP Setup(std::string filter_type, 
-         size_t statistical_security_parameter, 
-         size_t LOG_SERVER_LEN, 
-         size_t LOG_CLIENT_LEN)
+PP Setup(size_t statistical_security_parameter, size_t LOG_SERVER_LEN, size_t LOG_CLIENT_LEN)
 {
     PP pp; 
-    pp.filter_type = filter_type; 
     pp.statistical_security_parameter = statistical_security_parameter; 
     pp.LOG_SERVER_LEN = LOG_SERVER_LEN; 
     pp.SERVER_LEN = size_t(pow(2, pp.LOG_SERVER_LEN)); 
@@ -137,7 +130,19 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     // compute the indication bit vector
     std::vector<uint8_t> vec_indication_bit(pp.CLIENT_LEN);
 
-    if(pp.filter_type == "shuffle"){
+    #ifdef BLOOMFILTER
+        BloomFilter filter; 
+        // get the size of filter 
+        size_t filter_size = filter.ObjectSize();
+        io.ReceiveInteger(filter_size);
+        // get the content of filter
+        char *buffer = new char[filter_size]; 
+        io.ReceiveBytes(buffer, filter_size);
+        // reconstruct bloom filter  
+        filter.ReadObject(buffer);  
+        delete[] buffer; 
+        vec_indication_bit = filter.Contain(vec_Fk1k2_X); 
+    #else
         std::vector<ECPoint> vec_Fk2k1_Y(pp.SERVER_LEN);
         io.ReceiveECPoints(vec_Fk2k1_Y.data(), pp.SERVER_LEN);
         std::unordered_set<ECPoint, ECPointHash> S;
@@ -149,23 +154,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
             if(S.find(vec_Fk1k2_X[i]) == S.end()) vec_indication_bit[i] = 0;  
             else vec_indication_bit[i] = 1;
         }
-    }
-
-    if(pp.filter_type == "bloom"){
-        BloomFilter filter; 
-        // get the size of filter 
-        size_t filter_size = filter.ObjectSize();
-        io.ReceiveInteger(filter_size);
-        // get the content of filter
-        char *buffer = new char[filter_size]; 
-        io.ReceiveBytes(buffer, filter_size);
-        
-        // reconstruct bloom filter  
-        filter.ReadObject(buffer);  
-        delete[] buffer; 
-
-        vec_indication_bit = filter.Contain(vec_Fk1k2_X); 
-    } 
+    #endif
 
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -215,10 +204,21 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
         vec_Fk2k1_Y[i] = vec_Fk1_Y[i] * k2; 
     }
 
-    // permutation
-    if(pp.filter_type == "shuffle"){
+    // generate and send bloom filter
+    #ifdef BLOOMFILTER
+        BloomFilter filter(vec_Fk2k1_Y.size(), pp.statistical_security_parameter);
+        filter.Insert(vec_Fk2k1_Y);
+        size_t filter_size = filter.ObjectSize(); 
+        io.SendInteger(filter_size);
+        char *buffer = new char[filter_size]; 
+        filter.WriteObject(buffer);
+        io.SendBytes(buffer, filter_size); 
+        std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> BloomFilter(F_k2k1(y_i)) ===> Server";
+        std::cout << " [" << (double)filter_size/(1024*1024) << " MB]" << std::endl;
+        delete[] buffer; 
+    #else
+        // permutation
         std::shuffle(vec_Fk2k1_Y.begin(), vec_Fk2k1_Y.end(), global_built_in_prg);
-
         io.SendECPoints(vec_Fk2k1_Y.data(), pp.SERVER_LEN); 
         std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> Permutation(F_k2k1(y_i)) ===> Server"; 
         #ifdef ECPOINT_COMPRESSED
@@ -226,26 +226,7 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
         #else
             std::cout << " [" << (double)POINT_BYTE_LEN*pp.SERVER_LEN/(1024*1024) << " MB]" << std::endl;
         #endif
-    }
-
-    // generate and send bloom filter
-    if(pp.filter_type == "bloom"){
-
-        BloomFilter filter(vec_Fk2k1_Y.size(), pp.statistical_security_parameter);
-
-        filter.Insert(vec_Fk2k1_Y);
-
-        size_t filter_size = filter.ObjectSize(); 
-        io.SendInteger(filter_size);
-
-        char *buffer = new char[filter_size]; 
-        filter.WriteObject(buffer);
-        io.SendBytes(buffer, filter_size); 
-        std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> BloomFilter(F_k2k1(y_i)) ===> Server";
-        std::cout << " [" << (double)filter_size/(1024*1024) << " MB]" << std::endl;
-
-        delete[] buffer; 
-    } 
+    #endif
     
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -299,11 +280,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
     // compute the indication bit vector
     std::vector<uint8_t> vec_indication_bit(pp.CLIENT_LEN);
 
-    if(pp.filter_type == "shuffle"){
-        std::cerr << "does not support shuffle" << std::endl;
-    }
-
-    if(pp.filter_type == "bloom"){
+    #ifdef BLOOMFILTER
         BloomFilter filter; 
         // get the size of filter 
         size_t filter_size = filter.ObjectSize();
@@ -311,13 +288,23 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
         // get the content of filter
         char *buffer = new char[filter_size]; 
         io.ReceiveBytes(buffer, filter_size);
-        
         // reconstruct bloom filter  
         filter.ReadObject(buffer);  
         delete[] buffer; 
-
         vec_indication_bit = filter.Contain(vec_Fk1k2_X); 
-    } 
+    #else
+        std::vector<EC25519Point> vec_Fk2k1_Y(pp.SERVER_LEN);
+        io.ReceiveEC25519Points(vec_Fk2k1_Y.data(), pp.SERVER_LEN);
+        std::unordered_set<EC25519Point, EC25519PointHash> S;
+        for(auto i = 0; i < pp.SERVER_LEN; i++){
+            S.insert(vec_Fk2k1_Y[i]); 
+        }
+        #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
+        for(auto i = 0; i < pp.CLIENT_LEN; i++){
+            if(S.find(vec_Fk1k2_X[i]) == S.end()) vec_indication_bit[i] = 0;  
+            else vec_indication_bit[i] = 1;
+        }
+    #endif
 
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -369,39 +356,40 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
         vec_Fk2k1_Y[i] = vec_Fk1_Y[i] * k2; // (H(y_i)^k1)^k2
     }
 
-    // permutation
-    if(pp.filter_type == "shuffle"){
-        std::cerr << "does not support shuffle" << std::endl;
-    }
 
-    // generate and send bloom filter
-    if(pp.filter_type == "bloom"){
-
+    #ifdef BLOOMFILTER
         BloomFilter filter(vec_Fk2k1_Y.size(), pp.statistical_security_parameter);
-
         filter.Insert(vec_Fk2k1_Y);
-
         size_t filter_size = filter.ObjectSize(); 
         io.SendInteger(filter_size);
-
         char *buffer = new char[filter_size]; 
         filter.WriteObject(buffer);
         io.SendBytes(buffer, filter_size); 
         std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> BloomFilter(F_k2k1(y_i)) ===> Server";
         std::cout << " [" << (double)filter_size/(1024*1024) << " MB]" << std::endl;
-
         delete[] buffer; 
-    } 
-    
+    #else
+    // permutation
+        std::shuffle(vec_Fk2k1_Y.begin(), vec_Fk2k1_Y.end(), global_built_in_prg);
+        io.SendEC25519Points(vec_Fk2k1_Y.data(), pp.SERVER_LEN); 
+        std::cout <<"cwPRF-based mqRPMT [step 2]: Client ===> Permutation(F_k2k1(y_i)) ===> Server"; 
+        std::cout << " [" << (double)32 * pp.SERVER_LEN/(1024*1024) << " MB]" << std::endl;
+    #endif
+
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
     std::cout << "cwPRF-mqRPMT: Client side takes time = " 
               << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
-
         
     PrintSplitLine('-'); 
 }
 
+#endif
+
+}
+#endif
+
+// previous code using C interface of X25519: roughly 10% faster than current code using C++ interfaces  
 // std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<block> &vec_Y)
 // {
 //     if(pp.SERVER_LEN != vec_Y.size()){
@@ -545,8 +533,3 @@ void Client(NetIO &io, PP &pp, std::vector<block> &vec_X)
         
 //     PrintSplitLine('-'); 
 // }
-
-#endif
-
-}
-#endif

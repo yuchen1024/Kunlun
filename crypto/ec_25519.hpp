@@ -43,6 +43,8 @@ public:
         return *this; 
     }
 
+    inline std::string ToByteString() const;
+    
     inline bool operator==(const EC25519Point& other) const{ return this->CompareTo(other); }
 
     inline bool operator!=(const EC25519Point& other) const{ return !this->CompareTo(other);}
@@ -99,6 +101,15 @@ bool EC25519Point::CompareTo(const EC25519Point& other) const{
     return std::equal(this->px, this->px+32, other.px, other.px+32);
 }
 
+
+// convert an EC25519 Point to byte string
+std::string EC25519Point::ToByteString() const
+{
+    std::string ecp_str(32, '0'); 
+    memcpy(&ecp_str[0], this->px, 32); 
+    return ecp_str; 
+}
+
 void EC25519Point::Print() const
 { 
     for(auto i = 0; i < 32; i++) {
@@ -125,5 +136,18 @@ std::ifstream &operator>>(std::ifstream &fin, EC25519Point &A)
     fin.read(reinterpret_cast<char *>(A.px), 32); 
     return fin;            
 }
+
+class EC25519PointHash{
+public:
+    size_t operator()(const EC25519Point& A) const
+    {
+        return std::hash<std::string>{}(A.ToByteString());
+    }
+};
+
+auto EC25519Point_Lexical_Compare = [](EC25519Point A, EC25519Point B){ 
+    return A.ToByteString() < B.ToByteString(); 
+};
+
 
 #endif

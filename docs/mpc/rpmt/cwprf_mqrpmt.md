@@ -5,6 +5,10 @@
 ## Construction
 All identifiers are defined in namespace `cwPRFmqRPMT`.
 
+### Define
+
+* BLOOMFILTER means we will use bloom filter, else use permutation.
+
 ### Public Parameters
 ```
 struct PP
@@ -14,13 +18,12 @@ struct PP
     size_t statistical_security_parameter;
 };
 ```
-* `bool malicious`: an indication variable, indicating if the protocol is secure against semi-honest adversaries(`malicious = false`) or malicious adversaries(`malicious = true`).
-* `std::string filter_type`: used to specify which data structure the algorithm will use to do membership test. `filter_type = shuffle` means it will use `unordered_set`, `filter_type = bloom` means it will use bloom filter.
+
 * `size_t statistical_security_parameter`: used to specify the false positive probability of bloom filter, which equals `1/(1 << {statistical_security_parameter/2})`.
 
 `PP` can be initialized by `Setup`. The input `lambda` is statistical security parameter.
 ```
-PP Setup(std::string filter_type, size_t lambda);
+PP Setup(size_t lambda);
 ```
 
 

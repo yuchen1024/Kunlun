@@ -104,10 +104,6 @@ int main()
 {
     CRYPTO_Initialize(); 
 
-    #ifdef ENABLE_X25519_ACCELERATION
-        std::cerr << "enable x25519 acceleration powered by Curve25519" << std::endl;
-    #endif
-
     PrintSplitLine('-'); 
     std::cout << "cwPRF-based mqRPMT test begins >>>" << std::endl; 
     PrintSplitLine('-'); 
@@ -120,7 +116,7 @@ int main()
     std::string pp_filename = "cwPRFmqRPMT.pp"; 
     cwPRFmqRPMT::PP pp; 
     if(!FileExist(pp_filename)){
-        pp = cwPRFmqRPMT::Setup("bloom", statistical_parameter, LOG_SERVER_LEN, LOG_CLIENT_LEN); 
+        pp = cwPRFmqRPMT::Setup(statistical_parameter, LOG_SERVER_LEN, LOG_CLIENT_LEN); 
         cwPRFmqRPMT::SavePP(pp, pp_filename); 
     }
     else{
