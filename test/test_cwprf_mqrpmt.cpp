@@ -23,8 +23,8 @@ RPMTTestcase GenTestInstance(size_t LOG_SERVER_LEN, size_t LOG_CLIENT_LEN)
     testcase.LOG_CLIENT_LEN = LOG_CLIENT_LEN;
     testcase.CLIENT_LEN = size_t(pow(2, testcase.LOG_CLIENT_LEN)); 
 
-    // set the Hamming weight to be a half of the max possible intersection size
-    testcase.HAMMING_WEIGHT = std::min(testcase.CLIENT_LEN, testcase.SERVER_LEN)/2;
+    // set the Hamming weight to be a half of the CLIENT_LEN
+    testcase.HAMMING_WEIGHT = testcase.CLIENT_LEN/2;
 
     PRG::Seed seed = PRG::SetSeed(fixed_seed, 0); // initialize PRG
     
