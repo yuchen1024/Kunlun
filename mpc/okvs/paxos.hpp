@@ -22,6 +22,7 @@
 // A generic matrix class template that stores a matrix of values of type T.
 // It provides methods for resizing the matrix, setting the values of its rows,
 // and accessing elements of the matrix using the [] operator.
+
 template <typename T>
 class Mtx
 {
@@ -96,7 +97,7 @@ public:
 enum DenseType
 {
    binary, // Represents a binary okvs
-   gf_128  // Represents a gf_128 okvs, which uses the Galois Field GF(2^128)
+   gf_128,  // Represents a gf_128 okvs, which uses the Galois Field GF(2^128)
 };
 
 // This class represents an oblivious key-value store (okvs).
@@ -330,7 +331,7 @@ public:
    bool ReadObject(std::string file_name);
 
    // Encode
-   std::vector<block> encode(const std::vector<value_type> &values, PRG::Seed *prng = nullptr);
+   std::vector<value_type> encode(const std::vector<value_type> &values, PRG::Seed *prng = nullptr);
    void encode(value_type *values, value_type *output, PRG::Seed *prng = nullptr);
 
    // Decode
@@ -365,6 +366,9 @@ public:
    void backfill_gf128(T *values, T *output, PRG::Seed *prng);
 
    void backfill_gf128(block *values, block *output, PRG::Seed *prng);
+   
+   // The backfill algorithm for a OKVS whose dense_type is gf_128 and value_type is BlockArrayValue(block[]).
+   void backfill_BlockArrayValue128(value_type *values, value_type *output, PRG::Seed *prng);
 };
 
 template <typename idx_type, DenseType dense_type, typename value_type>
@@ -1265,6 +1269,124 @@ inline void OKVS<idx_type, dense_type, value_type>::get_FC_1()
 }
 
 template <typename idx_type, DenseType dense_type, typename value_type>
+void OKVS<idx_type, dense_type, value_type>::backfill_BlockArrayValue128(value_type *values, value_type *output, PRG::Seed *prng)
+{
+   uint32_t valuetype_len = sizeof(value_type)/sizeof(block);
+   uint8_t g = gap_rows.size();
+   if (g && (gap_cols.size() == 0))
+   {
+      if (g > g_limit)
+         throw;
+      get_FC_1();
+
+      auto len = prng ? dense_size : g;
+      std::vector<value_type> values_(len);
+
+      E_gf128.resize(len, std::vector<block>(len));
+
+      for (auto i = 0; i < g; i++)
+      {
+         auto common_ratio_e = h_dense[gap_rows[i]];
+         auto E_i_k = common_ratio_e;
+         E_gf128[i][0] = E_i_k;
+         for (auto k = 1; k < len; k++)
+         {
+            E_i_k = gf128_mul(E_i_k, common_ratio_e);
+            E_gf128[i][k] = E_i_k;
+         }
+
+         for (auto col : FC_1[i])
+         {
+            auto common_ratio_b = h_dense[col];
+            auto B_col_k = common_ratio_b;
+            E_gf128[i][0] = E_gf128[i][0] ^ B_col_k;
+            for (auto k = 1; k < len; k++)
+            {
+               B_col_k = gf128_mul(B_col_k, common_ratio_b);
+               E_gf128[i][k] = E_gf128[i][k] ^ B_col_k;
+            }
+         }
+      }
+
+      if (prng)
+      {
+         std::vector<block> random_blocks = PRG::GenRandomBlocks(*prng, (dense_size - g)*valuetype_len);
+         auto iter = 0;
+         for (auto i = g; i < dense_size; i++)
+         {
+            E_gf128[i] = PRG::GenRandomBlocks(*prng, dense_size);
+            values_[i] = ((value_type*)(&random_blocks[0]))[iter++];
+         }
+         assert(iter == (dense_size - g));
+      }
+
+      if (!check_invert_gf128(E_gf128))
+      {
+         throw "E' is not invertible!";
+      }
+
+      for (auto i = 0; i < g; i++)
+      {
+         values_[i] = values[gap_rows[i]];
+         for (auto j : FC_1[i])
+         {
+            values_[i] ^= values[j];
+         }
+      }
+
+      for (auto i = 0; i < len; i++)
+      {
+         auto &output_ = output[sparse_size + i];
+         for (auto j = 0; j < len; j++)
+         {
+            output_ ^= gf128_mul(values_[j], E_gf128[i][j]);
+         }
+      }
+   }
+   else if (prng)
+   {
+      auto random_blocks = PRG::GenRandomBlocks(*prng, dense_size*valuetype_len);
+      for (idx_type i = sparse_size; i < total_size; ++i)
+         output[i] = ((value_type*)(&random_blocks[0]))[i - sparse_size];
+   }
+
+   value_type temp_value;
+   auto delta = triangular_c_rows.size();
+   auto iter = delta;
+
+   for (idx_type k = 0; k < delta; k++)
+   {
+      iter--;
+      auto row = triangular_c_rows[iter];
+      auto col = triangular_c_cols[iter];
+      temp_value = values[row];
+
+      auto row_data = h_sparse[row];
+      for (auto j = 0; j < sparse_weight; j++)
+      {
+         auto cc = row_data[j];    // 6925//26953//31661//45321
+         temp_value ^= output[cc]; // 00//00//00output[row_data[1]]
+      }
+
+      if (g || prng)
+      {
+         auto common_ratio_d = h_dense[row];
+         auto d_iter_j = common_ratio_d;
+         temp_value ^= gf128_mul(output[sparse_size], d_iter_j);
+         for (auto j = 1; j < dense_size; j++)
+         {
+            d_iter_j = gf128_mul(d_iter_j, common_ratio_d);
+            temp_value ^= gf128_mul(output[sparse_size + j], d_iter_j);
+         }
+      }
+
+      output[col] = temp_value;
+   }
+}
+ 
+
+
+template <typename idx_type, DenseType dense_type, typename value_type>
 template<typename T>
 void OKVS<idx_type, dense_type, value_type>::backfill_gf128(T *values, T *output, PRG::Seed *prng)
 {
@@ -1778,6 +1900,8 @@ void OKVS<idx_type, dense_type, value_type>::encode(value_type *values,value_typ
 
    if (prng)
    {
+      uint32_t valuetype_len = sizeof(value_type)/sizeof(block);
+      auto single_value_len = valuetype_len ? valuetype_len : 1; 
       // Assign random numbers to the unknowns corresponding to those columns whose weight is 0
       if (weight_set[0] != 0)
       {
@@ -1786,11 +1910,11 @@ void OKVS<idx_type, dense_type, value_type>::encode(value_type *values,value_typ
          while (1)
          {
             remain_len = 8;
-            std::vector<block> output_(PRG::GenRandomBlocks(*prng, 8));
+            std::vector<block> output_(PRG::GenRandomBlocks(*prng, 8*single_value_len));
             while (node_pointer != nullptr && remain_len > 0)
             {
                auto col_idx = node_pointer->col_idx;
-               output[col_idx] = ((value_type *)(&output_[remain_len - 1]))[0];
+               output[col_idx] = ((value_type *)(&output_[(remain_len - 1)*single_value_len]))[0];
                if (node_pointer->next == empty_node)
                   node_pointer = nullptr;
                else
@@ -1806,10 +1930,10 @@ void OKVS<idx_type, dense_type, value_type>::encode(value_type *values,value_typ
       else if (weight_0_list.size())
       {
          auto weight_0_size = weight_0_list.size();
-         std::vector<block> output_(PRG::GenRandomBlocks(*prng, weight_0_size));
+         std::vector<block> output_(PRG::GenRandomBlocks(*prng, weight_0_size*single_value_len));
          for (idx_type i = 0; i < weight_0_size; i++)
          {
-            output[weight_0_list[i]] = ((value_type *)(&output_[i]))[0];
+            output[weight_0_list[i]] = ((value_type *)(&output_[i*single_value_len]))[0];
          }
       }
       else
@@ -1820,6 +1944,9 @@ void OKVS<idx_type, dense_type, value_type>::encode(value_type *values,value_typ
       backfill_binary(values, output, prng);
    else if (dense_type == gf_128 && std::is_same<value_type, block>::value)
       backfill_gf128(values, output, prng);
+   else if (dense_type == gf_128 && std::is_same<value_type, BlockArrayValue>::value)
+      backfill_BlockArrayValue128(values, output, prng);
+   
 
    // return output;
 }
@@ -1897,9 +2024,9 @@ inline void OKVS<idx_type, dense_type, value_type>::decode_1(const block *key, c
    }
 }
 template <typename idx_type, DenseType dense_type, typename value_type>
-std::vector<block> OKVS<idx_type, dense_type, value_type>::encode(const std::vector<value_type> &values, PRG::Seed *prng)
+std::vector<value_type> OKVS<idx_type, dense_type, value_type>::encode(const std::vector<value_type> &values, PRG::Seed *prng)
 {
-   std::vector<block> output(total_size);
+   std::vector<value_type> output(total_size);
    assert(values.size() == item_num);
    encode((value_type *)values.data(), (value_type *)output.data(), prng);
    return output;
@@ -2289,52 +2416,36 @@ void test()
       };
    }
 }
-struct MyStruct
-{
-   uint64_t var1;
-   uint64_t var2;
-   MyStruct() : var1(0), var2(0) {}
-   MyStruct(uint64_t v1, uint64_t v2) : var1(v1), var2(v2) {}
+/**
 
-   MyStruct operator^(const MyStruct &other) const
-   {
-      MyStruct result(var1 ^ other.var1, var2 ^ other.var2);
-      return result;
-   }
-   MyStruct &operator^=(const MyStruct &other)
-   {
-      var1 ^= other.var1;
-      var2 ^= other.var2;
-      return *this;
-   }
+**/
 
-   bool operator!=(const MyStruct &other) const
-   {
-      return (var1 != other.var1) || (var2 != other.var2);
-   }
-};
+
+
 void test_value_type()
 {
+
 
    uint32_t n = 1ull << 20;
 
    PRG::Seed seed = PRG::SetSeed();
-   auto random_values = PRG::GenRandomBlocks(seed, n);
-   std::vector<MyStruct> v(n);
-   for (auto i = 0; i < n; i++)
-   {
-      v[i].var1 = ((uint64_t *)(&random_values[i]))[0];
-      v[i].var2 = ((uint64_t *)(&random_values[i]))[1];
-   }
+   auto k = PRG::GenRandomBlocks(seed, n);
+   auto value_block_len = sizeof(BlockArrayValue)/sizeof(block);
+   
+   std::vector<block> random_values = PRG::GenRandomBlocks(seed, value_block_len * n);
+   
+   std::vector<BlockArrayValue> v(n);
+   memcpy(v.data(), random_values.data(), sizeof(BlockArrayValue) * n);
+	
 
    OKVS<uint32_t, binary> tempa(n, 3);
-   std::vector<MyStruct> output(tempa.total_size);
-   std::vector<MyStruct> temp_blocks(n);
+   std::vector<BlockArrayValue> output(tempa.total_size);
+   std::vector<BlockArrayValue> temp_values(n);
 
    auto start = std::chrono::steady_clock::now();
-   OKVS<uint32_t, binary, MyStruct> a(n, 3);
+   OKVS<uint32_t, binary, BlockArrayValue> a(n, 3);
 
-   a.set_keys(random_values.data());
+   a.set_keys(k.data());
 
    a.encode(v.data(), output.data(), &seed);
 
@@ -2344,20 +2455,23 @@ void test_value_type()
              << ":" << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
 
    start = std::chrono::steady_clock::now();
-   a.decode(random_values.data(), n, output.data(), temp_blocks.data());
+   
+   a.decode(k.data(), n, output.data(), temp_values.data());
 
    end = std::chrono::steady_clock::now();
 
    std::cout << "total"
              << ":" << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
-   for (auto i = 0; i < v.size(); i++)
+    
+   for (auto i = 0; i < n; i++)
    {
-      if (temp_blocks[i] != v[i])
+      if (temp_values[i] != v[i])
       {
          std::cout << i << std::endl;
          throw;
       };
    }
+  
 }
 
 void test_circle()
