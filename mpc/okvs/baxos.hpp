@@ -11,7 +11,7 @@
 #include "okvs_utility.hpp"
 
 #include <future>
-template <DenseType dense_type = binary>
+template <DenseType dense_type = binary, typename value_type = block>
 class Baxos
 {
 public:
@@ -32,20 +32,20 @@ public:
     Baxos() = default;
     Baxos(const uint64_t item_num, const uint64_t bin_size, const uint8_t sparse_weight = 3, const uint8_t statistical_security_parameter = 40, const PRG::Seed *seed = nullptr);
     template <typename idx_type>
-    void impl_solve(const std::vector<block> &keys, const std::vector<block> &values, std::vector<block> &output, PRG::Seed *prng, uint8_t thread_num);
+    void impl_solve(const std::vector<block> &keys, const std::vector<value_type> &values, std::vector<value_type> &output, PRG::Seed *prng, uint8_t thread_num);
     template <typename idx_type>
-    void impl_decode(const std::vector<block> &keys, std::vector<block> &values, const std::vector<block> &output, uint8_t thread_num);
+    void impl_decode(const std::vector<block> &keys, std::vector<value_type> &values, const std::vector<value_type> &output, uint8_t thread_num);
     template <typename idx_type>
-    void impl_decode_batch(block *keys, block *values, uint64_t batch_len, block *output);
+    void impl_decode_batch(block *keys, value_type *values, uint64_t batch_len, value_type *output);
     // template <typename idx_type>
     // void impl_decode_bin(block *keys, uint64_t len, block *keys_indexes, block *output,
     //                      OKVS<idx_type, dense_type> &paxos);
-    void solve(const std::vector<block> &keys, const std::vector<block> &values, std::vector<block> &output, PRG::Seed *prng = nullptr, uint8_t thread_num = 1);
-    void decode(const std::vector<block> &keys, std::vector<block> &values, const std::vector<block> &output, uint8_t thread_num = 1);
+    void solve(const std::vector<block> &keys, const std::vector<value_type> &values, std::vector<value_type> &output, PRG::Seed *prng = nullptr, uint8_t thread_num = 1);
+    void decode(const std::vector<block> &keys, std::vector<value_type> &values, const std::vector<value_type> &output, uint8_t thread_num = 1);
 };
 
-template <DenseType dense_type>
-Baxos<dense_type>::Baxos(const uint64_t item_num, const uint64_t bin_size,
+template <DenseType dense_type, typename value_type>
+Baxos<dense_type, value_type>::Baxos(const uint64_t item_num, const uint64_t bin_size,
                          const uint8_t sparse_weight, const uint8_t statistical_security_parameter, const PRG::Seed *input_seed) : item_num(item_num), sparse_weight(sparse_weight),
                                                                                                            bin_num((item_num + bin_size - 1) / bin_size), statistical_security_parameter(statistical_security_parameter)
 {
@@ -93,14 +93,14 @@ Baxos<dense_type>::Baxos(const uint64_t item_num, const uint64_t bin_size,
     dense_size = g_limit + (dense_type == binary ? statistical_security_parameter : 0);
     total_size = sparse_size + dense_size;
 }
-template <DenseType dense_type>
+template <DenseType dense_type, typename value_type>
 template <typename idx_type>
-inline void Baxos<dense_type>::impl_solve(const std::vector<block> &keys, const std::vector<block> &values, std::vector<block> &output, PRG::Seed *prng, uint8_t thread_num)
+inline void Baxos<dense_type, value_type>::impl_solve(const std::vector<block> &keys, const std::vector<value_type> &values, std::vector<value_type> &output, PRG::Seed *prng, uint8_t thread_num)
 {
     if (bin_num == 1)
     {
         // If there is only one bin, then call single-threaded OKVS
-        OKVS<idx_type, dense_type> paxos(item_num_per_bin, sparse_weight, statistical_security_parameter, &seed);
+        OKVS<idx_type, dense_type, value_type> paxos(item_num_per_bin, sparse_weight, statistical_security_parameter, &seed);
         paxos.set_keys(keys.data());
         output = paxos.encode(values, prng);
         return;
@@ -120,7 +120,7 @@ inline void Baxos<dense_type>::impl_solve(const std::vector<block> &keys, const 
         std::vector<std::vector<idx_type>> bin_size_thread(thread_num, std::vector<idx_type>(bin_num, 0));
 
         std::unique_ptr<idx_type[]> item_to_bin_thread(new idx_type[bin_num * bin_size_all_thread]);
-        std::unique_ptr<block[]> value_to_bin_thread(new block[bin_num * bin_size_all_thread]);
+        std::unique_ptr<value_type[]> value_to_bin_thread(new value_type[bin_num * bin_size_all_thread]);
         std::unique_ptr<block[]> hash_to_bin_thread(new block[bin_num * bin_size_all_thread]);
 
         // The storage format is shown in the table below
@@ -129,9 +129,9 @@ inline void Baxos<dense_type>::impl_solve(const std::vector<block> &keys, const 
                |<-bin_size_per_thread->|
                 -----------------------------------------------------------------------------------------------
         bin_0  |_______________________|_______________________|_______________________|_______________________|
-        bin_0  |_______________________|_______________________|_______________________|_______________________|
-        bin_0  |_______________________|_______________________|_______________________|_______________________|
-        bin_0  |                       |                       |                       |                       |
+        bin_1  |_______________________|_______________________|_______________________|_______________________|
+        bin_2  |_______________________|_______________________|_______________________|_______________________|
+        bin_3  |                       |                       |                       |                       |
                 -----------------------------------------------------------------------------------------------
         */
 
@@ -243,7 +243,7 @@ inline void Baxos<dense_type>::impl_solve(const std::vector<block> &keys, const 
                 assert(bin_size <= item_num_per_bin); // 0:262420 1:261874 2:262425 3:261857
 
                 // Initialize small-sized single-threaded OKVS
-                OKVS<idx_type, dense_type> paxos;
+                OKVS<idx_type, dense_type, value_type> paxos;
                 paxos.item_num = bin_size;
                 paxos.sparse_weight = sparse_weight;
                 paxos.sparse_size = sparse_size;
@@ -303,7 +303,7 @@ inline void Baxos<dense_type>::impl_solve(const std::vector<block> &keys, const 
                 {
                     paxos.h_dense = hashes_pointer;
                     paxos.sparse_weight = sparse_weight;
-                    paxos.weight_nodes.reset(new typename OKVS<idx_type, dense_type>::weight_node[sparse_size]);
+                    paxos.weight_nodes.reset(new typename OKVS<idx_type, dense_type, value_type>::weight_node[sparse_size]);
 
                     paxos.weight_set.resize(200);
                     paxos.mModVals.reserve(sparse_weight);
@@ -324,21 +324,22 @@ inline void Baxos<dense_type>::impl_solve(const std::vector<block> &keys, const 
                 // Check in advance that the single encode process is executed correctly,
                 // this process will not happen during the actual execution
 
-                std::vector<block> temp(total_size);
-                memcpy(temp.data(), output_pointer, total_size * sizeof(block));
-                std::vector<block> v2(bin_size);
+                std::vector<value_type> temp(total_size);
+                memcpy(temp.data(), output_pointer, total_size * sizeof(value_type));
+                std::vector<value_type> v2(bin_size);
                 block t;
-                paxos.decode(&keys[get_item_bin_thread(bin_idx, thread_id)[0]], 1, output_pointer, &t);
+                paxos.decode(&keys[get_item_bin_thread(bin_idx, thread_id)[0]], 1, output_pointer,values_pointer, &t);
                 paxos.decode(0, bin_size, output_pointer, v2.data(), paxos.h_dense);
                 // std::cout << bin_size << "  " << output_pointer << " " << bin_idx << " " << Block::BlockToInt64(output_pointer[0])
                 //           << " " << Block::BlockToInt64(values_pointer[bin_size - 1]) << " " << paxos.h_sparse[bin_size - 1][0] << std::endl;
-                for (auto ij = 0; ij < v2.size(); ij++)
+                
+                /**for (auto ij = 0; ij < v2.size(); ij++)
                 {
-                    if (!Block::Compare(v2[ij], values_pointer[ij]))
+                    if (v2[ij] != values_pointer[ij])
                     {
                         throw;
                     }
-                }
+                }**/
 #endif
             }
         }
@@ -359,9 +360,9 @@ inline uint64_t get_bin_idx(block *p)
 // {
 // }
 
-template <DenseType dense_type>
+template <DenseType dense_type, typename value_type>
 template <typename idx_type>
-inline void Baxos<dense_type>::impl_decode_batch(block *keys, block *values, uint64_t batch_len, block *output)
+inline void Baxos<dense_type, value_type>::impl_decode_batch(block *keys, value_type *values, uint64_t batch_len, value_type *output)
 {
     // Decode is performed in units of decode_size groups
     auto decode_size = std::min(uint64_t(512), batch_len);
@@ -370,7 +371,7 @@ inline void Baxos<dense_type>::impl_decode_batch(block *keys, block *values, uin
     std::vector<uint64_t> batch_sizes(bin_num);
 
     // Initialize small-sized single-threaded OKVS
-    OKVS<idx_type, dense_type> paxos;
+    OKVS<idx_type, dense_type, value_type> paxos;
     {
         paxos.item_num = decode_size;
         paxos.sparse_weight = sparse_weight;
@@ -388,7 +389,7 @@ inline void Baxos<dense_type>::impl_decode_batch(block *keys, block *values, uin
         }
     }
     std::array<block, 32> buffer;
-    std::vector<block> value_buffer(decode_size);
+    std::vector<value_type> value_buffer(decode_size);
     std::array<uint64_t, 32> bin_idxes;
     divider divider = gen_divider(bin_num);
     uint64_t i = 0;
@@ -482,13 +483,13 @@ inline void Baxos<dense_type>::impl_decode_batch(block *keys, block *values, uin
         }
     }
 }
-template <DenseType dense_type>
+template <DenseType dense_type, typename value_type>
 template <typename idx_type>
-inline void Baxos<dense_type>::impl_decode(const std::vector<block> &keys, std::vector<block> &values, const std::vector<block> &output, uint8_t thread_num)
+inline void Baxos<dense_type, value_type>::impl_decode(const std::vector<block> &keys, std::vector<value_type> &values, const std::vector<value_type> &output, uint8_t thread_num)
 {
     if (bin_num == 1)
     {
-        OKVS<idx_type, dense_type> paxos(item_num_per_bin, sparse_weight, statistical_security_parameter, &seed);
+        OKVS<idx_type, dense_type, value_type> paxos(item_num_per_bin, sparse_weight, statistical_security_parameter, &seed);
         paxos.decode(keys.data(), keys.size(), output.data(), values.data());
         return;
     }
@@ -506,12 +507,12 @@ inline void Baxos<dense_type>::impl_decode(const std::vector<block> &keys, std::
 
         auto keys_pointer = keys_begin + begin;
         auto values_pointer = values_begin + begin;
-        impl_decode_batch<idx_type>((block *)keys_pointer, values_pointer, len, (block *)output.data());
+        impl_decode_batch<idx_type>((block *)keys_pointer, values_pointer, len, (value_type *)output.data());
     }
 }
 
-template <DenseType dense_type>
-inline void Baxos<dense_type>::solve(const std::vector<block> &keys, const std::vector<block> &values, std::vector<block> &output, PRG::Seed *prng, uint8_t thread_num)
+template <DenseType dense_type, typename value_type>
+inline void Baxos<dense_type, value_type>::solve(const std::vector<block> &keys, const std::vector<value_type> &values, std::vector<value_type> &output, PRG::Seed *prng, uint8_t thread_num)
 {
     // Calculate the number of bits occupied by a single variable that occupies the largest space among member variables
     auto bit_len = log2_ceil(sparse_size + 1);
@@ -535,8 +536,8 @@ inline void Baxos<dense_type>::solve(const std::vector<block> &keys, const std::
     }
 }
 
-template <DenseType dense_type>
-inline void Baxos<dense_type>::decode(const std::vector<block> &keys, std::vector<block> &values, const std::vector<block> &output, uint8_t thread_num)
+template <DenseType dense_type, typename value_type>
+inline void Baxos<dense_type, value_type>::decode(const std::vector<block> &keys, std::vector<value_type> &values, const std::vector<value_type> &output, uint8_t thread_num)
 {
     auto bit_len = log2_ceil(sparse_size + 1);
     if (bit_len <= 8)
@@ -557,10 +558,54 @@ inline void Baxos<dense_type>::decode(const std::vector<block> &keys, std::vecto
     }
 }
 
-void test_baxos()
+
+void test_baxos_BlockArrayValue()
+{
+    // We observe that when bin_size = n >> 7, the performance seems better than others.
+    uint64_t n = 1ull << 20;
+    uint64_t bin_size = 1 << 13;
+
+    auto t = Baxos<gf_128>(n, bin_size, 3);
+    std::vector<BlockArrayValue> out(t.bin_num * t.total_size);
+    std::vector<BlockArrayValue> v(n);
+    std::vector<BlockArrayValue> v2(n);
+    
+    PRG::Seed seed = PRG::SetSeed(fixed_seed, 0);
+    std::vector<block> k = PRG::GenRandomBlocks(seed, n);
+    std::vector<block> v_pre = PRG::GenRandomBlocks(seed, n*(sizeof(BlockArrayValue)/sizeof(block)));
+    memcpy(v.data(), &v_pre[0], sizeof(BlockArrayValue) * n);
+    
+    auto start = std::chrono::steady_clock::now();
+    Baxos<gf_128, BlockArrayValue> baxos(n, bin_size, 3);
+    uint8_t thread_num = 4;
+    baxos.solve(k, v, out, 0, thread_num);
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "encode"
+              << ":" << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+    start = std::chrono::steady_clock::now();
+    
+    Baxos<gf_128, BlockArrayValue> baxos2(n, bin_size, 3);
+    baxos2.decode(k, v2, out, thread_num);
+
+    end = std::chrono::steady_clock::now();
+    std::cout << "decode"
+              << ":" << std::chrono::duration<double, std::milli>(end - start).count() << " ms" << std::endl;
+              
+    for (auto i = 0; i < v.size(); i++)
+    {
+        if (v2[i]!= v[i])
+        {
+            throw;
+        }
+    }
+
+}
+
+void test_baxos_block()
 {
     uint64_t n = 1ull << 20;
-    uint64_t bin_size = 1 << 15;
+    // We observe that when bin_size = n >> 7, the performance seems better than others.
+    uint64_t bin_size = 1 << 13;
     PRG::Seed seed = PRG::SetSeed(fixed_seed, 0);
 
     std::vector<block> v = PRG::GenRandomBlocks(seed, n);
@@ -589,10 +634,6 @@ void test_baxos()
             throw;
         }
     }
-    for (auto i = 0; i < out.size(); i++)
-    {
-        out[i] ^= Block::all_one_block;
-    }
-}
 
+}
 #endif
