@@ -204,7 +204,7 @@ void NetIO::SendDataInternal(const void *data, size_t LEN)
 	while(HAVE_SENT_LEN < LEN) {
 		size_t SENT_LEN = fwrite((char*)data+HAVE_SENT_LEN, 1, LEN-HAVE_SENT_LEN, stream);
 		if (SENT_LEN >= 0) HAVE_SENT_LEN+=SENT_LEN;
-		else fprintf(stderr,"error: fail to send data %zu\n", SENT_LEN);
+		else fprintf(stderr, "error: fail to send data %zu\n", SENT_LEN);
 	}
 	/* 
 	** very important: 
@@ -221,7 +221,7 @@ void NetIO::ReceiveDataInternal(const void *data, size_t LEN)
 	while(HAVE_RECEIVE_LEN < LEN) {
 		size_t RECEIVE_LEN = fread((char*)data+HAVE_RECEIVE_LEN, 1, LEN-HAVE_RECEIVE_LEN, stream);
 		if (RECEIVE_LEN >= 0) HAVE_RECEIVE_LEN+=RECEIVE_LEN;
-		else fprintf(stderr,"error: fail to receive data %zu\n", RECEIVE_LEN);
+		else fprintf(stderr, "error: fail to receive data %zu\n", RECEIVE_LEN);
 	}
 }
 
