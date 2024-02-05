@@ -99,7 +99,7 @@ std::vector<uint8_t> Server(NetIO &io, PP &pp, std::vector<uint64_t> permutation
 
     std::cout <<"DDH-based (permuted)-OPRF [step 2]: Server ===> F_k(mask_x_i) ===> Client";
     #ifdef ECPOINT_COMPRESSED
-        std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
+        std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*INPUT_NUM/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*INPUT_NUM/(1024*1024) << " MB]" << std::endl;
     #endif
@@ -155,7 +155,7 @@ std::vector<std::vector<uint8_t>> Client(NetIO &io, PP &pp, std::vector<block> &
     
     std::cout <<"DDH-based (permuted)-OPRF [step 1]: Client ===> mask_x_i ===> Server"; 
     #ifdef ECPOINT_COMPRESSED
-        std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*LEN/(1024*1024) << " MB]" << std::endl;
+        std::cout << " [" << (double)POINT_COMPRESSED_BYTE_LEN*INPUT_NUM/(1024*1024) << " MB]" << std::endl;
     #else
         std::cout << " [" << (double)POINT_BYTE_LEN*INPUT_NUM/(1024*1024) << " MB]" << std::endl;
     #endif

@@ -300,12 +300,8 @@ std::ifstream &operator>>(std::ifstream &fin, ECPoint &A)
     #else
         unsigned char buffer[POINT_BYTE_LEN];
         fin.read(reinterpret_cast<char *>(buffer), POINT_BYTE_LEN); 
-        if(EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx[thread_num]) == 0){
-            std::cerr << "fail to decode EC point from bytes, please check the format of input" << std::endl;
-            exit(1);  
-        }
+        EC_POINT_oct2point(group, A.point_ptr, buffer, POINT_BYTE_LEN, bn_ctx[thread_num]); 
     #endif
-    
     return fin;            
 }
 
