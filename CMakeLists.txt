@@ -16,6 +16,8 @@ ENDIF()
 
 FIND_PACKAGE(OpenMP REQUIRED)
 
+# FIND_PACKAGE(absl REQUIRED)
+
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fpic -Wno-deprecated-declarations -Wno-unused-result -Xpreprocessor -O3")
 
@@ -60,6 +62,8 @@ if(CMAKE_SYSTEM_NAME  STREQUAL "Windows")
 endif()
 
 configure_file(${PROJECT_SOURCE_DIR}/config/config.h.in ${PROJECT_SOURCE_DIR}/config/config.h @ONLY)
+
+# TARGET_LINK_LIBRARIES(absl::flat_hash_map)
 
 # vole
 ADD_EXECUTABLE(test_vole test/test_vole.cpp)

@@ -19,14 +19,8 @@ this hpp implements DLOG algorithm
 #include "../utility/murmurhash3.hpp"
 #include "../utility/print.hpp"
 
-// class naivehash{
-// public:
-//     size_t operator()(const size_t& a) const
-//     {
-//         return a;
-//     }
-// };
-//std::unordered_map<size_t, size_t, naivehash> encoding2index_map; 
+// #include "absl/container/flat_hash_map"
+
 
 inline const size_t BUILD_TASK_NUM  = pow(2, 6);  // number of parallel task for building pre-computable table 
 inline const size_t SEARCH_TASK_NUM = pow(2, 6);  // number of parallel task for search  
@@ -41,8 +35,8 @@ std::vector<ECPoint> vec_searchanchor;
 ** key-value hash table: key is uint64_t encoding, value is its corresponding DLOG w.r.t. g
 ** more intuitive solution is using <ECPoint, size_t> hashmap, but its storage cost is high 
 */
-//std::unordered_map<size_t, size_t> encoding2index_map; 
-absl::flat_hash_map<size_t, size_t, naivehash> encoding2index_map;
+std::unordered_map<size_t, size_t> encoding2index_map; 
+//absl::flat_hash_map<size_t, size_t> encoding2index_map;
 
 /*
 * the default TRADEOFF_NUM=0
@@ -336,6 +330,13 @@ bool ShanksDLOG(const ECPoint &g, const ECPoint &h, size_t RANGE_LEN, size_t TRA
 
     return FIND; 
 }
-
-
 # endif
+
+// class naivehash{
+// public:
+//     size_t operator()(const size_t& a) const
+//     {
+//         return a;
+//     }
+// };
+//std::unordered_map<size_t, size_t, naivehash> encoding2index_map; 

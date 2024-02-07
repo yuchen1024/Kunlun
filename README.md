@@ -55,6 +55,14 @@ test if the function x25519_scalar_mulx is available
   $ brew install libomp 
 ```
 
+<!-- * install abseil-cpp
+```
+  $ git clone git@github.com:abseil/abseil-cpp.git 
+  $ mkdir build && cd build
+  $ cmake -DABSL_BUILD_TESTING=ON -DABSL_USE_GOOGLETEST_HEAD=ON -DCMAKE_CXX_STANDARD=14 ..
+  $ make install
+``` -->
+
 
 ### On Linux
 * install OpenSSL 3.0
