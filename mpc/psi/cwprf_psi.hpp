@@ -14,8 +14,8 @@
 ** implement cwPRF-based PSI
 ** it is insteresting that cwPRF-based mqPMT does not readily admit Bloom filter optimization
 ** it depends on the interpreation of the encoding
-** according to [CRYPTO 2019 - PRTY - SpOT Lightweight PSI from Sparse OT Extension]
-** in any OPRF-based PSI protocol, for correctness it suffices to truncate the output of F
+** Reference [CRYPTO 2019 - PRTY - SpOT Lightweight PSI from Sparse OT Extension]
+** in any OPRF-based PSI protocol, for correctness it suffices to truncate the output length of F to \lambda+2log(n) 
 ** !!! Warning: the truncate optimization only work when the range is {0,1}^n
 ** one should be careful if the range is G, which is sparse over {0,1}^n
 ** in this case: the most prudent manner is to hash the output to {0,1}^n, here hash plays the role of random oracle again
