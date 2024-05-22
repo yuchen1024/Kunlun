@@ -566,10 +566,13 @@ inline void OKVS<idx_type, dense_type, value_type>::allocate()
 
    const uint8_t *iter = storage.get();
 
-   h_sparse.resize(iter, item_num, sparse_weight);
+   //h_sparse.resize(iter, item_num, sparse_weight);
 
-   h_dense = (block *)(iter + h_sparse_capacity);
-
+   //h_dense = (block *)(iter + h_sparse_capacity);
+	
+   h_dense = (block *)(iter);
+   h_sparse.resize(iter+h_dense_capacity, item_num, sparse_weight);
+	
    col_weights = (idx_type *)(iter + col_weights_pointer);
 
    h_cols.resize(iter + h_cols_pointer, sparse_size);
