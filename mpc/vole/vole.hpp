@@ -456,7 +456,7 @@ namespace VOLE {
 		seed.aes_key = AES::GenEncKey(in);	
 		std::vector<block> vec_a(2);
 		vec_a[0] =_mm_set_epi64x(0ll, 1ll);
-		vec_a[0] =_mm_set_epi64x(0ll, 2ll);
+		vec_a[1] =_mm_set_epi64x(0ll, 2ll);
 		AES::FastECBEnc(seed.aes_key, vec_a.data(), 2);	
 		return vec_a;
 	}	
