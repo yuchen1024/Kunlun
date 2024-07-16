@@ -169,8 +169,6 @@ void RandomSend(NetIO &io, PP &pp, std::vector<block> &vec_K0, std::vector<block
     std::vector<block> vec_outer_C0(ROW_NUM); 
     std::vector<block> vec_outer_C1(ROW_NUM); 
 
-    // std::cout << "still clean here [1]" << std::endl;
-
     #pragma omp parallel for num_threads(NUMBER_OF_THREADS)
     for(auto i = 0; i < ROW_NUM; i++)
     {

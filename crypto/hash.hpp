@@ -163,7 +163,7 @@ std::vector<uint8_t> ECPointToBytes(const ECPoint &A)
     return result; 
 }
 
-
+// Hash-based blocks to block hash
 block BlocksToBlock(const std::vector<block> &input_block)
 {
     std::string str_input;
@@ -179,6 +179,7 @@ block BlocksToBlock(const std::vector<block> &input_block)
     return _mm_load_si128((__m128i*)&output[0]);
 }
 
+// AES-based blocks to block hash, which is faster than hash-based counterpart
 block FastBlocksToBlock(const std::vector<block> input_block)
 {
     std::vector<block> vec_B = input_block;
@@ -187,6 +188,20 @@ block FastBlocksToBlock(const std::vector<block> input_block)
     AES::CBCEnc(AES::fixed_enc_key, vec_B.data(), BLOCK_NUM);  
     return vec_B[BLOCK_NUM-1];
 }
+
+
+// /* 
+// ** AES-based block to block hash
+// ** though this function can be performed by the above one
+// ** it is worthwhile to give a dedicated on for efficiency
+// */
+// block FastBlockToBlock(const std::vector<block> input_block)
+// {
+//     block output_block = input_block;
+//     AES::Enc(AES::fixed_enc_key, output_block);  
+//     return output_block;
+// }
+
 
 /* 
 * hash a block to uint8_t[32]
