@@ -49,9 +49,7 @@ void test_nizk_enc_relation(bool flag)
  
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
-    size_t DEC_THREAD_NUM = 8;
     TwistedExponentialElGamal::PP enc_pp = TwistedExponentialElGamal::Setup(MSG_LEN, TRADEOFF_NUM); 
-
 
     size_t n = 2;
     EncRelation::PP pp = EncRelation::Setup(com_pp, enc_pp, n);

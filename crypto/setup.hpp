@@ -24,9 +24,15 @@ void CRYPTO_Initialize()
     ECGroup_Initialize(); 
     AES_Initialize();   // does not need Finalize() 
 
+    /* 
+    * set number of threads to ensure thread_number obtained via omp_get_thread_no() lies in [0, NUMBER_OF_THREADS)  
+    * otherwise segmentation fault may occur when a thread i attempts to access bn_ctx[i], whose memory is not allocated
+    */
+    omp_set_num_threads(NUMBER_OF_THREADS); 
+
     PrintSplitLine('-'); 
     std::cout << "GLOBAL ENVIROMENT INFO >>>" << std::endl;
-    std::cout << "THREAD NUM = " << NUMBER_OF_THREADS << std::endl;
+    std::cout << "NUM OF THREADS = " << NUMBER_OF_THREADS << std::endl;
 
     std::cout << "EC Curve ID = " << curve_id << std::endl;
     std::cout << "ECPoint COMPRESSION = "; 

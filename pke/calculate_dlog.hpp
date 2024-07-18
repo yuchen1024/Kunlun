@@ -22,6 +22,10 @@ this hpp implements DLOG algorithm
 // #include "absl/container/flat_hash_map"
 
 
+/*
+* introduce BUILD_TASK_NUM and SEARCH_TASK_NUM to facilitate parallisim using OMP
+* BUILD_TASK_NUM and SEARCH_TASK_NUM should larger than NUM_OF_THREADS 
+*/
 inline const size_t BUILD_TASK_NUM  = pow(2, 6);  // number of parallel task for building pre-computable table 
 inline const size_t SEARCH_TASK_NUM = pow(2, 6);  // number of parallel task for search  
 
@@ -44,7 +48,15 @@ std::unordered_map<size_t, size_t> encoding2index_map;
 void CheckDlogParameters(size_t RANGE_LEN, size_t TRADEOFF_NUM)
 {
     if (RANGE_LEN/2 < TRADEOFF_NUM){
-        std::cerr << "TRADEOFF_NUM is too aggressive" << std::endl;
+        std::cerr << "TRADEOFF_NUM is too large" << std::endl;
+        exit(EXIT_FAILURE);   
+    }
+    if (RANGE_LEN/2+TRADEOFF_NUM < (size_t)log2(BUILD_TASK_NUM)){
+        std::cerr << "BUILD_TASK_NUM is too large" << std::endl;
+        exit(EXIT_FAILURE);   
+    }
+    if (RANGE_LEN/2-TRADEOFF_NUM < (size_t)log2(SEARCH_TASK_NUM)){
+        std::cerr << "SEARCH_TASK_NUM is too large" << std::endl;
         exit(EXIT_FAILURE);   
     }
 }
@@ -100,11 +112,6 @@ void BuildSaveTable(ECPoint &g, size_t RANGE_LEN, size_t TRADEOFF_NUM, std::stri
     std::cout << "begin to build and save " << table_filename << " >>> " << std::endl;
     auto start_time = std::chrono::steady_clock::now(); // start to count the time
     size_t BABYSTEP_NUM = pow(2, RANGE_LEN/2 + TRADEOFF_NUM); // babystep num = single giantstep size
-
-    /*
-    * to show full power of omp, this value is not real CPU core number
-    * but an emprical value, should less than and dividable by BABYSTEP_NUM 
-    */
 
     size_t SLICED_BABYSTEP_NUM = BABYSTEP_NUM/BUILD_TASK_NUM; 
 

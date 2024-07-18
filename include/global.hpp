@@ -20,7 +20,8 @@ inline std::mt19937 global_built_in_prg(rd());
 * you can switch to **N** thread setting by assign NUMBER_OF_THREADS = N by hand
 */
 // inline const size_t NUMBER_OF_THREADS = NUMBER_OF_PHYSICAL_CORES;  
-inline const size_t NUMBER_OF_THREADS = 4;  
+
+inline const size_t NUMBER_OF_THREADS = 8;  
 
 inline const size_t CHECK_BUFFER_SIZE = 1024*8;
 

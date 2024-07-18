@@ -51,7 +51,6 @@ void test_gadget1(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN, si
     PrintSplitLine('-'); 
 
     Bullet::PP pp_bullet = Bullet::Setup(RANGE_LEN, AGG_NUM); 
-    size_t DEC_THREAD_NUM = 8; 
     size_t TRADEOFF_NUM = 7;
     TwistedExponentialElGamal::PP pp_enc = TwistedExponentialElGamal::Setup(RANGE_LEN, TRADEOFF_NUM); 
 
@@ -92,7 +91,6 @@ void test_gadget2(BigInt &LEFT_BOUND, BigInt &RIGHT_BOUND, size_t &RANGE_LEN, si
     PrintSplitLine('-'); 
 
     Bullet::PP pp_bullet = Bullet::Setup(RANGE_LEN, AGG_NUM); 
-    size_t DEC_THREAD_NUM = 8; 
     size_t TRADEOFF_NUM = 7;
     TwistedExponentialElGamal::PP pp_enc = TwistedExponentialElGamal::Setup(RANGE_LEN, TRADEOFF_NUM); 
     Gadget::PP pp = Gadget::Setup(pp_enc, pp_bullet);

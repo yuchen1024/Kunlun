@@ -50,7 +50,6 @@ std::tuple<PP, SP> Setup(size_t N_max)
 
     size_t MSG_LEN = 32; 
     size_t TRADEOFF_NUM = 7; 
-    size_t DEC_THREAD_NUM = 8;
     pp.enc_part = TwistedExponentialElGamal::Setup(MSG_LEN, TRADEOFF_NUM);
     
     std::tie(pp.ek, sp.dk) = TwistedExponentialElGamal::KeyGen(pp.enc_part); 
