@@ -26,6 +26,22 @@ PP Setup(size_t N_max)
     return pp; 
 }
 
+std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
+{
+    fout << pp.g <<pp.N_max;; 
+    fout << pp.vec_h;
+    
+    return fout;
+
+}
+std::ifstream &operator>>(std::ifstream &fin, PP &pp)
+{
+    fin >> pp.g>>pp.N_max;
+    pp.vec_h.resize(pp.N_max);
+    fin >> pp.vec_h;
+    
+    return fin;
+}
 
 ECPoint Commit(PP &pp, std::vector<BigInt>& vec_m, BigInt r)
 {
