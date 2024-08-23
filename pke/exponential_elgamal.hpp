@@ -232,16 +232,17 @@ BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
     BigInt m;
     //begin decryption  
     ECPoint M = ct.Y - ct.X * sk; // M = Y - X^sk = g^m 
-    ECPoint M_inv = M.Invert();
 
     bool SUCCESS = ShanksDLOG(pp.g, M, pp.MSG_LEN, pp.TRADEOFF_NUM, m); 
     if(SUCCESS == false)
     {
-        //std::cout << "decryption fails in the specified range" << std::endl;
-        //dec the cipher that encryption value is negative
+        /* dec the cipher that encrypted value is negative,
+        this approach is added for SDPT this special situation which encrypted value is negative sometimes,
+        This processing is not needed in general */
+        ECPoint M_inv = M.Invert();
         bool success = ShanksDLOG(pp.g, M_inv, pp.MSG_LEN, pp.TRADEOFF_NUM, m);
         if(success == false){
-            std::cout << "decryption fails in the specified range-negative" << std::endl; 
+            std::cout << "decryption fails in the specified range (-2^32, 0]" << std::endl; 
             exit(EXIT_FAILURE);
         }
         else
