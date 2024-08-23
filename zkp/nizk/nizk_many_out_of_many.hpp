@@ -19,31 +19,31 @@ using Serialization::operator>>;
 // define structure of ManyOutOfManyProof
 struct PP
 {
-    size_t Com_LEN;
-    size_t Log_Com_Len;
+    size_t cipher_num;
+    size_t log_cipher_num;
     Pedersen::PP com_part;
     ECPoint g;
    
 };
 std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 {
-    fout<<pp.Com_LEN<<pp.Log_Com_Len<<pp.com_part<<pp.g;
+    fout<<pp.cipher_num<<pp.log_cipher_num<<pp.com_part<<pp.g;
     return fout;
 }
 std::ifstream &operator>>(std::ifstream &fin, PP& pp)
 {
-    fin>>pp.Com_LEN>>pp.Log_Com_Len>>pp.com_part>>pp.g;
+    fin>>pp.cipher_num>>pp.log_cipher_num>>pp.com_part>>pp.g;
     return fin;  
 }
 
 struct Instance
 {
     size_t Com_Num;
-    //devide the cipher into two parts in order to compute efficient
+    // devide the cipher into two parts in order to compute efficient
     std::vector<ECPoint> vec_cipher_bal_left;
     std::vector<ECPoint> vec_cipher_bal_right;
     std::vector<ECPoint> vec_cipher_value;
-    ECPoint cipher4D; //D is equal to g^r
+    ECPoint cipher4D; // D is equal to g^r
     std::vector<ECPoint> vec_pk;
     ECPoint gepoch;
     ECPoint uepoch;
@@ -167,12 +167,12 @@ void PrintProof(Proof &proof)
     proof.proof_Au.Print("proof_Au");
 }
 
-PP Setup(size_t Com_LEN, size_t Log_Com_Len,Pedersen::PP &com_part)
+PP Setup(size_t cipher_num, size_t log_cipher_num,Pedersen::PP &com_part)
 {
 
     PP pp;
-    pp.Com_LEN = Com_LEN;
-    pp.Log_Com_Len = Log_Com_Len;
+    pp.cipher_num = cipher_num;
+    pp.log_cipher_num = log_cipher_num;
     pp.com_part = com_part;
     pp.g = ECPoint(generator); 
     return pp;
@@ -285,8 +285,8 @@ void Prove(PP &pp,Witness &witness,Instance &instance,std::string &transcript_st
     BigInt rb = GenRandomBigIntLessThan(order);
     BigInt rc = GenRandomBigIntLessThan(order);
     BigInt rd = GenRandomBigIntLessThan(order);
-    size_t n=pp.Com_LEN;
-    size_t m=pp.Log_Com_Len;
+    size_t n=pp.cipher_num;
+    size_t m=pp.log_cipher_num;
     proof.Num=n;
     std::vector<BigInt> al0(m);
     std::vector<BigInt> bl0(m);
@@ -701,8 +701,8 @@ void Prove(PP &pp,Witness &witness,Instance &instance,std::string &transcript_st
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {
     
-    size_t n=pp.Com_LEN;
-    size_t m=pp.Log_Com_Len;
+    size_t n=pp.cipher_num;
+    size_t m=pp.log_cipher_num;
 
     transcript_str = "";
     transcript_str += proof.proof_ComA.ToByteString();

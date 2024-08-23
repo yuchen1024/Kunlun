@@ -27,7 +27,7 @@ struct Instance
 {
    std::vector<ECPoint> vec_pk;
    std::vector<ExponentialElGamal::CT> vec_cipher;  
-   std::vector<ExponentialElGamal::CT> vec_Supervise_cipher; 
+   std::vector<ExponentialElGamal::CT> vec_supervise_cipher; 
 };
 
 // structure of witness 
@@ -80,13 +80,13 @@ void PrintInstance(Instance &instance)
         note = "instance.cipher.Y" + std::to_string(i);
         instance.vec_cipher[i].Y.Print(note); 
     }
-    for(auto i = 0; i < instance.vec_Supervise_cipher.size(); i++){
+    for(auto i = 0; i < instance.vec_supervise_cipher.size(); i++){
         note = "instance.Supervise_cipher.X" + std::to_string(i);
-        instance.vec_Supervise_cipher[i].X.Print(note); 
+        instance.vec_supervise_cipher[i].X.Print(note); 
     }
-    for(auto i = 0; i < instance.vec_Supervise_cipher.size(); i++){
+    for(auto i = 0; i < instance.vec_supervise_cipher.size(); i++){
         note = "instance.Supervise_cipher.Y" + std::to_string(i);
-        instance.vec_Supervise_cipher[i].Y.Print(note); 
+        instance.vec_supervise_cipher[i].Y.Print(note); 
     }
 } 
 
@@ -178,8 +178,8 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
         transcript_str += instance.vec_cipher[i].Y.ToByteString();
     }
     for(auto i=0;i<num;i++){
-        transcript_str += instance.vec_Supervise_cipher[i].X.ToByteString();
-        transcript_str += instance.vec_Supervise_cipher[i].Y.ToByteString();
+        transcript_str += instance.vec_supervise_cipher[i].X.ToByteString();
+        transcript_str += instance.vec_supervise_cipher[i].Y.ToByteString();
     }
     std::vector<BigInt> vec_a(num);
     std::vector<BigInt> vec_b(num);
@@ -233,8 +233,8 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
         transcript_str += instance.vec_cipher[i].Y.ToByteString();
     }
     for(auto i=0;i<num;i++){
-        transcript_str += instance.vec_Supervise_cipher[i].X.ToByteString();
-        transcript_str += instance.vec_Supervise_cipher[i].Y.ToByteString();
+        transcript_str += instance.vec_supervise_cipher[i].X.ToByteString();
+        transcript_str += instance.vec_supervise_cipher[i].Y.ToByteString();
     }
   
 
@@ -258,11 +258,11 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
         LEFT1 = pp.g * proof.vec_z1[i]; // g^{z_1}
         RIGHT1 = proof.vec_A[i] + instance.vec_cipher[i].X * e; // A {X_1}^e
         LEFT2 = pp.g * proof.vec_z2[i]; // g^{z_2}
-        RIGHT2 = proof.vec_A[i] + instance.vec_Supervise_cipher[i].X * e; // A {X_2}^e
+        RIGHT2 = proof.vec_A[i] + instance.vec_supervise_cipher[i].X * e; // A {X_2}^e
         LEFT3 = pp.g * proof.vec_t[i]+instance.vec_pk[i]*proof.vec_z1[i]; // g^{t}{pk_1}^{z_1}
         RIGHT3 = proof.vec_B1[i] + instance.vec_cipher[i].Y * e; // B_1 {Y_1}^e
         LEFT4 = pp.g * proof.vec_t[i]+pp.pka*proof.vec_z2[i]; // g^{t} {pk_a}^{z_2}
-        RIGHT4 = proof.vec_B2[i] + instance.vec_Supervise_cipher[i].Y * e; // B_2 {Y_2}^e  
+        RIGHT4 = proof.vec_B2[i] + instance.vec_supervise_cipher[i].Y * e; // B_2 {Y_2}^e  
         vec_condition[i] = (LEFT1 == RIGHT1); // check g^{z1} = A {X_1}^e
         vec_condition[num+i]= (LEFT2 == RIGHT2); // check g^{z_2} = A {X_2}^e
         vec_condition[2*num+i] = (LEFT3 == RIGHT3); // check g^{t}{pk_1}^{z_1} = B_1 {Y_1}^e

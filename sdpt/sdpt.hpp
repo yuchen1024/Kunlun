@@ -7,9 +7,9 @@ this hpp implements the SDPT functionality
 #include "../pke/exponential_elgamal.hpp"        // implement ElGamal  
 #include "../pke/elgamal.hpp"  
 #include "../zkp/bulletproofs/sigma_bullet_proof.hpp"    // implement Log Size Bulletproof
-#include "../zkp/nizk/nizk_right.hpp" // implement many out of many proof
-#include "../zkp/nizk/nizk_supervise1.hpp" // implement Supervise knowledge proof
-#include "../zkp/nizk/nizk_supervise2.hpp" // implement Supervise knowledge proof
+#include "../zkp/nizk/nizk_many_out_of_many.hpp" // implement many out of many proof
+#include "../zkp/nizk/nizk_plaintext_bit_equality.hpp" // implement Supervise knowledge proof
+#include "../zkp/nizk/nizk_multi_plaintext_equality.hpp" // implement Supervise knowledge proof
 
 #include "../gadget/range_proof.hpp"
 #include "../utility/serialization.hpp"
@@ -928,7 +928,7 @@ StofAnoyTransaction2 CreateAnoyTransaction2(PP &pp, Account &Acct_sender, BigInt
     for(size_t i=0;i<AnoyTransaction.number;i++){
         Supervise_knowledge2_instance.vec_cipher[i]=AnoyTransaction.transfer_ct[i];
     }
-    Supervise_knowledge2_instance.vec_Supervise_cipher.resize(AnoyTransaction.number);
+    Supervise_knowledge2_instance.vec_supervise_cipher.resize(AnoyTransaction.number);
     
     Supervise_knowledge2_witness.vec_Supervise_r.resize(AnoyTransaction.number);
     Supervise_knowledge2_witness.vec_cipher_v.resize(AnoyTransaction.number);
@@ -956,7 +956,7 @@ StofAnoyTransaction2 CreateAnoyTransaction2(PP &pp, Account &Acct_sender, BigInt
             
             Supervise_knowledge2_witness.vec_cipher_v[i]=bn_0;
         }
-        Supervise_knowledge2_instance.vec_Supervise_cipher[i]=AnoyTransaction.Supervise_ct[i];  
+        Supervise_knowledge2_instance.vec_supervise_cipher[i]=AnoyTransaction.Supervise_ct[i];  
             
     }
     
@@ -1114,7 +1114,7 @@ bool VerifyAnoyTX2(PP &pp, StofAnoyTransaction2 AnoyTransaction)
     SuperviseKnowledge2::Instance Supervise_knowledge2_instance;
     Supervise_knowledge2_instance.vec_pk=AnoyTransaction.pk;
     Supervise_knowledge2_instance.vec_cipher=AnoyTransaction.transfer_ct;
-    Supervise_knowledge2_instance.vec_Supervise_cipher=AnoyTransaction.Supervise_ct;
+    Supervise_knowledge2_instance.vec_supervise_cipher=AnoyTransaction.Supervise_ct;
     condition3 = SuperviseKnowledge2::Verify(Supervise_knowledge2_pp, Supervise_knowledge2_instance, 
                                    transcript_str, AnoyTransaction.proof_Supervise_knowledge2_proof);
     #ifdef DEMO

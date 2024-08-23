@@ -7,7 +7,7 @@ this hpp implements NIZKPoK for ElGamal ciphertext value
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"
 #include "../../pke/exponential_elgamal.hpp"
-#include "../../zkp/nizk/nizk_right.hpp"
+#include "../../zkp/nizk/nizk_many_out_of_many.hpp"
 
 namespace SuperviseKnowledge1{
 
@@ -19,7 +19,7 @@ struct PP
 {
     ECPoint g; 
     size_t cipher_num;
-    size_t Log_cipher_num;
+    size_t log_cipher_num;
     ECPoint pka;
     //ECPoint h; 
 };
@@ -196,7 +196,7 @@ PP Setup(ExponentialElGamal::PP pp_enc,size_t cipher_num,ECPoint pka)
     PP pp;
     pp.g = pp_enc.g;
     pp.cipher_num = cipher_num;
-    pp.Log_cipher_num =size_t(log2(cipher_num-1)+1); 
+    pp.log_cipher_num =size_t(log2(cipher_num-1)+1); 
     pp.pka = pka;
 
     #ifdef DEBUG
@@ -215,7 +215,7 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness,ManyOutOfMany::Proof &m
     Proof proof;
     // initialize the transcript with instance 
     size_t num = pp.cipher_num; 
-    size_t m = pp.Log_cipher_num;
+    size_t m = pp.log_cipher_num;
  
     transcript_str="";
     
@@ -337,7 +337,7 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness,ManyOutOfMany::Proof &m
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof,ManyOutOfMany::Proof &mom_proof)
 {   
     size_t num = pp.cipher_num; 
-    size_t m = pp.Log_cipher_num; 
+    size_t m = pp.log_cipher_num; 
     // initialize the transcript with instance 
     transcript_str ="";
     transcript_str+=mom_proof.proof_ComA.ToByteString();
