@@ -10,15 +10,14 @@ void Build_SDPT_Test_Enviroment(size_t ringnumber)
     std::cout << "setup SDPT system" << std::endl; 
     // setup adcp system
     
-    size_t SN_LEN = 4;
     size_t LOG_MAXIMUM_COINS = 32;      
-    size_t MAX_RECEIVER_NUM = 7;
+    //size_t MAX_RECEIVER_NUM = 7;
     size_t AnonySetSize = ringnumber;  
 
     SDPT::SP sp;
     SDPT::PP pp;
 
-    std::tie(pp, sp) = SDPT::Setup(LOG_MAXIMUM_COINS, MAX_RECEIVER_NUM, SN_LEN, AnonySetSize); 
+    std::tie(pp, sp) = SDPT::Setup(LOG_MAXIMUM_COINS, AnonySetSize); 
 
     SDPT::Initialize(pp);
 
@@ -37,104 +36,87 @@ void Build_SDPT_Test_Enviroment(size_t ringnumber)
     PrintSplitLine('-'); 
 
     BigInt Alice_balance = BigInt(512); 
-    BigInt Alice_sn = bn_1; 
-    SDPT::Account Acct_Alice = SDPT::CreateAccount(pp, "Alice", Alice_balance, Alice_sn); 
+    SDPT::Account Acct_Alice = SDPT::CreateAccount(pp, "Alice", Alice_balance); 
     std::string Alice_Acct_FileName = "Alice.account"; 
     SDPT::SaveAccount(Acct_Alice, Alice_Acct_FileName); 
 
-    BigInt Bob_balance = BigInt(256); 
-    BigInt Bob_sn = bn_1; 
-    SDPT::Account Acct_Bob = SDPT::CreateAccount(pp, "Bob", Bob_balance, Bob_sn); 
+    BigInt Bob_balance = BigInt(256);
+    SDPT::Account Acct_Bob = SDPT::CreateAccount(pp, "Bob", Bob_balance); 
     std::string Bob_Acct_FileName = "Bob.account"; 
     SDPT::SaveAccount(Acct_Bob, Bob_Acct_FileName); 
 
     BigInt Carl_balance = BigInt(128); 
-    BigInt Carl_sn = bn_1; 
-    SDPT::Account Acct_Carl = SDPT::CreateAccount(pp, "Carl", Carl_balance, Carl_sn); 
+    SDPT::Account Acct_Carl = SDPT::CreateAccount(pp, "Carl", Carl_balance); 
     std::string Carl_Acct_FileName = "Carl.account"; 
     SDPT::SaveAccount(Acct_Carl, Carl_Acct_FileName); 
 
     BigInt David_balance = BigInt(64);
-    BigInt David_sn = bn_1;
-    SDPT::Account Acct_David = SDPT::CreateAccount(pp, "David", David_balance, David_sn);
+    SDPT::Account Acct_David = SDPT::CreateAccount(pp, "David", David_balance);
     std::string David_Acct_FileName = "David.account";
     SDPT::SaveAccount(Acct_David, David_Acct_FileName);
 
     BigInt Eve_balance = BigInt(32);
-    BigInt Eve_sn = bn_1;
-    SDPT::Account Acct_Eve = SDPT::CreateAccount(pp, "Eve", Eve_balance, Eve_sn);
+    SDPT::Account Acct_Eve = SDPT::CreateAccount(pp, "Eve", Eve_balance);
     std::string Eve_Acct_FileName = "Eve.account";
     SDPT::SaveAccount(Acct_Eve, Eve_Acct_FileName);
 
     BigInt Frank_balance = BigInt(16);
-    BigInt Frank_sn = bn_1;
-    SDPT::Account Acct_Frank = SDPT::CreateAccount(pp, "Frank", Frank_balance, Frank_sn);
+    SDPT::Account Acct_Frank = SDPT::CreateAccount(pp, "Frank", Frank_balance);
     std::string Frank_Acct_FileName = "Frank.account";
     SDPT::SaveAccount(Acct_Frank, Frank_Acct_FileName);
 
     BigInt Grace_balance = BigInt(32);
-    BigInt Grace_sn = bn_1;
-    SDPT::Account Acct_Grace = SDPT::CreateAccount(pp, "Grace", Grace_balance, Grace_sn);
+    SDPT::Account Acct_Grace = SDPT::CreateAccount(pp, "Grace", Grace_balance);
     std::string Grace_Acct_FileName = "Grace.account";
     SDPT::SaveAccount(Acct_Grace, Grace_Acct_FileName);
 
     BigInt Henry_balance = BigInt(32);
-    BigInt Henry_sn = bn_1;
-    SDPT::Account Acct_Henry = SDPT::CreateAccount(pp, "Henry", Henry_balance, Henry_sn);
+    SDPT::Account Acct_Henry = SDPT::CreateAccount(pp, "Henry", Henry_balance);
     std::string Henry_Acct_FileName = "Henry.account";
     SDPT::SaveAccount(Acct_Henry, Henry_Acct_FileName);
 
     BigInt Ida_balance = BigInt(32);
-    BigInt Ida_sn = bn_1;
-    SDPT::Account Acct_Ida = SDPT::CreateAccount(pp, "Ida", Ida_balance, Ida_sn);
+    SDPT::Account Acct_Ida = SDPT::CreateAccount(pp, "Ida", Ida_balance);
     std::string Ida_Acct_FileName = "Ida.account";
     SDPT::SaveAccount(Acct_Ida, Ida_Acct_FileName);
 
     BigInt Jack_balance = BigInt(32);
-    BigInt Jack_sn = bn_1;
-    SDPT::Account Acct_Jack = SDPT::CreateAccount(pp, "Jack", Jack_balance, Jack_sn);
+    SDPT::Account Acct_Jack = SDPT::CreateAccount(pp, "Jack", Jack_balance);
     std::string Jack_Acct_FileName = "Jack.account";
     SDPT::SaveAccount(Acct_Jack, Jack_Acct_FileName);
 
     BigInt Kate_balance = BigInt(32);
-    BigInt Kate_sn = bn_1;
-    SDPT::Account Acct_Kate = SDPT::CreateAccount(pp, "Kate", Kate_balance, Kate_sn);
+    SDPT::Account Acct_Kate = SDPT::CreateAccount(pp, "Kate", Kate_balance);
     std::string Kate_Acct_FileName = "Kate.account";
     SDPT::SaveAccount(Acct_Kate, Kate_Acct_FileName);
 
     BigInt Leo_balance = BigInt(32);
-    BigInt Leo_sn = bn_1;
-    SDPT::Account Acct_Leo = SDPT::CreateAccount(pp, "Leo", Leo_balance, Leo_sn);
+    SDPT::Account Acct_Leo = SDPT::CreateAccount(pp, "Leo", Leo_balance);
     std::string Leo_Acct_FileName = "Leo.account";
     SDPT::SaveAccount(Acct_Leo, Leo_Acct_FileName);
 
     BigInt Mary_balance = BigInt(32);
-    BigInt Mary_sn = bn_1;
-    SDPT::Account Acct_Mary = SDPT::CreateAccount(pp, "Mary", Mary_balance, Mary_sn);
+    SDPT::Account Acct_Mary = SDPT::CreateAccount(pp, "Mary", Mary_balance);
     std::string Mary_Acct_FileName = "Mary.account";
     SDPT::SaveAccount(Acct_Mary, Mary_Acct_FileName);
 
     BigInt Nick_balance = BigInt(32);
-    BigInt Nick_sn = bn_1;
-    SDPT::Account Acct_Nick = SDPT::CreateAccount(pp, "Nick", Nick_balance, Nick_sn);
+    SDPT::Account Acct_Nick = SDPT::CreateAccount(pp, "Nick", Nick_balance);
     std::string Nick_Acct_FileName = "Nick.account";
     SDPT::SaveAccount(Acct_Nick, Nick_Acct_FileName);
 
     BigInt Olivia_balance = BigInt(32);
-    BigInt Olivia_sn = bn_1;
-    SDPT::Account Acct_Olivia = SDPT::CreateAccount(pp, "Olivia", Olivia_balance, Olivia_sn);
+    SDPT::Account Acct_Olivia = SDPT::CreateAccount(pp, "Olivia", Olivia_balance);
     std::string Olivia_Acct_FileName = "Olivia.account";
     SDPT::SaveAccount(Acct_Olivia, Olivia_Acct_FileName);
 
     BigInt Paul_balance = BigInt(32);
-    BigInt Paul_sn = bn_1;
-    SDPT::Account Acct_Paul = SDPT::CreateAccount(pp, "Paul", Paul_balance, Paul_sn);
+    SDPT::Account Acct_Paul = SDPT::CreateAccount(pp, "Paul", Paul_balance);
     std::string Paul_Acct_FileName = "Paul.account";
     SDPT::SaveAccount(Acct_Paul, Paul_Acct_FileName);
 
     BigInt Tax_balance = bn_0; 
-    BigInt Tax_sn = bn_1; 
-    SDPT::Account Acct_Tax = SDPT::CreateAccount(pp, "Tax", Tax_balance, Tax_sn); 
+    SDPT::Account Acct_Tax = SDPT::CreateAccount(pp, "Tax", Tax_balance); 
     std::string Tax_Acct_FileName = "Tax.account"; 
     SDPT::SaveAccount(Acct_Tax, Tax_Acct_FileName); 
 
@@ -252,8 +234,7 @@ void Emulate_SDPT_System(size_t ringnumber)
     for(auto i=0;i<numadd_account;i++)
     {
         BigInt account_balance = BigInt(32); 
-        BigInt sn = bn_1; 
-        SDPT::Account Acct = SDPT::CreateAccount(pp, "Account"+std::to_string(i), account_balance, sn); 
+        SDPT::Account Acct = SDPT::CreateAccount(pp, "Account"+std::to_string(i), account_balance); 
         std::string Acct_FileName = "Account"+std::to_string(i)+".account"; 
         SDPT::SaveAccount(Acct, Acct_FileName); 
         Accountlist.push_back(Acct);
