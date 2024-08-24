@@ -61,7 +61,7 @@ struct AnonSet{
 
 struct SuperviseResult
 {
-    BigInt Supervise_value;
+    BigInt supervise_value;
     size_t Supervise_sender_index;
     size_t Supervise_receiver_index;
     ECPoint sender_pk;
@@ -86,11 +86,11 @@ struct StofAnoyTransaction1{
     
    SigmaBullet::Proof proof_sigma_bullet_proof; // NIZKPoK for the validity of tx
    
-   ExponentialElGamal::CT Supervise_value;
+   ExponentialElGamal::CT supervise_value;
    std::vector<ExponentialElGamal::CT>Supervise_indexl0;
    std::vector<ExponentialElGamal::CT>Supervise_indexl1;
    //Superviseable proof
-   SuperviseKnowledge1::Proof proof_Supervise_knowledge1_proof; // NIZKPoK for the Superviseable of tx
+   PlaintextBitEquality::Proof proof_Supervise_knowledge1_proof; // NIZKPoK for the Superviseable of tx
 
 };
 
@@ -114,7 +114,7 @@ struct StofAnoyTransaction2{
    
    std::vector<ExponentialElGamal::CT>Supervise_ct;
    //Superviseable proof
-   SuperviseKnowledge2::Proof proof_Supervise_knowledge2_proof; // NIZKPoK for the Superviseable of tx
+   MultiPlaintextEquality::Proof proof_Supervise_knowledge2_proof; // NIZKPoK for the Superviseable of tx
 
 };
 std::string GetAnoyTxFileName(StofAnoyTransaction1 &AnoyTransaction)
@@ -200,10 +200,10 @@ void PrintAnonyTX1(StofAnoyTransaction1 &AnoyTransaction)
     ManyOutOfMany::PrintProof(AnoyTransaction.proof_many_out_of_many_proof);
     std::cout << std::endl;
 
-    //the encryption of Supervise_value is not print
+    //the encryption of supervise_value is not print
 
     std::cout << "NIZKPoK for Supervise 1 >>>" << std::endl;
-    SuperviseKnowledge1::PrintProof(AnoyTransaction.proof_Supervise_knowledge1_proof);
+    PlaintextBitEquality::PrintProof(AnoyTransaction.proof_Supervise_knowledge1_proof);
     std::cout << std::endl;
 
 }
@@ -258,7 +258,7 @@ void PrintAnonyTX2(StofAnoyTransaction2 &AnoyTransaction)
     std::cout << std::endl;
 
     std::cout << "NIZKPoK for Supervise 2 >>>" << std::endl;
-    SuperviseKnowledge2::PrintProof(AnoyTransaction.proof_Supervise_knowledge2_proof);
+    MultiPlaintextEquality::PrintProof(AnoyTransaction.proof_Supervise_knowledge2_proof);
     std::cout << std::endl;
 }
 
@@ -361,7 +361,7 @@ void SaveAnonyTx1(StofAnoyTransaction1 AnoyTransaction,std::string SDPT_AnonyTx_
     // save proofs
     fout << AnoyTransaction.proof_many_out_of_many_proof;
     //save supertvisor's Supervise1 result and proof
-    fout << AnoyTransaction.Supervise_value;
+    fout << AnoyTransaction.supervise_value;
     for(auto i=0;i<AnoyTransaction.Supervise_indexl0.size();i++){
         fout << AnoyTransaction.Supervise_indexl0[i];
     }
@@ -437,7 +437,7 @@ void FetchAnonyTx1(StofAnoyTransaction1 &AnoyTransaction, std::string SDPT_Anony
     // recover proof
     fin >> AnoyTransaction.proof_many_out_of_many_proof;
     //recover supertvisor's Supervise1 result and proof
-    fin >> AnoyTransaction.Supervise_value;
+    fin >> AnoyTransaction.supervise_value;
     for(auto i=0;i<AnoyTransaction.Supervise_indexl0.size();i++){
         fin >> AnoyTransaction.Supervise_indexl0[i];
     }
@@ -700,27 +700,27 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
 
     //the way 1
 
-    SuperviseKnowledge1::PP Supervise_knowledge1_pp = SuperviseKnowledge1::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
+    PlaintextBitEquality::PP plaintext_bit_equality_pp = PlaintextBitEquality::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
     PrintSplitLine('-');
-    std::cout<<"successfully setup the SuperviseKnowledge1 Proof"<<std::endl;
-    SuperviseKnowledge1::Instance Supervise_knowledge1_instance;
-    SuperviseKnowledge1::Witness Supervise_knowledge1_witness;
-    Supervise_knowledge1_witness.r=r;
-    Supervise_knowledge1_witness.v=v;
-    Supervise_knowledge1_instance.vec_cipher.resize(AnoyTransaction.number);
-    Supervise_knowledge1_witness.vec_Supervisesenderindex_v.resize(AnoyTransaction.Log_number);
-    Supervise_knowledge1_witness.vec_Supervisereceiverindex_v.resize(AnoyTransaction.Log_number);
-    Supervise_knowledge1_instance.vec_pk=AnoyTransaction.pk;
+    std::cout<<"successfully setup the PlaintextBitEquality Proof"<<std::endl;
+    PlaintextBitEquality::Instance plaintext_bit_equality_instance;
+    PlaintextBitEquality::Witness plaintext_bit_equality_witness;
+    plaintext_bit_equality_witness.r=r;
+    plaintext_bit_equality_witness.v=v;
+    plaintext_bit_equality_instance.vec_cipher_transfer.resize(AnoyTransaction.number);
+    plaintext_bit_equality_witness.vec_Supervisesenderindex_v.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_witness.vec_Supervisereceiverindex_v.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_instance.vec_pk=AnoyTransaction.pk;
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        Supervise_knowledge1_instance.vec_cipher[i]=AnoyTransaction.transfer_ct[i];
+        plaintext_bit_equality_instance.vec_cipher_transfer[i]=AnoyTransaction.transfer_ct[i];
     }
     BigInt Supervise_value_r=GenRandomBigIntLessThan(order);
-    Supervise_knowledge1_witness.Supervise_value_r=Supervise_value_r;
-    AnoyTransaction.Supervise_value=ExponentialElGamal::Enc(pp.enc_part,pp.pka,v,Supervise_value_r);
-    Supervise_knowledge1_instance.Supervise_value=AnoyTransaction.Supervise_value;
+    plaintext_bit_equality_witness.Supervise_value_r=Supervise_value_r;
+    AnoyTransaction.supervise_value=ExponentialElGamal::Enc(pp.enc_part,pp.pka,v,Supervise_value_r);
+    plaintext_bit_equality_instance.supervise_value=AnoyTransaction.supervise_value;
 
-    Supervise_knowledge1_witness.vec_Supervisesenderindex_r.resize(AnoyTransaction.Log_number);
-    Supervise_knowledge1_witness.vec_Supervisereceiverindex_r.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_witness.vec_Supervisesenderindex_r.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_witness.vec_Supervisereceiverindex_r.resize(AnoyTransaction.Log_number);
     AnoyTransaction.Supervise_indexl0.resize(AnoyTransaction.Log_number);
     AnoyTransaction.Supervise_indexl1.resize(AnoyTransaction.Log_number);
     BigInt Supervise_indexl0_r;
@@ -730,13 +730,13 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
     PrintSplitLine('-');
     std::cout<<"begin to generate the vector index"<<std::endl;
 
-    Supervise_knowledge1_instance.vec_Supervise_indexl0.resize(AnoyTransaction.Log_number);
-    Supervise_knowledge1_instance.vec_Supervise_indexl1.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_instance.vec_Supervise_indexl0.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_instance.vec_Supervise_indexl1.resize(AnoyTransaction.Log_number);
     for(size_t i=0;i<AnoyTransaction.Log_number;i++){
         Supervise_indexl0_r=GenRandomBigIntLessThan(order);
         Supervise_indexl1_r=GenRandomBigIntLessThan(order);
-        Supervise_knowledge1_witness.vec_Supervisesenderindex_r[i]=Supervise_indexl0_r;
-        Supervise_knowledge1_witness.vec_Supervisereceiverindex_r[i]=Supervise_indexl1_r;
+        plaintext_bit_equality_witness.vec_Supervisesenderindex_r[i]=Supervise_indexl0_r;
+        plaintext_bit_equality_witness.vec_Supervisereceiverindex_r[i]=Supervise_indexl1_r;
 
         if((sender_index>>i)&1==1)
         {
@@ -757,16 +757,16 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
 
         AnoyTransaction.Supervise_indexl0[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,Supervise_indexl0_v,Supervise_indexl0_r);
         AnoyTransaction.Supervise_indexl1[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,Supervise_indexl1_v,Supervise_indexl1_r);
-        Supervise_knowledge1_witness.vec_Supervisesenderindex_v[i]=Supervise_indexl0_v;
-        Supervise_knowledge1_witness.vec_Supervisereceiverindex_v[i]=Supervise_indexl1_v;
-        Supervise_knowledge1_instance.vec_Supervise_indexl0[i]=AnoyTransaction.Supervise_indexl0[i];
-        Supervise_knowledge1_instance.vec_Supervise_indexl1[i]=AnoyTransaction.Supervise_indexl1[i];
+        plaintext_bit_equality_witness.vec_Supervisesenderindex_v[i]=Supervise_indexl0_v;
+        plaintext_bit_equality_witness.vec_Supervisereceiverindex_v[i]=Supervise_indexl1_v;
+        plaintext_bit_equality_instance.vec_Supervise_indexl0[i]=AnoyTransaction.Supervise_indexl0[i];
+        plaintext_bit_equality_instance.vec_Supervise_indexl1[i]=AnoyTransaction.Supervise_indexl1[i];
     }
     std::string transcript_Supervise_str1 = "";
     PrintSplitLine('-');
     std::cout<<"begin to prove the Supervise knowledge1"<<std::endl;
-    AnoyTransaction.proof_Supervise_knowledge1_proof = SuperviseKnowledge1::Prove(Supervise_knowledge1_pp, Supervise_knowledge1_instance, 
-                            Supervise_knowledge1_witness,AnoyTransaction.proof_many_out_of_many_proof,transcript_Supervise_str1,cons_random);
+    AnoyTransaction.proof_Supervise_knowledge1_proof = PlaintextBitEquality::Prove(plaintext_bit_equality_pp, plaintext_bit_equality_instance, 
+                            plaintext_bit_equality_witness,AnoyTransaction.proof_many_out_of_many_proof,transcript_Supervise_str1,cons_random);
 
     PrintSplitLine('-');
     std::cout<<"successfully generate the Supervise knowledge1 proof"<<std::endl;
@@ -917,53 +917,53 @@ StofAnoyTransaction2 CreateAnoyTransaction2(PP &pp, Account &Acct_sender, BigInt
     AnoyTransaction.proof_sigma_bullet_proof = proof_sigma_bullet_proof;
 
     //the way 2
-    SuperviseKnowledge2::PP Supervise_knowledge2_pp = SuperviseKnowledge2::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
+    MultiPlaintextEquality::PP multi_plaintext_equality_pp = MultiPlaintextEquality::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
 
-    SuperviseKnowledge2::Instance Supervise_knowledge2_instance;
-    Supervise_knowledge2_instance.vec_pk=pk_list;
-    SuperviseKnowledge2::Witness Supervise_knowledge2_witness;
-    Supervise_knowledge2_witness.r=r;
+    MultiPlaintextEquality::Instance multi_plaintext_equality_instance;
+    multi_plaintext_equality_instance.vec_pk=pk_list;
+    MultiPlaintextEquality::Witness multi_plaintext_equality_witness;
+    multi_plaintext_equality_witness.r=r;
     AnoyTransaction.Supervise_ct.resize(AnoyTransaction.number);
-    Supervise_knowledge2_instance.vec_cipher.resize(AnoyTransaction.number);
+    multi_plaintext_equality_instance.vec_cipher_transfer.resize(AnoyTransaction.number);
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        Supervise_knowledge2_instance.vec_cipher[i]=AnoyTransaction.transfer_ct[i];
+        multi_plaintext_equality_instance.vec_cipher_transfer[i]=AnoyTransaction.transfer_ct[i];
     }
-    Supervise_knowledge2_instance.vec_supervise_cipher.resize(AnoyTransaction.number);
+    multi_plaintext_equality_instance.vec_cipher_supervision.resize(AnoyTransaction.number);
     
-    Supervise_knowledge2_witness.vec_Supervise_r.resize(AnoyTransaction.number);
-    Supervise_knowledge2_witness.vec_cipher_v.resize(AnoyTransaction.number);
+    multi_plaintext_equality_witness.vec_cipher_supervision_r.resize(AnoyTransaction.number);
+    multi_plaintext_equality_witness.vec_cipher_v.resize(AnoyTransaction.number);
 
     BigInt Supervise2_vec_r;
     std::vector<ExponentialElGamal::CT>test(AnoyTransaction.number);
     for(size_t i=0;i<AnoyTransaction.number;i++){
         Supervise2_vec_r=GenRandomBigIntLessThan(order);
-        Supervise_knowledge2_witness.vec_Supervise_r[i]=Supervise2_vec_r;
+        multi_plaintext_equality_witness.vec_cipher_supervision_r[i]=Supervise2_vec_r;
         if(i==sender_index)
         {
             AnoyTransaction.Supervise_ct[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,-v,Supervise2_vec_r);
             
-            Supervise_knowledge2_witness.vec_cipher_v[i]=-v;
+            multi_plaintext_equality_witness.vec_cipher_v[i]=-v;
         }
         else if(i==receiver_index)
         {
             AnoyTransaction.Supervise_ct[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,v,Supervise2_vec_r);
             
-            Supervise_knowledge2_witness.vec_cipher_v[i]=v;
+            multi_plaintext_equality_witness.vec_cipher_v[i]=v;
         }
         else
         {
             AnoyTransaction.Supervise_ct[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,bn_0,Supervise2_vec_r);
             
-            Supervise_knowledge2_witness.vec_cipher_v[i]=bn_0;
+            multi_plaintext_equality_witness.vec_cipher_v[i]=bn_0;
         }
-        Supervise_knowledge2_instance.vec_supervise_cipher[i]=AnoyTransaction.Supervise_ct[i];  
+        multi_plaintext_equality_instance.vec_cipher_supervision[i]=AnoyTransaction.Supervise_ct[i];  
             
     }
     
     std::string transcript_Supervise_str2 = "";
     //std::cout<<"begin to prove the Supervise knowledge2"<<std::endl;
-    AnoyTransaction.proof_Supervise_knowledge2_proof = SuperviseKnowledge2::Prove(Supervise_knowledge2_pp, Supervise_knowledge2_instance, 
-                                                    Supervise_knowledge2_witness, transcript_Supervise_str2);
+    AnoyTransaction.proof_Supervise_knowledge2_proof = MultiPlaintextEquality::Prove(multi_plaintext_equality_pp, multi_plaintext_equality_instance, 
+                                                    multi_plaintext_equality_witness, transcript_Supervise_str2);
 
     PrintSplitLine('-');
     std::cout<<"successfully generate the Supervise knowledge2 proof"<<std::endl;
@@ -1031,18 +1031,18 @@ bool VerifyAnoyTX1(PP &pp, StofAnoyTransaction1 AnoyTransaction)
     //check Supervise way 1
     bool condition3;
     transcript_str = "";
-    SuperviseKnowledge1::PP Supervise_knowledge1_pp = SuperviseKnowledge1::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
-    SuperviseKnowledge1::Instance Supervise_knowledge1_instance;
-    Supervise_knowledge1_instance.vec_pk=AnoyTransaction.pk;
-    Supervise_knowledge1_instance.Supervise_value=AnoyTransaction.Supervise_value;
-    Supervise_knowledge1_instance.vec_Supervise_indexl0=AnoyTransaction.Supervise_indexl0;
-    Supervise_knowledge1_instance.vec_Supervise_indexl1=AnoyTransaction.Supervise_indexl1;
-    Supervise_knowledge1_instance.vec_cipher=AnoyTransaction.transfer_ct;
-    condition3 = SuperviseKnowledge1::Verify(Supervise_knowledge1_pp, Supervise_knowledge1_instance, 
+    PlaintextBitEquality::PP plaintext_bit_equality_pp = PlaintextBitEquality::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
+    PlaintextBitEquality::Instance plaintext_bit_equality_instance;
+    plaintext_bit_equality_instance.vec_pk=AnoyTransaction.pk;
+    plaintext_bit_equality_instance.supervise_value=AnoyTransaction.supervise_value;
+    plaintext_bit_equality_instance.vec_Supervise_indexl0=AnoyTransaction.Supervise_indexl0;
+    plaintext_bit_equality_instance.vec_Supervise_indexl1=AnoyTransaction.Supervise_indexl1;
+    plaintext_bit_equality_instance.vec_cipher_transfer=AnoyTransaction.transfer_ct;
+    condition3 = PlaintextBitEquality::Verify(plaintext_bit_equality_pp, plaintext_bit_equality_instance, 
                                    transcript_str, AnoyTransaction.proof_Supervise_knowledge1_proof,AnoyTransaction.proof_many_out_of_many_proof);
     #ifdef DEMO
-        if (condition3) std::cout << "SuperviseKnowledge1 proof accepts" << std::endl; 
-        else std::cout << "SuperviseKnowledge1 proof rejects" << std::endl;
+        if (condition3) std::cout << "PlaintextBitEquality proof accepts" << std::endl; 
+        else std::cout << "PlaintextBitEquality proof rejects" << std::endl;
     #endif
     auto end_time = std::chrono::steady_clock::now();
     auto running_time = end_time - start_time;
@@ -1110,16 +1110,16 @@ bool VerifyAnoyTX2(PP &pp, StofAnoyTransaction2 AnoyTransaction)
     
     bool condition3;
     transcript_str = "";
-    SuperviseKnowledge2::PP Supervise_knowledge2_pp = SuperviseKnowledge2::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
-    SuperviseKnowledge2::Instance Supervise_knowledge2_instance;
-    Supervise_knowledge2_instance.vec_pk=AnoyTransaction.pk;
-    Supervise_knowledge2_instance.vec_cipher=AnoyTransaction.transfer_ct;
-    Supervise_knowledge2_instance.vec_supervise_cipher=AnoyTransaction.Supervise_ct;
-    condition3 = SuperviseKnowledge2::Verify(Supervise_knowledge2_pp, Supervise_knowledge2_instance, 
+    MultiPlaintextEquality::PP multi_plaintext_equality_pp = MultiPlaintextEquality::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
+    MultiPlaintextEquality::Instance multi_plaintext_equality_instance;
+    multi_plaintext_equality_instance.vec_pk=AnoyTransaction.pk;
+    multi_plaintext_equality_instance.vec_cipher_transfer=AnoyTransaction.transfer_ct;
+    multi_plaintext_equality_instance.vec_cipher_supervision=AnoyTransaction.Supervise_ct;
+    condition3 = MultiPlaintextEquality::Verify(multi_plaintext_equality_pp, multi_plaintext_equality_instance, 
                                    transcript_str, AnoyTransaction.proof_Supervise_knowledge2_proof);
     #ifdef DEMO
-        if (condition3) std::cout << "SuperviseKnowledge2 proof accepts" << std::endl; 
-        else std::cout << "SuperviseKnowledge2 proof rejects" << std::endl;
+        if (condition3) std::cout << "MultiPlaintextEquality proof accepts" << std::endl; 
+        else std::cout << "MultiPlaintextEquality proof rejects" << std::endl;
     #endif
 
     auto end_time = std::chrono::steady_clock::now();
@@ -1216,12 +1216,12 @@ SuperviseResult SuperviseAnoyTx1(SP &sp, PP &pp,  StofAnoyTransaction1 &AnoyTran
     auto start_time = std::chrono::steady_clock::now();
     size_t number=AnoyTransaction.number;
     size_t Log_number=AnoyTransaction.Log_number;
-    ExponentialElGamal::CT Supervise_value=AnoyTransaction.Supervise_value;
+    ExponentialElGamal::CT supervise_value=AnoyTransaction.supervise_value;
     std::vector<ExponentialElGamal::CT>Supervise_indexl0=AnoyTransaction.Supervise_indexl0;
     std::vector<ExponentialElGamal::CT>Supervise_indexl1=AnoyTransaction.Supervise_indexl1;
-    BigInt v = ExponentialElGamal::Dec(pp.enc_part, sp.ska, Supervise_value);
+    BigInt v = ExponentialElGamal::Dec(pp.enc_part, sp.ska, supervise_value);
     SuperviseResult Supervise_result;
-    Supervise_result.Supervise_value=v;
+    Supervise_result.supervise_value=v;
     Supervise_result.Supervise_sender_index=0;
     Supervise_result.Supervise_receiver_index=0;
     for(auto i=0;i<Log_number;i++)
@@ -1272,7 +1272,7 @@ SuperviseResult SuperviseAnoyTx2(SP &sp, PP &pp,  StofAnoyTransaction2 &AnoyTran
         {
             Supervise_result.Supervise_receiver_index=i;
             Supervise_result.receiver_pk=AnoyTransaction.pk[i];
-            Supervise_result.Supervise_value=v;
+            Supervise_result.supervise_value=v;
         }
         
     }
@@ -1281,10 +1281,10 @@ SuperviseResult SuperviseAnoyTx2(SP &sp, PP &pp,  StofAnoyTransaction2 &AnoyTran
     std::cout << "Supervise tx takes time = "
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
     PrintSplitLine('-');
-    std::cout << Supervise_result.sender_pk.ToHexString() << " transfers " << BN_bn2dec(Supervise_result.Supervise_value.bn_ptr)
+    std::cout << Supervise_result.sender_pk.ToHexString() << " transfers " << BN_bn2dec(Supervise_result.supervise_value.bn_ptr)
     << " coins to " << Supervise_result.receiver_pk.ToHexString() << std::endl;
     PrintSplitLine('-');
-    std::cout << AnoyTransaction.identity[Supervise_result.Supervise_sender_index] << " transfers " << BN_bn2dec(Supervise_result.Supervise_value.bn_ptr)
+    std::cout << AnoyTransaction.identity[Supervise_result.Supervise_sender_index] << " transfers " << BN_bn2dec(Supervise_result.supervise_value.bn_ptr)
     << " coins to " <<AnoyTransaction.identity[Supervise_result.Supervise_receiver_index]<< std::endl;
     return Supervise_result;
 

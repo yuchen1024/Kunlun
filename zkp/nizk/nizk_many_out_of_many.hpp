@@ -19,20 +19,20 @@ using Serialization::operator>>;
 // define structure of ManyOutOfManyProof
 struct PP
 {
-    size_t cipher_num;
-    size_t log_cipher_num;
+    size_t num_cipher;
+    size_t log_num_cipher;
     Pedersen::PP com_part;
     ECPoint g;
    
 };
 std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 {
-    fout<<pp.cipher_num<<pp.log_cipher_num<<pp.com_part<<pp.g;
+    fout<<pp.num_cipher<<pp.log_num_cipher<<pp.com_part<<pp.g;
     return fout;
 }
 std::ifstream &operator>>(std::ifstream &fin, PP& pp)
 {
-    fin>>pp.cipher_num>>pp.log_cipher_num>>pp.com_part>>pp.g;
+    fin>>pp.num_cipher>>pp.log_num_cipher>>pp.com_part>>pp.g;
     return fin;  
 }
 
@@ -167,12 +167,12 @@ void PrintProof(Proof &proof)
     proof.proof_Au.Print("proof_Au");
 }
 
-PP Setup(size_t cipher_num, size_t log_cipher_num,Pedersen::PP &com_part)
+PP Setup(size_t num_cipher, size_t log_num_cipher,Pedersen::PP &com_part)
 {
 
     PP pp;
-    pp.cipher_num = cipher_num;
-    pp.log_cipher_num = log_cipher_num;
+    pp.num_cipher = num_cipher;
+    pp.log_num_cipher = log_num_cipher;
     pp.com_part = com_part;
     pp.g = ECPoint(generator); 
     return pp;
@@ -285,8 +285,8 @@ void Prove(PP &pp,Witness &witness,Instance &instance,std::string &transcript_st
     BigInt rb = GenRandomBigIntLessThan(order);
     BigInt rc = GenRandomBigIntLessThan(order);
     BigInt rd = GenRandomBigIntLessThan(order);
-    size_t n=pp.cipher_num;
-    size_t m=pp.log_cipher_num;
+    size_t n=pp.num_cipher;
+    size_t m=pp.log_num_cipher;
     proof.Num=n;
     std::vector<BigInt> al0(m);
     std::vector<BigInt> bl0(m);
@@ -701,8 +701,8 @@ void Prove(PP &pp,Witness &witness,Instance &instance,std::string &transcript_st
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {
     
-    size_t n=pp.cipher_num;
-    size_t m=pp.log_cipher_num;
+    size_t n=pp.num_cipher;
+    size_t m=pp.log_num_cipher;
 
     transcript_str = "";
     transcript_str += proof.proof_ComA.ToByteString();

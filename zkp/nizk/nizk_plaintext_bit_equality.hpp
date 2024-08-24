@@ -9,7 +9,7 @@ this hpp implements NIZKPoK for ElGamal ciphertext value
 #include "../../pke/exponential_elgamal.hpp"
 #include "../../zkp/nizk/nizk_many_out_of_many.hpp"
 
-namespace SuperviseKnowledge1{
+namespace PlaintextBitEquality{
 
 
 using Serialization::operator<<; 
@@ -18,10 +18,9 @@ using Serialization::operator>>;
 struct PP
 {
     ECPoint g; 
-    size_t cipher_num;
-    size_t log_cipher_num;
+    size_t num_cipher;
+    size_t log_num_cipher;
     ECPoint pka;
-    //ECPoint h; 
 };
 
 // structure of instance 
@@ -29,7 +28,7 @@ struct Instance
 {   
     std::vector<ExponentialElGamal::CT> vec_cipher;
     std::vector<ECPoint> vec_pk;
-    ExponentialElGamal::CT Supervise_value;
+    ExponentialElGamal::CT supervise_value;
     std::vector<ExponentialElGamal::CT> vec_Supervise_indexl0;
     std::vector<ExponentialElGamal::CT> vec_Supervise_indexl1;
 };
@@ -66,7 +65,7 @@ std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
 {
     fout << proof.valueA << proof.valueB << proof.valuez << proof.valuet;
     size_t vec_size = proof.vec_Supervise_senderindexA.size();
-    for(auto i=0;i<vec_size;i++)
+    for(auto i = 0; i < vec_size; i++)
     {
         fout    << proof.vec_Supervise_senderindexA[i] 
                 << proof.vec_Supervise_senderindexB[i] 
@@ -85,7 +84,7 @@ std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
 {
     fin >> proof.valueA >> proof.valueB >> proof.valuez >> proof.valuet;
     size_t vec_size = proof.vec_Supervise_senderindexA.size();
-    for(auto i=0;i<vec_size;i++)
+    for(auto i = 0; i < vec_size; i++)
     {
         fin    >> proof.vec_Supervise_senderindexA[i] 
                 >> proof.vec_Supervise_senderindexB[i] 
@@ -103,17 +102,17 @@ std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
 void PrintInstance(Instance &instance)
 {
     std::cout << "Supervise Knowledge Instance >>> " << std::endl; 
-    instance.Supervise_value.X.Print("instance.Supervise_value.X");
-    instance.Supervise_value.Y.Print("instance.Supervise_value.Y");
+    instance.supervise_value.X.Print("instance.supervise_value.X");
+    instance.supervise_value.Y.Print("instance.supervise_value.Y");
     size_t vec_size = instance.vec_cipher.size();
-    for(auto i=0;i<vec_size;i++)
+    for(auto i = 0; i < vec_size; i++)
     {
         instance.vec_cipher[i].X.Print("instance.vec_cipher.X");
         instance.vec_cipher[i].Y.Print("instance.vec_cipher.Y");
         instance.vec_pk[i].Print("instance.vec_pk");
     }
     vec_size = instance.vec_Supervise_indexl0.size();
-    for(auto i=0;i<vec_size;i++)
+    for(auto i = 0; i < vec_size; i++)
     {
         instance.vec_Supervise_indexl0[i].X.Print("instance.vec_Supervise_indexl0.X");
         instance.vec_Supervise_indexl0[i].Y.Print("instance.vec_Supervise_indexl0.Y");
@@ -191,12 +190,12 @@ std::string ProofToByteString(Proof &proof)
 }
 
 /*  Setup algorithm */
-PP Setup(ExponentialElGamal::PP pp_enc,size_t cipher_num,ECPoint pka)
+PP Setup(ExponentialElGamal::PP pp_enc,size_t num_cipher,ECPoint pka)
 { 
     PP pp;
     pp.g = pp_enc.g;
-    pp.cipher_num = cipher_num;
-    pp.log_cipher_num =size_t(log2(cipher_num-1)+1); 
+    pp.num_cipher = num_cipher;
+    pp.log_num_cipher =size_t(log2(num_cipher-1)+1); 
     pp.pka = pka;
 
     #ifdef DEBUG
@@ -209,13 +208,13 @@ PP Setup(ExponentialElGamal::PP pp_enc,size_t cipher_num,ECPoint pka)
 }
 
 
-// generate NIZK proof for Supervise_value = Enc(pk_a, v; r) and vec_Supervise_index enc the sender and receiver index
+// generate NIZK proof for supervise_value = Enc(pk_a, v; r) and vec_Supervise_index enc the sender and receiver index
 Proof Prove(PP &pp, Instance &instance, Witness &witness,ManyOutOfMany::Proof &mom_proof,std::string &transcript_str,ManyOutOfMany::ConsRandom cons_random)
 {   
     Proof proof;
     // initialize the transcript with instance 
-    size_t num = pp.cipher_num; 
-    size_t m = pp.log_cipher_num;
+    size_t num = pp.num_cipher; 
+    size_t m = pp.log_num_cipher;
  
     transcript_str="";
     
@@ -336,15 +335,15 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness,ManyOutOfMany::Proof &m
 // check NIZKPoK
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof,ManyOutOfMany::Proof &mom_proof)
 {   
-    size_t num = pp.cipher_num; 
-    size_t m = pp.log_cipher_num; 
+    size_t num = pp.num_cipher; 
+    size_t m = pp.log_num_cipher; 
     // initialize the transcript with instance 
     transcript_str ="";
     transcript_str+=mom_proof.proof_ComA.ToByteString();
     transcript_str+=mom_proof.proof_ComB.ToByteString();
 
     size_t vec_size = mom_proof.vec_lower_cipher_bal_left.size();
-    for(size_t i=0;i<vec_size;i++)
+    for(size_t i = 0; i < vec_size; i++)
     {
         transcript_str+=mom_proof.vec_lower_cipher_bal_left[i].ToByteString();
         transcript_str+=mom_proof.vec_lower_cipher_bal_right[i].ToByteString();
@@ -358,7 +357,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     BigInt w=Hash::StringToBigInt(transcript_str);
 
-    for(auto k=0;k<vec_size;k++)
+    for(auto k = 0; k < vec_size; k++)
     {
         transcript_str += mom_proof.vec_proof_f0[k].ToByteString();
         transcript_str += mom_proof.vec_proof_f1[k].ToByteString();
@@ -387,7 +386,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     // check condition 1
     LEFT = pp.g * proof.valuez ; //  LEFT  = g^z
-    RIGHT = proof.valueA + instance.Supervise_value.X*e; // RIGHT = A X^e
+    RIGHT = proof.valueA + instance.supervise_value.X*e; // RIGHT = A X^e
     
     vec_condition[0] = (LEFT == RIGHT); //check pk^z1 = A X^e
     
@@ -395,7 +394,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     std::vector<ECPoint> vec_base{pp.pka, pp.g}; 
     std::vector<BigInt> vec_x{proof.valuez, proof.valuet}; 
     LEFT = ECPointVectorMul(vec_base, vec_x); // LEFT = pk^z g^t
-    RIGHT = proof.valueB + instance.Supervise_value.Y * e; // RIGHT = B Y^e 
+    RIGHT = proof.valueB + instance.supervise_value.Y * e; // RIGHT = B Y^e 
 
     vec_condition[1] = (LEFT == RIGHT); //check g^z1 h^z2 = B Y^e
 
