@@ -28,13 +28,13 @@ using Serialization::operator>>;
 // define the structure of system parameters
 
 struct PP{    
-    size_t SN_LEN;    // sn length
+    //size_t SN_LEN;    // sn length
     size_t MAX_RECEIVER_NUM; // number of maximum receivers (for now, we require this value to be 2^n - 1)
     BigInt MAXIMUM_COINS; 
     size_t AnonSetNum; // the number of AnonSet,include the sender
     SigmaBullet::PP sigmabullet_part;
     ExponentialElGamal::PP enc_part;
-    ElGamal::PP enc_part_nexp;
+    // ElGamal::PP enc_part_nexp;
     Pedersen::PP com_part;
     ECPoint pka; // supervisor's pk
 };
@@ -50,7 +50,7 @@ struct Account{
     BigInt sk;              // secret key
     ExponentialElGamal::CT balance_ct;  // current balance
     BigInt m;               // dangerous (should only be used for speeding up the proof generation)
-    BigInt sn; 
+    //BigInt sn; ..remove sn
 };
 
 struct AnonSet{
@@ -132,7 +132,6 @@ void PrintPP(PP &pp)
     PrintSplitLine('-');
     std::cout << "pp content >>>>>>" << std::endl; 
     std::cout << "MAX_RECEIVER_NUM = " << pp.MAX_RECEIVER_NUM << std::endl; // number of sub-argument (for now, we require m to be the power of 2)
-    std::cout << "SN_LEN = " << pp.SN_LEN << std::endl;
     std::cout << "AnonSetNum = " << pp.AnonSetNum << std::endl; 
 
     pp.pka.Print("supervisor's pk"); 
@@ -147,7 +146,6 @@ void PrintAccount(Account &Acct)
     std::cout << "encrypted balance:" << std::endl; 
     ExponentialElGamal::PrintCT(Acct.balance_ct);  // current balance
     Acct.m.PrintInDec("m"); 
-    Acct.sn.Print("sn"); 
     PrintSplitLine('-'); 
 }
 
@@ -284,7 +282,6 @@ void SavePP(PP &pp, std::string SDPT_PP_File)
     fout.open(SDPT_PP_File, std::ios::binary); 
 
     fout << pp.MAX_RECEIVER_NUM; 
-    fout << pp.SN_LEN;
     fout << pp.MAXIMUM_COINS; 
     fout << pp.AnonSetNum;
     fout << pp.pka; 
@@ -292,7 +289,6 @@ void SavePP(PP &pp, std::string SDPT_PP_File)
     fout << pp.sigmabullet_part; 
     fout << pp.enc_part; 
     fout << pp.com_part;
-    fout << pp.enc_part_nexp;
 
     fout.close();   
 }
@@ -302,8 +298,7 @@ void FetchPP(PP &pp, std::string SDPT_PP_File)
     std::ifstream fin; 
     fin.open(SDPT_PP_File, std::ios::binary); 
 
-    fin >> pp.MAX_RECEIVER_NUM;
-    fin >> pp.SN_LEN; 
+    fin >> pp.MAX_RECEIVER_NUM; 
     fin >> pp.MAXIMUM_COINS;  
     fin >> pp.AnonSetNum;
     fin >> pp.pka; 
@@ -311,7 +306,6 @@ void FetchPP(PP &pp, std::string SDPT_PP_File)
     fin >> pp.sigmabullet_part;
     fin >> pp.enc_part; 
     fin >> pp.com_part;
-    fin >> pp.enc_part_nexp;
 
     fin.close();   
 }
@@ -325,7 +319,6 @@ void SaveAccount(Account &user, std::string SDPT_Account_File)
     fout << user.sk;   
     fout << user.balance_ct;  
     fout << user.m; 
-    fout << user.sn;
     fout.close();  
 }
 
@@ -338,7 +331,6 @@ void FetchAccount(Account &user, std::string SDPT_Account_File)
     fin >> user.sk;             
     fin >> user.balance_ct;
     fin >> user.m; 
-    fin >> user.sn;
     fin.close();  
 }
 
@@ -479,7 +471,7 @@ void FetchAnonyTx2(StofAnoyTransaction2 &AnoyTransaction, std::string SDPT_Anony
 }
 
 /* This function implements Setup algorithm of SDPT */
-std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size_t SN_LEN, size_t AnonSetNum)
+std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size_t AnonSetNum)
 {
     PP pp; 
     SP sp; 
@@ -488,7 +480,7 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
     if(IsPowerOfTwo(MAX_RECEIVER_NUM+1) == false){
         std::cerr << "parameters wrong: (MAX_RECEIVER_NUM+1) must be a power of 2" << std::endl; 
     }
-    pp.SN_LEN = SN_LEN;    
+     
     pp.MAXIMUM_COINS = BigInt(uint64_t(pow(2, LOG_MAXIMUM_COINS)));  
     pp.AnonSetNum = AnonSetNum;
 
@@ -500,7 +492,6 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size
     
     size_t TRADEOFF_NUM = 7; 
     pp.enc_part = ExponentialElGamal::Setup(LOG_MAXIMUM_COINS, TRADEOFF_NUM);  
-    pp.enc_part_nexp = ElGamal::Setup();
     pp.com_part = Pedersen::Setup(4*Log_AnonSetNum+2); // the size of the Pedersen commitment is 4*Log_AnonSetNum+2
 
     std::tie(pp.pka, sp.ska) = ExponentialElGamal::KeyGen(pp.enc_part);
@@ -517,11 +508,11 @@ void Initialize(PP &pp)
 }
 
 /* create an account for input identity */
-Account CreateAccount(PP &pp, std::string identity, BigInt &init_balance, BigInt &init_sn)
+Account CreateAccount(PP &pp, std::string identity, BigInt &init_balance)
 {
     Account newAcct;
     newAcct.identity = identity;
-    newAcct.sn = init_sn;  
+
 
     std::tie(newAcct.pk, newAcct.sk) = ExponentialElGamal::KeyGen(pp.enc_part); // generate a keypair
 
