@@ -28,8 +28,6 @@ using Serialization::operator>>;
 // define the structure of system parameters
 
 struct PP{    
-    //size_t SN_LEN;    // sn length
-    size_t MAX_RECEIVER_NUM; // number of maximum receivers (for now, we require this value to be 2^n - 1)
     BigInt MAXIMUM_COINS; 
     size_t AnonSetNum; // the number of AnonSet,include the sender
     SigmaBullet::PP sigmabullet_part;
@@ -61,7 +59,7 @@ struct AnonSet{
 
 struct SuperviseResult
 {
-    BigInt supervise_value;
+    BigInt value_cipher_supervison;
     size_t Supervise_sender_index;
     size_t Supervise_receiver_index;
     ECPoint sender_pk;
@@ -86,7 +84,7 @@ struct StofAnoyTransaction1{
     
    SigmaBullet::Proof proof_sigma_bullet_proof; // NIZKPoK for the validity of tx
    
-   ExponentialElGamal::CT supervise_value;
+   ExponentialElGamal::CT value_cipher_supervison;
    std::vector<ExponentialElGamal::CT>Supervise_indexl0;
    std::vector<ExponentialElGamal::CT>Supervise_indexl1;
    //Superviseable proof
@@ -131,7 +129,6 @@ void PrintPP(PP &pp)
 {
     PrintSplitLine('-');
     std::cout << "pp content >>>>>>" << std::endl; 
-    std::cout << "MAX_RECEIVER_NUM = " << pp.MAX_RECEIVER_NUM << std::endl; // number of sub-argument (for now, we require m to be the power of 2)
     std::cout << "AnonSetNum = " << pp.AnonSetNum << std::endl; 
 
     pp.pka.Print("supervisor's pk"); 
@@ -198,7 +195,7 @@ void PrintAnonyTX1(StofAnoyTransaction1 &AnoyTransaction)
     ManyOutOfMany::PrintProof(AnoyTransaction.proof_many_out_of_many_proof);
     std::cout << std::endl;
 
-    //the encryption of supervise_value is not print
+    //the encryption of value_cipher_supervison is not print
 
     std::cout << "NIZKPoK for Supervise 1 >>>" << std::endl;
     PlaintextBitEquality::PrintProof(AnoyTransaction.proof_Supervise_knowledge1_proof);
@@ -281,7 +278,6 @@ void SavePP(PP &pp, std::string SDPT_PP_File)
     std::ofstream fout; 
     fout.open(SDPT_PP_File, std::ios::binary); 
 
-    fout << pp.MAX_RECEIVER_NUM; 
     fout << pp.MAXIMUM_COINS; 
     fout << pp.AnonSetNum;
     fout << pp.pka; 
@@ -298,7 +294,6 @@ void FetchPP(PP &pp, std::string SDPT_PP_File)
     std::ifstream fin; 
     fin.open(SDPT_PP_File, std::ios::binary); 
 
-    fin >> pp.MAX_RECEIVER_NUM; 
     fin >> pp.MAXIMUM_COINS;  
     fin >> pp.AnonSetNum;
     fin >> pp.pka; 
@@ -353,7 +348,7 @@ void SaveAnonyTx1(StofAnoyTransaction1 AnoyTransaction,std::string SDPT_AnonyTx_
     // save proofs
     fout << AnoyTransaction.proof_many_out_of_many_proof;
     //save supertvisor's Supervise1 result and proof
-    fout << AnoyTransaction.supervise_value;
+    fout << AnoyTransaction.value_cipher_supervison;
     for(auto i=0;i<AnoyTransaction.Supervise_indexl0.size();i++){
         fout << AnoyTransaction.Supervise_indexl0[i];
     }
@@ -429,7 +424,7 @@ void FetchAnonyTx1(StofAnoyTransaction1 &AnoyTransaction, std::string SDPT_Anony
     // recover proof
     fin >> AnoyTransaction.proof_many_out_of_many_proof;
     //recover supertvisor's Supervise1 result and proof
-    fin >> AnoyTransaction.supervise_value;
+    fin >> AnoyTransaction.value_cipher_supervison;
     for(auto i=0;i<AnoyTransaction.Supervise_indexl0.size();i++){
         fin >> AnoyTransaction.Supervise_indexl0[i];
     }
@@ -471,14 +466,13 @@ void FetchAnonyTx2(StofAnoyTransaction2 &AnoyTransaction, std::string SDPT_Anony
 }
 
 /* This function implements Setup algorithm of SDPT */
-std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t MAX_RECEIVER_NUM, size_t AnonSetNum)
+std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t AnonSetNum)
 {
     PP pp; 
     SP sp; 
 
-    pp.MAX_RECEIVER_NUM = MAX_RECEIVER_NUM; 
-    if(IsPowerOfTwo(MAX_RECEIVER_NUM+1) == false){
-        std::cerr << "parameters wrong: (MAX_RECEIVER_NUM+1) must be a power of 2" << std::endl; 
+    if(IsPowerOfTwo(AnonSetNum) == false){ 
+        std::cout << "parameters warning: (AnonSetNum) had better be a power of 2" << std::endl;
     }
      
     pp.MAXIMUM_COINS = BigInt(uint64_t(pow(2, LOG_MAXIMUM_COINS)));  
@@ -696,22 +690,21 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
     std::cout<<"successfully setup the PlaintextBitEquality Proof"<<std::endl;
     PlaintextBitEquality::Instance plaintext_bit_equality_instance;
     PlaintextBitEquality::Witness plaintext_bit_equality_witness;
-    plaintext_bit_equality_witness.r=r;
     plaintext_bit_equality_witness.v=v;
     plaintext_bit_equality_instance.vec_cipher_transfer.resize(AnoyTransaction.number);
-    plaintext_bit_equality_witness.vec_Supervisesenderindex_v.resize(AnoyTransaction.Log_number);
-    plaintext_bit_equality_witness.vec_Supervisereceiverindex_v.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_sender_v.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_receiver_v.resize(AnoyTransaction.Log_number);
     plaintext_bit_equality_instance.vec_pk=AnoyTransaction.pk;
     for(size_t i=0;i<AnoyTransaction.number;i++){
         plaintext_bit_equality_instance.vec_cipher_transfer[i]=AnoyTransaction.transfer_ct[i];
     }
-    BigInt Supervise_value_r=GenRandomBigIntLessThan(order);
-    plaintext_bit_equality_witness.Supervise_value_r=Supervise_value_r;
-    AnoyTransaction.supervise_value=ExponentialElGamal::Enc(pp.enc_part,pp.pka,v,Supervise_value_r);
-    plaintext_bit_equality_instance.supervise_value=AnoyTransaction.supervise_value;
+    BigInt cipher_supervison_value_r=GenRandomBigIntLessThan(order);
+    plaintext_bit_equality_witness.cipher_supervison_value_r=cipher_supervison_value_r;
+    AnoyTransaction.value_cipher_supervison=ExponentialElGamal::Enc(pp.enc_part,pp.pka,v,cipher_supervison_value_r);
+    plaintext_bit_equality_instance.value_cipher_supervison=AnoyTransaction.value_cipher_supervison;
 
-    plaintext_bit_equality_witness.vec_Supervisesenderindex_r.resize(AnoyTransaction.Log_number);
-    plaintext_bit_equality_witness.vec_Supervisereceiverindex_r.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_sender_r.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_receiver_r.resize(AnoyTransaction.Log_number);
     AnoyTransaction.Supervise_indexl0.resize(AnoyTransaction.Log_number);
     AnoyTransaction.Supervise_indexl1.resize(AnoyTransaction.Log_number);
     BigInt Supervise_indexl0_r;
@@ -721,13 +714,13 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
     PrintSplitLine('-');
     std::cout<<"begin to generate the vector index"<<std::endl;
 
-    plaintext_bit_equality_instance.vec_Supervise_indexl0.resize(AnoyTransaction.Log_number);
-    plaintext_bit_equality_instance.vec_Supervise_indexl1.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_instance.vec_cipher_supervision_index_bit_sender.resize(AnoyTransaction.Log_number);
+    plaintext_bit_equality_instance.vec_cipher_supervision_index_bit_receiver.resize(AnoyTransaction.Log_number);
     for(size_t i=0;i<AnoyTransaction.Log_number;i++){
         Supervise_indexl0_r=GenRandomBigIntLessThan(order);
         Supervise_indexl1_r=GenRandomBigIntLessThan(order);
-        plaintext_bit_equality_witness.vec_Supervisesenderindex_r[i]=Supervise_indexl0_r;
-        plaintext_bit_equality_witness.vec_Supervisereceiverindex_r[i]=Supervise_indexl1_r;
+        plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_sender_r[i]=Supervise_indexl0_r;
+        plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_receiver_r[i]=Supervise_indexl1_r;
 
         if((sender_index>>i)&1==1)
         {
@@ -748,10 +741,10 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
 
         AnoyTransaction.Supervise_indexl0[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,Supervise_indexl0_v,Supervise_indexl0_r);
         AnoyTransaction.Supervise_indexl1[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,Supervise_indexl1_v,Supervise_indexl1_r);
-        plaintext_bit_equality_witness.vec_Supervisesenderindex_v[i]=Supervise_indexl0_v;
-        plaintext_bit_equality_witness.vec_Supervisereceiverindex_v[i]=Supervise_indexl1_v;
-        plaintext_bit_equality_instance.vec_Supervise_indexl0[i]=AnoyTransaction.Supervise_indexl0[i];
-        plaintext_bit_equality_instance.vec_Supervise_indexl1[i]=AnoyTransaction.Supervise_indexl1[i];
+        plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_sender_v[i]=Supervise_indexl0_v;
+        plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_receiver_v[i]=Supervise_indexl1_v;
+        plaintext_bit_equality_instance.vec_cipher_supervision_index_bit_sender[i]=AnoyTransaction.Supervise_indexl0[i];
+        plaintext_bit_equality_instance.vec_cipher_supervision_index_bit_receiver[i]=AnoyTransaction.Supervise_indexl1[i];
     }
     std::string transcript_Supervise_str1 = "";
     PrintSplitLine('-');
@@ -1025,9 +1018,9 @@ bool VerifyAnoyTX1(PP &pp, StofAnoyTransaction1 AnoyTransaction)
     PlaintextBitEquality::PP plaintext_bit_equality_pp = PlaintextBitEquality::Setup(pp.enc_part,AnoyTransaction.number,pp.pka);
     PlaintextBitEquality::Instance plaintext_bit_equality_instance;
     plaintext_bit_equality_instance.vec_pk=AnoyTransaction.pk;
-    plaintext_bit_equality_instance.supervise_value=AnoyTransaction.supervise_value;
-    plaintext_bit_equality_instance.vec_Supervise_indexl0=AnoyTransaction.Supervise_indexl0;
-    plaintext_bit_equality_instance.vec_Supervise_indexl1=AnoyTransaction.Supervise_indexl1;
+    plaintext_bit_equality_instance.value_cipher_supervison=AnoyTransaction.value_cipher_supervison;
+    plaintext_bit_equality_instance.vec_cipher_supervision_index_bit_sender=AnoyTransaction.Supervise_indexl0;
+    plaintext_bit_equality_instance.vec_cipher_supervision_index_bit_receiver=AnoyTransaction.Supervise_indexl1;
     plaintext_bit_equality_instance.vec_cipher_transfer=AnoyTransaction.transfer_ct;
     condition3 = PlaintextBitEquality::Verify(plaintext_bit_equality_pp, plaintext_bit_equality_instance, 
                                    transcript_str, AnoyTransaction.proof_Supervise_knowledge1_proof,AnoyTransaction.proof_many_out_of_many_proof);
@@ -1207,12 +1200,12 @@ SuperviseResult SuperviseAnoyTx1(SP &sp, PP &pp,  StofAnoyTransaction1 &AnoyTran
     auto start_time = std::chrono::steady_clock::now();
     size_t number=AnoyTransaction.number;
     size_t Log_number=AnoyTransaction.Log_number;
-    ExponentialElGamal::CT supervise_value=AnoyTransaction.supervise_value;
+    ExponentialElGamal::CT value_cipher_supervison=AnoyTransaction.value_cipher_supervison;
     std::vector<ExponentialElGamal::CT>Supervise_indexl0=AnoyTransaction.Supervise_indexl0;
     std::vector<ExponentialElGamal::CT>Supervise_indexl1=AnoyTransaction.Supervise_indexl1;
-    BigInt v = ExponentialElGamal::Dec(pp.enc_part, sp.ska, supervise_value);
+    BigInt v = ExponentialElGamal::Dec(pp.enc_part, sp.ska, value_cipher_supervison);
     SuperviseResult Supervise_result;
-    Supervise_result.supervise_value=v;
+    Supervise_result.value_cipher_supervison=v;
     Supervise_result.Supervise_sender_index=0;
     Supervise_result.Supervise_receiver_index=0;
     for(auto i=0;i<Log_number;i++)
@@ -1263,7 +1256,7 @@ SuperviseResult SuperviseAnoyTx2(SP &sp, PP &pp,  StofAnoyTransaction2 &AnoyTran
         {
             Supervise_result.Supervise_receiver_index=i;
             Supervise_result.receiver_pk=AnoyTransaction.pk[i];
-            Supervise_result.supervise_value=v;
+            Supervise_result.value_cipher_supervison=v;
         }
         
     }
@@ -1272,10 +1265,10 @@ SuperviseResult SuperviseAnoyTx2(SP &sp, PP &pp,  StofAnoyTransaction2 &AnoyTran
     std::cout << "Supervise tx takes time = "
     << std::chrono::duration <double, std::milli> (running_time).count() << " ms" << std::endl;
     PrintSplitLine('-');
-    std::cout << Supervise_result.sender_pk.ToHexString() << " transfers " << BN_bn2dec(Supervise_result.supervise_value.bn_ptr)
+    std::cout << Supervise_result.sender_pk.ToHexString() << " transfers " << BN_bn2dec(Supervise_result.value_cipher_supervison.bn_ptr)
     << " coins to " << Supervise_result.receiver_pk.ToHexString() << std::endl;
     PrintSplitLine('-');
-    std::cout << AnoyTransaction.identity[Supervise_result.Supervise_sender_index] << " transfers " << BN_bn2dec(Supervise_result.supervise_value.bn_ptr)
+    std::cout << AnoyTransaction.identity[Supervise_result.Supervise_sender_index] << " transfers " << BN_bn2dec(Supervise_result.value_cipher_supervison.bn_ptr)
     << " coins to " <<AnoyTransaction.identity[Supervise_result.Supervise_receiver_index]<< std::endl;
     return Supervise_result;
 

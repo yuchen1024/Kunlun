@@ -141,55 +141,55 @@ PP Setup(size_t &RANGE_LEN, size_t &MAX_AGG_NUM)
     pp.h = Hash::StringToECPoint(pp.g.ToByteString()); 
     pp.u = GenRandomGenerator();
 
-    pp.vec_g = GenRandomECPointVector(RANGE_LEN*MAX_AGG_NUM);
-    pp.vec_h = GenRandomECPointVector(RANGE_LEN*MAX_AGG_NUM);
+    pp.vec_g = GenRandomECPointVector(RANGE_LEN * MAX_AGG_NUM);
+    pp.vec_h = GenRandomECPointVector(RANGE_LEN * MAX_AGG_NUM);
 
     return pp; 
 }
 
 // statement C_\ell = g^-v pk_\ell^v and v \in [0, 2^n-1]
 void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str, 
-                            Proof &proof,ManyOutOfMany::ConsRandom cons_random,ManyOutOfMany::Proof &mom_proof)
+                            Proof &proof,ManyOutOfMany::ConsRandom cons_random, ManyOutOfMany::Proof &many_out_of_many_proof)
 { 
-    std::string transcript_str_mom="";
-    transcript_str_mom+=mom_proof.proof_ComA.ToByteString();
-    transcript_str_mom+=mom_proof.proof_ComB.ToByteString();
+    transcript_str = "";
+    transcript_str += many_out_of_many_proof.proof_ComA.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_ComB.ToByteString();
     
-    BigInt v=Hash::StringToBigInt(transcript_str_mom);
+    BigInt v=Hash::StringToBigInt(transcript_str);
 
-    size_t m=mom_proof.vec_lower_cipher_bal_left.size();
+    size_t m=many_out_of_many_proof.vec_lower_cipher_bal_left.size();
     std::cout<<"Log_mom_proof.Num = "<<m<<std::endl;
     for(size_t i=0;i<m;i++)
     {
-        transcript_str_mom+=mom_proof.vec_lower_cipher_bal_left[i].ToByteString();
-        transcript_str_mom+=mom_proof.vec_lower_cipher_bal_right[i].ToByteString();
-        transcript_str_mom+=mom_proof.vec_lower_cipher_value[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_cipher4D[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_vec_pk[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_vec_g[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_vec_oppcipher[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_vec_oppcipherpk[i].ToByteString();
+        transcript_str+=many_out_of_many_proof.vec_lower_cipher_bal_left[i].ToByteString();
+        transcript_str+=many_out_of_many_proof.vec_lower_cipher_bal_right[i].ToByteString();
+        transcript_str+=many_out_of_many_proof.vec_lower_cipher_value[i].ToByteString();
+        transcript_str+=many_out_of_many_proof.lower_cipher4D[i].ToByteString();
+        transcript_str+=many_out_of_many_proof.lower_vec_pk[i].ToByteString();
+        transcript_str+=many_out_of_many_proof.lower_vec_g[i].ToByteString();
+        transcript_str+=many_out_of_many_proof.lower_vec_oppcipher[i].ToByteString();
+        transcript_str+=many_out_of_many_proof.lower_vec_oppcipherpk[i].ToByteString();
     }
 
-    BigInt w=Hash::StringToBigInt(transcript_str_mom);
+    BigInt w=Hash::StringToBigInt(transcript_str);
 
     for(size_t k=0;k<m;k++)
     {
-        transcript_str_mom+= mom_proof.vec_proof_f0[k].ToByteString();
-        transcript_str_mom+= mom_proof.vec_proof_f1[k].ToByteString();
+        transcript_str+= many_out_of_many_proof.vec_proof_f0[k].ToByteString();
+        transcript_str+= many_out_of_many_proof.vec_proof_f1[k].ToByteString();
     }
-    transcript_str_mom+=mom_proof.proof_Za.ToByteString();
+    transcript_str+=many_out_of_many_proof.proof_Za.ToByteString();
 
-    BigInt z = Hash::StringToBigInt(transcript_str_mom);
+    BigInt z = Hash::StringToBigInt(transcript_str);
 
-    transcript_str_mom +=mom_proof.proof_Ay_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_AD_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_Ab0_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_Ab1_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_Ax_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_Au.ToByteString();
+    transcript_str +=many_out_of_many_proof.proof_Ay_re_enc.ToByteString();
+    transcript_str +=many_out_of_many_proof.proof_AD_re_enc.ToByteString();
+    transcript_str +=many_out_of_many_proof.proof_Ab0_re_enc.ToByteString();
+    transcript_str +=many_out_of_many_proof.proof_Ab1_re_enc.ToByteString();
+    transcript_str +=many_out_of_many_proof.proof_Ax_re_enc.ToByteString();
+    transcript_str +=many_out_of_many_proof.proof_Au.ToByteString();
 
-    BigInt c=Hash::StringToBigInt(transcript_str_mom);
+    BigInt c=Hash::StringToBigInt(transcript_str);
 
 
     auto start_time = std::chrono::steady_clock::now(); 
@@ -392,7 +392,7 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     #endif
 }
 
-bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof,ManyOutOfMany::Proof &mom_proof)
+bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof,ManyOutOfMany::Proof &many_out_of_many_proof)
 {
     #ifdef DEBUG
         std::cout << "begin to check the proof" << std::endl; 
@@ -400,45 +400,45 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     bool V1, V2, Validity; // variables for checking results
 
-    std::string transcript_str_mom="";
-    transcript_str_mom+=mom_proof.proof_ComA.ToByteString();
-    transcript_str_mom+=mom_proof.proof_ComB.ToByteString();
+    transcript_str = "";
+    transcript_str += many_out_of_many_proof.proof_ComA.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_ComB.ToByteString();
     
-    BigInt v=Hash::StringToBigInt(transcript_str_mom);
+    BigInt v = Hash::StringToBigInt(transcript_str);
 
-    size_t m=mom_proof.vec_lower_cipher_bal_left.size(); // m = log N
-    for(size_t i=0;i<m;i++)
+    size_t m = many_out_of_many_proof.vec_lower_cipher_bal_left.size(); // m = log N
+    for(size_t i = 0; i < m; i++)
     {
-        transcript_str_mom+=mom_proof.vec_lower_cipher_bal_left[i].ToByteString();
-        transcript_str_mom+=mom_proof.vec_lower_cipher_bal_right[i].ToByteString();
-        transcript_str_mom+=mom_proof.vec_lower_cipher_value[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_cipher4D[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_vec_pk[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_vec_g[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_vec_oppcipher[i].ToByteString();
-        transcript_str_mom+=mom_proof.lower_vec_oppcipherpk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_lower_cipher_bal_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_lower_cipher_bal_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_lower_cipher_value[i].ToByteString();
+        transcript_str += many_out_of_many_proof.lower_cipher4D[i].ToByteString();
+        transcript_str += many_out_of_many_proof.lower_vec_pk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.lower_vec_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.lower_vec_oppcipher[i].ToByteString();
+        transcript_str += many_out_of_many_proof.lower_vec_oppcipherpk[i].ToByteString();
     }
 
-    BigInt w=Hash::StringToBigInt(transcript_str_mom);
+    BigInt w=Hash::StringToBigInt(transcript_str);
 
-    for(size_t k=0;k<m;k++)
+    for(size_t k = 0; k < m; k++)
     {
-        transcript_str_mom+= mom_proof.vec_proof_f0[k].ToByteString();
-        transcript_str_mom+= mom_proof.vec_proof_f1[k].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_proof_f0[k].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_proof_f1[k].ToByteString();
     }
-    transcript_str_mom+=mom_proof.proof_Za.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Za.ToByteString();
 
-    BigInt z = Hash::StringToBigInt(transcript_str_mom); // //recover the challenge y
+    BigInt z = Hash::StringToBigInt(transcript_str); // //recover the challenge y
 
-    transcript_str_mom +=mom_proof.proof_Ay_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_AD_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_Ab0_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_Ab1_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_Ax_re_enc.ToByteString();
-    transcript_str_mom +=mom_proof.proof_Au.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ay_re_enc.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_AD_re_enc.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab0_re_enc.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab1_re_enc.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ax_re_enc.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Au.ToByteString();
 
 
-    BigInt c=Hash::StringToBigInt(transcript_str_mom);
+    BigInt c=Hash::StringToBigInt(transcript_str);
     transcript_str += proof.A.ToByteString();
     transcript_str += proof.S.ToByteString(); 
     transcript_str += z.ToByteString(); 
@@ -500,7 +500,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     
     BigInt rightexp4g=(w_exp_mc*delta_yz)%order;
     
-    BigInt Sb=(mom_proof.proof_Sb0+mom_proof.proof_Sb1)%order;
+    BigInt Sb=(many_out_of_many_proof.proof_Sb0+many_out_of_many_proof.proof_Sb1)%order;
  
     ECPoint Right=pp.g*rightexp4g+pp.g*(Sb)+proof.At+(proof.T1*x+proof.T2*x_square)*w_exp_mc;
 

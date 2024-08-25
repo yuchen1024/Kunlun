@@ -2,8 +2,8 @@
 this hpp implements NIZKPoK for n ElGamal ciphertexts 
 (randomness reuse) encrypt the same message 
 ***********************************************************************************/
-#ifndef KUNLUN_NIZK_KEEQ_HPP_
-#define KUNLUN_NIZK_KEEQ_HPP_
+#ifndef KUNLUN_NIZK_MPTEQ_HPP_
+#define KUNLUN_NIZK_MPTEQ_HPP_
 
 #include "../../crypto/ec_point.hpp"
 #include "../../crypto/hash.hpp"
