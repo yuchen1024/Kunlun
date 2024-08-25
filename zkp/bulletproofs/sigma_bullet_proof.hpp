@@ -493,14 +493,14 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     BigInt delta_yz = bn_temp1.ModSub(bn_temp2, order);  //Eq (39) also see page 21
 
     //begin sigma-bullet-verify
-    BigInt w_exp_m=w.ModExp(m,order);
-    BigInt w_exp_mc=w_exp_m*c%order;
-    BigInt leftexp4g=(w_exp_mc*proof.tx)%order;
-    ECPoint Left=pp.g*leftexp4g+pp.h*proof.stau;
+    BigInt w_exp_m = w.ModExp(m,order);
+    BigInt w_exp_mc  =w_exp_m*c%order;
+    BigInt leftexp4g = (w_exp_mc*proof.tx)%order;
+    ECPoint Left = pp.g*leftexp4g+pp.h*proof.stau;
     
-    BigInt rightexp4g=(w_exp_mc*delta_yz)%order;
+    BigInt rightexp4g = (w_exp_mc*delta_yz)%order;
     
-    BigInt Sb=(many_out_of_many_proof.proof_Sb0+many_out_of_many_proof.proof_Sb1)%order;
+    BigInt Sb = (many_out_of_many_proof.proof_Sb0+many_out_of_many_proof.proof_Sb1)%order;
  
     ECPoint Right=pp.g*rightexp4g+pp.g*(Sb)+proof.At+(proof.T1*x+proof.T2*x_square)*w_exp_mc;
 
