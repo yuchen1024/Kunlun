@@ -600,19 +600,19 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
     PrintSplitLine('-');
     std::cout<<"successfully setup the ManyOutOfMany Proof"<<std::endl;
     ManyOutOfMany::Instance many_out_of_many_instance;
-    many_out_of_many_instance.Com_Num = AnoyTransaction.number;
+
     many_out_of_many_instance.vec_pk=AnoyTransaction.pk;
-    many_out_of_many_instance.vec_cipher_bal_left.resize(AnoyTransaction.number);
-    many_out_of_many_instance.vec_cipher_bal_right.resize(AnoyTransaction.number);
-    many_out_of_many_instance.vec_cipher_value.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_balance_left.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_balance_right.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_transfer_left.resize(AnoyTransaction.number);
     
     for(size_t i=0;i<AnoyTransaction.number;i++)
     {
-        many_out_of_many_instance.vec_cipher_bal_left[i] = AnoyTransaction.balance_act[i].Y;
-        many_out_of_many_instance.vec_cipher_bal_right[i] = AnoyTransaction.balance_act[i].X;
-        many_out_of_many_instance.vec_cipher_value[i] = AnoyTransaction.transfer_ct[i].Y;
+        many_out_of_many_instance.vec_cipher_balance_left[i] = AnoyTransaction.balance_act[i].Y;
+        many_out_of_many_instance.vec_cipher_balance_right[i] = AnoyTransaction.balance_act[i].X;
+        many_out_of_many_instance.vec_cipher_transfer_left[i] = AnoyTransaction.transfer_ct[i].Y;
     }
-    many_out_of_many_instance.cipher4D =AnoyTransaction.transfer_ct[0].X;
+    many_out_of_many_instance.cipher_transfer_right =AnoyTransaction.transfer_ct[0].X;
     
     many_out_of_many_instance.gepoch=AnoyTransaction.gepoch;
     many_out_of_many_instance.uepoch=AnoyTransaction.uepoch;
@@ -622,15 +622,15 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
     for(size_t i=0;i<AnoyTransaction.number;i++){
        AnoyTransaction.balance_act[i]=ExponentialElGamal::HomoAdd(AnoyTransaction.balance_act[i],
                                                             AnoyTransaction.transfer_ct[i]); 
-       many_out_of_many_instance.vec_cipher_bal_left[i] = AnoyTransaction.balance_act[i].Y;
-       many_out_of_many_instance.vec_cipher_bal_right[i] = AnoyTransaction.balance_act[i].X;                                                    
+       many_out_of_many_instance.vec_cipher_balance_left[i] = AnoyTransaction.balance_act[i].Y;
+       many_out_of_many_instance.vec_cipher_balance_right[i] = AnoyTransaction.balance_act[i].X;                                                    
     }
     PrintSplitLine('-');
     std::cout<<"successfully fill the instance of the proof"<<std::endl;
     ManyOutOfMany::Witness many_out_of_many_witness;
-    many_out_of_many_witness.Ran_num =AnoyTransaction.number;
-    many_out_of_many_witness.l0=sender_index;
-    many_out_of_many_witness.l1=receiver_index;
+
+    many_out_of_many_witness.sender_index=sender_index;
+    many_out_of_many_witness.receiver_index=receiver_index;
     many_out_of_many_witness.value=v;
     many_out_of_many_witness.r=r;
     many_out_of_many_witness.sk=Acct_sender.sk;
@@ -661,17 +661,17 @@ StofAnoyTransaction1 CreateAnoyTransaction1(PP &pp, Account &Acct_sender, BigInt
     SigmaBullet::Instance sigmabullet_instance;
     SigmaBullet::Witness sigmabullet_witness;
     SigmaBullet::Proof proof_sigma_bullet_proof;
-    sigmabullet_instance.Cipher_Transfer_Left.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Transfer_Right.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Balance_Left.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Balance_Right.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_transfer_left.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_transfer_right.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_balance_left.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_balance_right.resize(AnoyTransaction.number);
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        sigmabullet_instance.Cipher_Transfer_Left[i]=AnoyTransaction.transfer_ct[i].Y;
-        sigmabullet_instance.Cipher_Transfer_Right[i]=AnoyTransaction.transfer_ct[i].X;
+        sigmabullet_instance.cipher_transfer_left[i]=AnoyTransaction.transfer_ct[i].Y;
+        sigmabullet_instance.cipher_transfer_right[i]=AnoyTransaction.transfer_ct[i].X;
     }
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        sigmabullet_instance.Cipher_Balance_Left[i]=AnoyTransaction.balance_act[i].Y;
-        sigmabullet_instance.Cipher_Balance_Left[i]=AnoyTransaction.balance_act[i].X;
+        sigmabullet_instance.cipher_balance_left[i]=AnoyTransaction.balance_act[i].Y;
+        sigmabullet_instance.cipher_balance_left[i]=AnoyTransaction.balance_act[i].X;
     }
     sigmabullet_witness.v={v,many_out_of_many_witness.vprime};
     transcript_str="";
@@ -819,17 +819,17 @@ StofAnoyTransaction2 CreateAnoyTransaction2(PP &pp, Account &Acct_sender, BigInt
     PrintSplitLine('-');
     std::cout<<"successfully setup the ManyOutOfMany Proof"<<std::endl;
     ManyOutOfMany::Instance many_out_of_many_instance;
-    many_out_of_many_instance.Com_Num = AnoyTransaction.number;
+
     many_out_of_many_instance.vec_pk=AnoyTransaction.pk;
-    many_out_of_many_instance.vec_cipher_bal_left.resize(AnoyTransaction.number);
-    many_out_of_many_instance.vec_cipher_bal_right.resize(AnoyTransaction.number);
-    many_out_of_many_instance.vec_cipher_value.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_balance_left.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_balance_right.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_transfer_left.resize(AnoyTransaction.number);
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        many_out_of_many_instance.vec_cipher_bal_left[i] = AnoyTransaction.balance_act[i].Y;
-        many_out_of_many_instance.vec_cipher_bal_right[i] = AnoyTransaction.balance_act[i].X;
-        many_out_of_many_instance.vec_cipher_value[i] = AnoyTransaction.transfer_ct[i].Y;
+        many_out_of_many_instance.vec_cipher_balance_left[i] = AnoyTransaction.balance_act[i].Y;
+        many_out_of_many_instance.vec_cipher_balance_right[i] = AnoyTransaction.balance_act[i].X;
+        many_out_of_many_instance.vec_cipher_transfer_left[i] = AnoyTransaction.transfer_ct[i].Y;
     }
-    many_out_of_many_instance.cipher4D =AnoyTransaction.transfer_ct[0].X;
+    many_out_of_many_instance.cipher_transfer_right =AnoyTransaction.transfer_ct[0].X;
     
     many_out_of_many_instance.gepoch=AnoyTransaction.gepoch;
     many_out_of_many_instance.uepoch=AnoyTransaction.uepoch;
@@ -839,15 +839,15 @@ StofAnoyTransaction2 CreateAnoyTransaction2(PP &pp, Account &Acct_sender, BigInt
     for(size_t i=0;i<AnoyTransaction.number;i++){
        AnoyTransaction.balance_act[i]=ExponentialElGamal::HomoAdd(AnoyTransaction.balance_act[i],
                                                             AnoyTransaction.transfer_ct[i]); 
-       many_out_of_many_instance.vec_cipher_bal_left[i] = AnoyTransaction.balance_act[i].Y;
-       many_out_of_many_instance.vec_cipher_bal_right[i] = AnoyTransaction.balance_act[i].X;                                                    
+       many_out_of_many_instance.vec_cipher_balance_left[i] = AnoyTransaction.balance_act[i].Y;
+       many_out_of_many_instance.vec_cipher_balance_right[i] = AnoyTransaction.balance_act[i].X;                                                    
     }
     PrintSplitLine('-');
     std::cout<<"successfully fill the instance of the proof"<<std::endl;
     ManyOutOfMany::Witness many_out_of_many_witness;
-    many_out_of_many_witness.Ran_num =AnoyTransaction.number;
-    many_out_of_many_witness.l0=sender_index;
-    many_out_of_many_witness.l1=receiver_index;
+
+    many_out_of_many_witness.sender_index=sender_index;
+    many_out_of_many_witness.receiver_index=receiver_index;
     many_out_of_many_witness.value=v;
     many_out_of_many_witness.r=r;
     many_out_of_many_witness.sk=Acct_sender.sk;
@@ -878,17 +878,17 @@ StofAnoyTransaction2 CreateAnoyTransaction2(PP &pp, Account &Acct_sender, BigInt
     SigmaBullet::Instance sigmabullet_instance;
     SigmaBullet::Witness sigmabullet_witness;
     SigmaBullet::Proof proof_sigma_bullet_proof;
-    sigmabullet_instance.Cipher_Transfer_Left.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Transfer_Right.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Balance_Left.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Balance_Right.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_transfer_left.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_transfer_right.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_balance_left.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_balance_right.resize(AnoyTransaction.number);
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        sigmabullet_instance.Cipher_Transfer_Left[i]=AnoyTransaction.transfer_ct[i].Y;
-        sigmabullet_instance.Cipher_Transfer_Right[i]=AnoyTransaction.transfer_ct[i].X;
+        sigmabullet_instance.cipher_transfer_left[i]=AnoyTransaction.transfer_ct[i].Y;
+        sigmabullet_instance.cipher_transfer_right[i]=AnoyTransaction.transfer_ct[i].X;
     }
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        sigmabullet_instance.Cipher_Balance_Left[i]=AnoyTransaction.balance_act[i].Y;
-        sigmabullet_instance.Cipher_Balance_Left[i]=AnoyTransaction.balance_act[i].X;
+        sigmabullet_instance.cipher_balance_left[i]=AnoyTransaction.balance_act[i].Y;
+        sigmabullet_instance.cipher_balance_left[i]=AnoyTransaction.balance_act[i].X;
     }
     sigmabullet_witness.v={v,many_out_of_many_witness.vprime};
     transcript_str="";
@@ -969,17 +969,18 @@ bool VerifyAnoyTX1(PP &pp, StofAnoyTransaction1 AnoyTransaction)
     PrintSplitLine('-');
     std::cout<<"successfully setup the ManyOutOfMany Proof-verify"<<std::endl;
     ManyOutOfMany::Instance many_out_of_many_instance;
-    many_out_of_many_instance.Com_Num = AnoyTransaction.number;
+
     many_out_of_many_instance.vec_pk=AnoyTransaction.pk;
-    many_out_of_many_instance.vec_cipher_bal_left.resize(AnoyTransaction.number);
-    many_out_of_many_instance.vec_cipher_bal_right.resize(AnoyTransaction.number);
-    many_out_of_many_instance.vec_cipher_value.resize(AnoyTransaction.number);
-    for(size_t i=0;i<AnoyTransaction.number;i++){
-        many_out_of_many_instance.vec_cipher_bal_left[i] = AnoyTransaction.balance_act[i].Y;
-        many_out_of_many_instance.vec_cipher_bal_right[i] = AnoyTransaction.balance_act[i].X;
-        many_out_of_many_instance.vec_cipher_value[i] = AnoyTransaction.transfer_ct[i].Y;
+    many_out_of_many_instance.vec_cipher_balance_left.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_balance_right.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_transfer_left.resize(AnoyTransaction.number);
+    for(size_t i=0;i<AnoyTransaction.number;i++)
+    {
+        many_out_of_many_instance.vec_cipher_balance_left[i] = AnoyTransaction.balance_act[i].Y;
+        many_out_of_many_instance.vec_cipher_balance_right[i] = AnoyTransaction.balance_act[i].X;
+        many_out_of_many_instance.vec_cipher_transfer_left[i] = AnoyTransaction.transfer_ct[i].Y;
     }
-    many_out_of_many_instance.cipher4D =AnoyTransaction.transfer_ct[0].X;
+    many_out_of_many_instance.cipher_transfer_right =AnoyTransaction.transfer_ct[0].X;
     many_out_of_many_instance.gepoch=AnoyTransaction.gepoch;
     many_out_of_many_instance.uepoch=AnoyTransaction.uepoch;
 
@@ -996,15 +997,15 @@ bool VerifyAnoyTX1(PP &pp, StofAnoyTransaction1 AnoyTransaction)
     //check sigma bullet proof
     transcript_str = "";
     SigmaBullet::Instance sigmabullet_instance;
-    sigmabullet_instance.Cipher_Transfer_Left.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Transfer_Right.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Balance_Left.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Balance_Right.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_transfer_left.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_transfer_right.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_balance_left.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_balance_right.resize(AnoyTransaction.number);
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        sigmabullet_instance.Cipher_Transfer_Left[i]=AnoyTransaction.transfer_ct[i].Y;
-        sigmabullet_instance.Cipher_Transfer_Right[i]=AnoyTransaction.transfer_ct[i].X;
-        sigmabullet_instance.Cipher_Balance_Left[i]=AnoyTransaction.balance_act[i].Y;
-        sigmabullet_instance.Cipher_Balance_Right[i]=AnoyTransaction.balance_act[i].X;
+        sigmabullet_instance.cipher_transfer_left[i]=AnoyTransaction.transfer_ct[i].Y;
+        sigmabullet_instance.cipher_transfer_right[i]=AnoyTransaction.transfer_ct[i].X;
+        sigmabullet_instance.cipher_balance_left[i]=AnoyTransaction.balance_act[i].Y;
+        sigmabullet_instance.cipher_balance_right[i]=AnoyTransaction.balance_act[i].X;
     }
     //SigmaBullet::Proof proof_sigma_bullet_proof;
     bool condition2 = SigmaBullet::Verify(pp.sigmabullet_part,sigmabullet_instance,transcript_str,AnoyTransaction.proof_sigma_bullet_proof,AnoyTransaction.proof_many_out_of_many_proof);
@@ -1047,17 +1048,17 @@ bool VerifyAnoyTX2(PP &pp, StofAnoyTransaction2 AnoyTransaction)
     PrintSplitLine('-');
     std::cout<<"successfully setup the ManyOutOfMany Proof-verify"<<std::endl;
     ManyOutOfMany::Instance many_out_of_many_instance;
-    many_out_of_many_instance.Com_Num = AnoyTransaction.number;
+    
     many_out_of_many_instance.vec_pk=AnoyTransaction.pk;
-    many_out_of_many_instance.vec_cipher_bal_left.resize(AnoyTransaction.number);
-    many_out_of_many_instance.vec_cipher_bal_right.resize(AnoyTransaction.number);
-    many_out_of_many_instance.vec_cipher_value.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_balance_left.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_balance_right.resize(AnoyTransaction.number);
+    many_out_of_many_instance.vec_cipher_transfer_left.resize(AnoyTransaction.number);
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        many_out_of_many_instance.vec_cipher_bal_left[i] = AnoyTransaction.balance_act[i].Y;
-        many_out_of_many_instance.vec_cipher_bal_right[i] = AnoyTransaction.balance_act[i].X;
-        many_out_of_many_instance.vec_cipher_value[i] = AnoyTransaction.transfer_ct[i].Y;
+        many_out_of_many_instance.vec_cipher_balance_left[i] = AnoyTransaction.balance_act[i].Y;
+        many_out_of_many_instance.vec_cipher_balance_right[i] = AnoyTransaction.balance_act[i].X;
+        many_out_of_many_instance.vec_cipher_transfer_left[i] = AnoyTransaction.transfer_ct[i].Y;
     }
-    many_out_of_many_instance.cipher4D =AnoyTransaction.transfer_ct[0].X;
+    many_out_of_many_instance.cipher_transfer_right =AnoyTransaction.transfer_ct[0].X;
     many_out_of_many_instance.gepoch=AnoyTransaction.gepoch;
     many_out_of_many_instance.uepoch=AnoyTransaction.uepoch;
 
@@ -1075,15 +1076,15 @@ bool VerifyAnoyTX2(PP &pp, StofAnoyTransaction2 AnoyTransaction)
     //check sigma bullet proof
     transcript_str = "";
     SigmaBullet::Instance sigmabullet_instance;
-    sigmabullet_instance.Cipher_Transfer_Left.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Transfer_Right.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Balance_Left.resize(AnoyTransaction.number);
-    sigmabullet_instance.Cipher_Balance_Right.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_transfer_left.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_transfer_right.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_balance_left.resize(AnoyTransaction.number);
+    sigmabullet_instance.cipher_balance_right.resize(AnoyTransaction.number);
     for(size_t i=0;i<AnoyTransaction.number;i++){
-        sigmabullet_instance.Cipher_Transfer_Left[i]=AnoyTransaction.transfer_ct[i].Y;
-        sigmabullet_instance.Cipher_Transfer_Right[i]=AnoyTransaction.transfer_ct[i].X;
-        sigmabullet_instance.Cipher_Balance_Left[i]=AnoyTransaction.balance_act[i].Y;
-        sigmabullet_instance.Cipher_Balance_Right[i]=AnoyTransaction.balance_act[i].X;
+        sigmabullet_instance.cipher_transfer_left[i]=AnoyTransaction.transfer_ct[i].Y;
+        sigmabullet_instance.cipher_transfer_right[i]=AnoyTransaction.transfer_ct[i].X;
+        sigmabullet_instance.cipher_balance_left[i]=AnoyTransaction.balance_act[i].Y;
+        sigmabullet_instance.cipher_balance_right[i]=AnoyTransaction.balance_act[i].X;
     }
     //SigmaBullet::Proof proof_sigma_bullet_proof;
     bool condition2 = SigmaBullet::Verify(pp.sigmabullet_part,sigmabullet_instance,transcript_str,AnoyTransaction.proof_sigma_bullet_proof,AnoyTransaction.proof_many_out_of_many_proof);

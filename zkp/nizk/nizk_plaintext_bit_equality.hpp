@@ -204,7 +204,7 @@ PP Setup(ExponentialElGamal::PP pp_enc,size_t num_cipher,ECPoint pka)
 
 
 // generate NIZK proof for value_cipher_supervison = Enc(pk_a, v; r) and vec_cipher_supervision_index_bit enc the sender and receiver index
-Proof Prove(PP &pp, Instance &instance, Witness &witness, ManyOutOfMany::Proof &many_out_of_many_proof, std::string &transcript_str, ManyOutOfMany::ConsRandom cons_random)
+Proof Prove(PP &pp, Instance &instance, Witness &witness, ManyOutOfMany::Proof &many_out_of_many_proof, std::string &transcript_str, ManyOutOfMany::ConsistencyRandom consistency_random)
 {   
     Proof proof;
     // initialize the transcript with instance 
@@ -213,20 +213,20 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, ManyOutOfMany::Proof &
  
     transcript_str="";
     
-    transcript_str += many_out_of_many_proof.proof_ComA.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_ComB.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_commitment_A.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_commitment_B.ToByteString();
 
-    size_t vec_size = many_out_of_many_proof.vec_lower_cipher_bal_left.size();
+    size_t vec_size = many_out_of_many_proof.proof_vec_lower_cipher_balance_left.size();
     for(size_t i = 0; i < vec_size; i++)
     {
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_bal_left[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_bal_right[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_value[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_cipher4D[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_pk[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_g[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_oppcipher[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_oppcipherpk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_balance_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_balance_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_transfer_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_lower_cipher_transfer_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_pk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
     BigInt w=Hash::StringToBigInt(transcript_str);
@@ -234,13 +234,13 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, ManyOutOfMany::Proof &
     proof.A = pp.g * a; // A = g^a
 
    
-    BigInt kb = cons_random.kb;
+    BigInt kb = consistency_random.kb;
     proof.B = pp.g * kb+pp.pka*a; // B = g^bpka^a
 
     for(auto k=0;k<vec_size;k++)
     {
-        transcript_str += many_out_of_many_proof.vec_proof_f0[k].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_proof_f1[k].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_eval_f0[k].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_eval_f1[k].ToByteString();
     }
 
     transcript_str += many_out_of_many_proof.proof_Za.ToByteString();
@@ -249,11 +249,11 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, ManyOutOfMany::Proof &
     BigInt z_cubic = (z_square*z) % order;
 
     //compute the challenge c
-    transcript_str += many_out_of_many_proof.proof_Ay_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_AD_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ab0_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ab1_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ax_re_enc.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ay_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_AD_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab0_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab1_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ax_re_encryption.ToByteString();
     
    
     BigInt c=Hash::StringToBigInt(transcript_str);
@@ -268,8 +268,8 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, ManyOutOfMany::Proof &
     proof.z = (a + e * witness.cipher_supervison_value_r) % order; // z = a + e * r mod q
     proof.t = (kb + e * witness.v) % order; // t = b + e * v mod q
 
-    std::vector<BigInt>vec_al0 = cons_random.vec_al0;
-    std::vector<BigInt>vec_al1 = cons_random.vec_al1;
+    std::vector<BigInt>vec_al0 = consistency_random.vec_al0;
+    std::vector<BigInt>vec_al1 = consistency_random.vec_al1;
     BigInt a0_random;
     BigInt a1_random;
     /*resize proof */
@@ -321,28 +321,28 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     size_t m = pp.log_num_cipher; 
     // initialize the transcript with instance 
     transcript_str ="";
-    transcript_str += many_out_of_many_proof.proof_ComA.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_ComB.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_commitment_A.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_commitment_B.ToByteString();
 
-    size_t vec_size = many_out_of_many_proof.vec_lower_cipher_bal_left.size();
+    size_t vec_size = many_out_of_many_proof.proof_vec_lower_cipher_balance_left.size();
     for(size_t i = 0; i < vec_size; i++)
     {
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_bal_left[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_bal_right[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_value[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_cipher4D[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_pk[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_g[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_oppcipher[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_oppcipherpk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_balance_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_balance_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_transfer_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_lower_cipher_transfer_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_pk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
     BigInt w=Hash::StringToBigInt(transcript_str);
 
     for(auto k = 0; k < vec_size; k++)
     {
-        transcript_str += many_out_of_many_proof.vec_proof_f0[k].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_proof_f1[k].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_eval_f0[k].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_eval_f1[k].ToByteString();
     }
 
     transcript_str += many_out_of_many_proof.proof_Za.ToByteString();
@@ -351,11 +351,11 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     BigInt z_cubic = z_square*z % order;
 
     //compute the challenge c
-    transcript_str += many_out_of_many_proof.proof_Ay_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_AD_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ab0_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ab1_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ax_re_enc.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ay_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_AD_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab0_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab1_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ax_re_encryption.ToByteString();
 
    
     BigInt c=Hash::StringToBigInt(transcript_str);

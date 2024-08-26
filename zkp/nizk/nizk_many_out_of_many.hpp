@@ -27,147 +27,148 @@ struct PP
 };
 std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 {
-    fout<<pp.num_cipher<<pp.log_num_cipher<<pp.com_part<<pp.g;
+    fout << pp.num_cipher << pp.log_num_cipher << pp.com_part << pp.g;
     return fout;
 }
 std::ifstream &operator>>(std::ifstream &fin, PP& pp)
 {
-    fin>>pp.num_cipher>>pp.log_num_cipher>>pp.com_part>>pp.g;
+    fin >> pp.num_cipher >> pp.log_num_cipher >> pp.com_part >> pp.g;
     return fin;  
 }
 
 struct Instance
 {
-    size_t Com_Num;
     // devide the cipher into two parts in order to compute efficient
-    std::vector<ECPoint> vec_cipher_bal_left;
-    std::vector<ECPoint> vec_cipher_bal_right;
-    std::vector<ECPoint> vec_cipher_value;
-    ECPoint cipher4D; // D is equal to g^r
-    std::vector<ECPoint> vec_pk;
+    std::vector<ECPoint> vec_cipher_balance_left; // vec_cipher_balance_left is the left part of balance cipher
+    std::vector<ECPoint> vec_cipher_balance_right; // vec_cipher_balance_right is the right part of balance cipher
+    std::vector<ECPoint> vec_cipher_transfer_left; // vec_cipher_transfer_left = g^v {pk_i}^r, v is the transfered value, 
+                                                   // the value of sender is -v, receiver is v, the others is 0
+    ECPoint cipher_transfer_right; // cipher_transfer_right = g^r, the randomness will be reused
+    std::vector<ECPoint> vec_pk; // participants's pk
     ECPoint gepoch;
     ECPoint uepoch;
 };
 struct Witness
 {
-    size_t Ran_num;
-    BigInt l0;
-    BigInt l1;
-    BigInt value;
-    BigInt sk;
-    BigInt r;
-    BigInt vprime;
+    BigInt sender_index; // sender's index
+    BigInt receiver_index; // receiver's index
+    BigInt value; // sender's transfer value
+    BigInt sk; //sender's sk
+    BigInt r; // the randomness used in the cipher_transfer
+    BigInt vprime; // vprime = sender's balance - transfer value
 };
-//this maybe a dirty way to implement the randoms reuse,if we combine the proof into one,we can avoid this
-struct ConsRandom{
+
+// this structure in order to achieve the randomness reuse, if combine the proof into one, then this is not need
+struct ConsistencyRandom
+{
     BigInt kb;
-    std::vector<BigInt> vec_al0;
+    std::vector<BigInt> vec_al0; // randomness choosed in bit commitment
     std::vector<BigInt> vec_al1;
 };
+
 // define structure of ManyOutOfManyProof
 struct Proof
 {
-    size_t Num;// it is not necessary, but we can use it to check the number of the proof
-    ECPoint proof_ComA, proof_ComB ;
-    std::vector<ECPoint> vec_lower_cipher_bal_left;
-    std::vector<ECPoint> vec_lower_cipher_bal_right;
-    std::vector<ECPoint> vec_lower_cipher_value;
-    std::vector<ECPoint> lower_cipher4D;
-    std::vector<ECPoint> lower_vec_pk;
-    std::vector<ECPoint> lower_vec_g;
-    std::vector<ECPoint> lower_vec_oppcipher;
-    std::vector<ECPoint> lower_vec_oppcipherpk;
-    std::vector<BigInt> vec_proof_f0;
-    std::vector<BigInt> vec_proof_f1;
-    BigInt proof_Za;
-    BigInt proof_Ssk, proof_Sr, proof_Sb0, proof_Sb1;
-    ECPoint proof_Ay_re_enc, proof_AD_re_enc,proof_Ab0_re_enc,proof_Ab1_re_enc,proof_Ax_re_enc;
-    ECPoint proof_Au;
+    ECPoint proof_commitment_A, proof_commitment_B ;
+    std::vector<ECPoint> proof_vec_lower_cipher_balance_left; // the lower order terms of the left part of cipher_balance
+    std::vector<ECPoint> proof_vec_lower_cipher_balance_right; // the lower order terms of the right part of cipher_balance
+    std::vector<ECPoint> proof_vec_lower_cipher_transfer_left; //  the lower order terms of the left part of cipher_transfer
+    std::vector<ECPoint> proof_lower_cipher_transfer_right; // the lower order terms of the right part of cipher_transfer
+    std::vector<ECPoint> proof_vec_lower_pk; 
+    std::vector<ECPoint> proof_vec_lower_g;
+    std::vector<ECPoint> proof_vec_lower_opposite_cipher; // the lower order terms of the opposite_cipher
+    std::vector<ECPoint> proof_vec_lower_opposite_cipher_g;
+    std::vector<BigInt> proof_vec_eval_f0; // evaluations of linear polynomials F0(X) = b0 * X + a0 at the verifiers challenge x
+    std::vector<BigInt> proof_vec_eval_f1; // evaluations of linear polynomials F1(X) = b1 * X + a1 at the verifiers challenge x
+    BigInt proof_Za; // P's response in Zq, Za = rB * w + rA
+    BigInt proof_Ssk, proof_Sr, proof_Sb0, proof_Sb1; // P's response in Zq
+    ECPoint proof_Ay_re_encryption, proof_AD_re_encryption, proof_Ab0_re_encryption, proof_Ab1_re_encryption, proof_Ax_re_encryption; // P's response in \mathbb{G}
+    ECPoint proof_Au; // P's response in \mathbb{G}
  
 };
 std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
 {
-    fout<<proof.Num<<proof.proof_ComA<<proof.proof_ComB;
-    size_t m=proof.vec_lower_cipher_bal_left.size();
-    for(auto i=0;i<m;i++)
+    fout << proof.proof_commitment_A << proof.proof_commitment_B;
+    size_t m = proof.proof_vec_lower_cipher_balance_left.size();
+    for(auto i = 0;i < m; i++)
     {
-        fout<<proof.vec_lower_cipher_bal_left[i]
-            <<proof.vec_lower_cipher_bal_right[i]
-            <<proof.vec_lower_cipher_value[i]
-            <<proof.lower_cipher4D[i]
-            <<proof.lower_vec_pk[i]
-            <<proof.lower_vec_g[i]
-            <<proof.lower_vec_oppcipher[i]
-            <<proof.lower_vec_oppcipherpk[i]
-            <<proof.vec_proof_f0[i]
-            <<proof.vec_proof_f1[i];
+        fout << proof.proof_vec_lower_cipher_balance_left[i]
+             << proof.proof_vec_lower_cipher_balance_right[i]
+             << proof.proof_vec_lower_cipher_transfer_left[i]
+             << proof.proof_lower_cipher_transfer_right[i]
+             << proof.proof_vec_lower_pk[i]
+             << proof.proof_vec_lower_g[i]
+             << proof.proof_vec_lower_opposite_cipher[i]
+             << proof.proof_vec_lower_opposite_cipher_g[i]
+             << proof.proof_vec_eval_f0[i]
+             << proof.proof_vec_eval_f1[i];
     }
-    fout<<proof.proof_Ssk<<proof.proof_Sr
-        <<proof.proof_Sb0<<proof.proof_Sb1;
-    fout<<proof.proof_Ay_re_enc<<proof.proof_AD_re_enc
-        <<proof.proof_Ab0_re_enc<<proof.proof_Ab1_re_enc
-        <<proof.proof_Ax_re_enc<<proof.proof_Au; 
+    fout << proof.proof_Ssk << proof.proof_Sr
+         << proof.proof_Sb0 << proof.proof_Sb1;
+    fout << proof.proof_Ay_re_encryption << proof.proof_AD_re_encryption
+         << proof.proof_Ab0_re_encryption << proof.proof_Ab1_re_encryption
+         << proof.proof_Ax_re_encryption << proof.proof_Au; 
 
     return fout; 
 }
 
 std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
 {
-    fin>>proof.Num>>proof.proof_ComA>>proof.proof_ComB;
-    size_t m=proof.vec_lower_cipher_bal_left.size();
-    for(auto i=0;i<m;i++)
+    fin >> proof.proof_commitment_A >> proof.proof_commitment_B;
+    size_t m = proof.proof_vec_lower_cipher_balance_left.size();
+    for(auto i = 0; i < m; i++)
     {
-        fin>>proof.vec_lower_cipher_bal_left[i]
-            >>proof.vec_lower_cipher_bal_right[i]
-            >>proof.vec_lower_cipher_value[i]
-            >>proof.lower_cipher4D[i]
-            >>proof.lower_vec_pk[i]
-            >>proof.lower_vec_g[i]
-            >>proof.lower_vec_oppcipher[i]
-            >>proof.lower_vec_oppcipherpk[i]
-            >>proof.vec_proof_f0[i]
-            >>proof.vec_proof_f1[i];
+        fin >> proof.proof_vec_lower_cipher_balance_left[i]
+            >> proof.proof_vec_lower_cipher_balance_right[i]
+            >> proof.proof_vec_lower_cipher_transfer_left[i]
+            >> proof.proof_lower_cipher_transfer_right[i]
+            >> proof.proof_vec_lower_pk[i]
+            >> proof.proof_vec_lower_g[i]
+            >> proof.proof_vec_lower_opposite_cipher[i]
+            >> proof.proof_vec_lower_opposite_cipher_g[i]
+            >> proof.proof_vec_eval_f0[i]
+            >> proof.proof_vec_eval_f1[i];
     }
-    fin>>proof.proof_Ssk>>proof.proof_Sr
-        >>proof.proof_Sb0>>proof.proof_Sb1;
-    fin>>proof.proof_Ay_re_enc>>proof.proof_AD_re_enc
-        >>proof.proof_Ab0_re_enc>>proof.proof_Ab1_re_enc
-        >>proof.proof_Ax_re_enc>>proof.proof_Au;
+    fin >> proof.proof_Ssk >> proof.proof_Sr
+        >> proof.proof_Sb0 >> proof.proof_Sb1;
+    fin >> proof.proof_Ay_re_encryption >> proof.proof_AD_re_encryption
+        >> proof.proof_Ab0_re_encryption >> proof.proof_Ab1_re_encryption
+        >> proof.proof_Ax_re_encryption >> proof.proof_Au;
     return fin; 
 }
 void PrintProof(Proof &proof)
 {
-    std::cout<<"Num:"<<proof.Num<<std::endl;
-    proof.proof_ComA.Print("proof_ComA");
-    proof.proof_ComB.Print("proof_ComB");
-    size_t m=proof.vec_lower_cipher_bal_left.size();
-    for(auto i=0;i<m;i++)
+    
+    proof.proof_commitment_A.Print("proof_commitment_A");
+    proof.proof_commitment_B.Print("proof_commitment_B");
+    size_t m = proof.proof_vec_lower_cipher_balance_left.size();
+    for(auto i = 0; i < m; i++)
     {
-        proof.vec_lower_cipher_bal_left[i].Print("vec_lower_cipher_bal_left");
-        proof.vec_lower_cipher_bal_right[i].Print("vec_lower_cipher_bal_right");
-        proof.vec_lower_cipher_value[i].Print("vec_lower_cipher_value");
-        proof.lower_cipher4D[i].Print("lower_cipher4D");
-        proof.lower_vec_pk[i].Print("lower_vec_pk");
-        proof.lower_vec_g[i].Print("lower_vec_g");
-        proof.lower_vec_oppcipher[i].Print("lower_vec_oppcipher");
-        proof.lower_vec_oppcipherpk[i].Print("lower_vec_oppcipherpk");
-        proof.vec_proof_f0[i].Print("vec_proof_f0");
-        proof.vec_proof_f1[i].Print("vec_proof_f1");
+        proof.proof_vec_lower_cipher_balance_left[i].Print("proof_vec_lower_cipher_balance_left");
+        proof.proof_vec_lower_cipher_balance_right[i].Print("proof_vec_lower_cipher_balance_right");
+        proof.proof_vec_lower_cipher_transfer_left[i].Print("proof_vec_lower_cipher_transfer_left");
+        proof.proof_lower_cipher_transfer_right[i].Print("proof_lower_cipher_transfer_right");
+        proof.proof_vec_lower_pk[i].Print("proof_vec_lower_pk");
+        proof.proof_vec_lower_g[i].Print("proof_vec_lower_g");
+        proof.proof_vec_lower_opposite_cipher[i].Print("proof_vec_lower_opposite_cipher");
+        proof.proof_vec_lower_opposite_cipher_g[i].Print("proof_vec_lower_opposite_cipher_g");
+        proof.proof_vec_eval_f0[i].Print("proof_vec_eval_f0");
+        proof.proof_vec_eval_f1[i].Print("proof_vec_eval_f1");
     }
     proof.proof_Ssk.Print("proof_Ssk");
     proof.proof_Sr.Print("proof_Sr");
     proof.proof_Sb0.Print("proof_Sb0");
     proof.proof_Sb1.Print("proof_Sb1");
 
-    proof.proof_Ay_re_enc.Print("proof_Ay_re_enc");
-    proof.proof_AD_re_enc.Print("proof_AD_re_enc");
-    proof.proof_Ab0_re_enc.Print("proof_Ab0_re_enc");
-    proof.proof_Ab1_re_enc.Print("proof_Ab1_re_enc");
-    proof.proof_Ax_re_enc.Print("proof_Ax_re_enc");
+    proof.proof_Ay_re_encryption.Print("proof_Ay_re_encryption");
+    proof.proof_AD_re_encryption.Print("proof_AD_re_encryption");
+    proof.proof_Ab0_re_encryption.Print("proof_Ab0_re_encryption");
+    proof.proof_Ab1_re_encryption.Print("proof_Ab1_re_encryption");
+    proof.proof_Ax_re_encryption.Print("proof_Ax_re_encryption");
     proof.proof_Au.Print("proof_Au");
 }
 
-PP Setup(size_t num_cipher, size_t log_num_cipher,Pedersen::PP &com_part)
+PP Setup(size_t num_cipher, size_t log_num_cipher, Pedersen::PP &com_part)
 {
 
     PP pp;
@@ -179,42 +180,43 @@ PP Setup(size_t num_cipher, size_t log_num_cipher,Pedersen::PP &com_part)
 }
 
 // multiplicate the element of the vector
-BigInt Accumulate(std::vector<BigInt> vec,const BigInt &mod)
+BigInt Accumulate(std::vector<BigInt> vec, const BigInt &mod)
 {
-    BigInt ans=BigInt(bn_1);
-    for(auto i=0;i<vec.size();i++)
+    BigInt ans = BigInt(bn_1);
+    for(auto i = 0; i < vec.size(); i++)
     {
-        ans=(ans*vec[i])%mod;
+        ans = (ans * vec[i]) % mod;
     }
     return ans;
 }
-// generate the Polynomial of index i
-std::vector<BigInt> BigIntPolModProduct(std::vector< std::vector<std::pair<BigInt, BigInt>> >vec_F,BigInt index, BigInt mod)
+
+// generate the linear Polynomial Product for each index i
+std::vector<BigInt> BigIntPolModProduct(std::vector< std::vector<std::pair<BigInt, BigInt>> >vec_F, BigInt index, BigInt mod)
 {
-    size_t k=vec_F.size(); // n is the number of rows, m is the number of columns,m=2;
-    size_t m=vec_F[0].size();
-    std::vector<BigInt> vec_ans(k+1,bn_0);
-    size_t n=1<<k; // n=2^k;
+    size_t k = vec_F.size(); // n is the number of rows, m is the number of columns,m=2;
+    size_t m = vec_F[0].size();
+    std::vector<BigInt> vec_ans(k+1, bn_0);
+    size_t n = (1<<k); // n=2^k;
     size_t sum=0;
     std::vector<BigInt> vec_tmp(k);
-    for(auto i=0;i<n;i++)
+    for(auto i = 0; i < n; i++)
     {
-        for(auto j=0;j<k;j++)
+        for(auto j = 0; j < k; j++)
         {
-            if(((i>>j)&1)==1)
+            if(((i >> j) & 1) ==1 )
             {
                 sum++;
-                vec_tmp[j]=vec_F[j][index.GetTheNthBit(j)].first;
+                vec_tmp[j] = vec_F[j][index.GetTheNthBit(j)].first;
             }
             else
             {
-                vec_tmp[j]=vec_F[j][index.GetTheNthBit(j)].second;
+                vec_tmp[j] = vec_F[j][index.GetTheNthBit(j)].second;
             }
 
         }
-        BigInt tmp_acc=Accumulate(vec_tmp,mod);
-        vec_ans[sum]=(vec_ans[sum]+tmp_acc)%mod;
-        sum=0;      
+        BigInt tmp_acc = Accumulate(vec_tmp, mod);
+        vec_ans[sum] = (vec_ans[sum] + tmp_acc) % mod;
+        sum = 0;      
     }
     return vec_ans;
 }
@@ -244,29 +246,29 @@ std::vector<BigInt> GenBigIntPowerVector4sdpt(size_t LEN, const BigInt &a)
     return vec_result; 
 }
 
-// circularly shifts the vector v of field elements by the integer j, choose right shift 
+// circularly shifts the vector of field elements by the integer j, choose right shift 
 std::vector<BigInt> Shift(std::vector<BigInt> vec, size_t j)
 {
     size_t n = vec.size(); 
     std::vector<BigInt> vec_result(n); 
     for (size_t i = 0; i < n; i++)
     {
-        vec_result[i] = vec[(i+j)%n]; 
+        vec_result[i] = vec[(i+j) % n]; 
     }
     return vec_result; 
 }
 
 // transposit the matrix
-std::vector<std::vector<BigInt>> BigIntMatrixtransposition(std::vector<std::vector<BigInt>> vec)
+std::vector<std::vector<BigInt>> BigIntMatrixTransposition(std::vector<std::vector<BigInt>> vec)
 {
-    size_t n=vec.size();
-    size_t m=vec[0].size();
-    std::vector<std::vector<BigInt>> vec_result(m,std::vector<BigInt>(n));
-    for(auto i=0;i<n;i++)
+    size_t n = vec.size();
+    size_t m = vec[0].size();
+    std::vector<std::vector<BigInt>> vec_result(m, std::vector<BigInt>(n));
+    for(auto i = 0; i < n; i++)
     {
-        for(auto j=0;j<m;j++)
+        for(auto j = 0; j < m; j++)
         {
-            vec_result[j][i]=vec[i][j];
+            vec_result[j][i] = vec[i][j];
         }
     }
     return vec_result;
@@ -274,53 +276,53 @@ std::vector<std::vector<BigInt>> BigIntMatrixtransposition(std::vector<std::vect
 // get the nth bit of element
 size_t GetTheNthBit(size_t index, size_t n)
 {
-    return (index>>n)&1;
+    return (index >> n) & 1;
 }
 
 //prove the sender encrypt value is -v, receiver encrypt value is v, the index of them is opposite
-void Prove(PP &pp,Witness &witness,Instance &instance,std::string &transcript_str, Proof &proof,ConsRandom &cons_random)
+void Prove(PP &pp, Witness &witness, Instance &instance, std::string &transcript_str, Proof &proof, ConsistencyRandom &consistency_random)
 {
 
     BigInt ra = GenRandomBigIntLessThan(order); 
     BigInt rb = GenRandomBigIntLessThan(order);
-    BigInt rc = GenRandomBigIntLessThan(order);
-    BigInt rd = GenRandomBigIntLessThan(order);
-    size_t n=pp.num_cipher;
-    size_t m=pp.log_num_cipher;
-    proof.Num=n;
-    std::vector<BigInt> al0(m);
-    std::vector<BigInt> bl0(m);
-    std::vector<BigInt> al1(m);
-    std::vector<BigInt> bl1(m);
-    BigInt l0=witness.l0;
-    BigInt l1=witness.l1;
 
-    size_t l0_size_t=l0.ToUint64();
-    size_t l1_size_t=l1.ToUint64();
+    size_t n = pp.num_cipher;
+    size_t m = pp.log_num_cipher;
+    std::vector<BigInt> al0(m); // randomness choosed for bit commitment
+    std::vector<BigInt> bl0(m); // bit representation of sender's index 
+    std::vector<BigInt> al1(m); // randomness choosed for bit commitment
+    std::vector<BigInt> bl1(m); // bit representation of receiver's index 
+    BigInt sender_index = witness.sender_index;
+    BigInt receiver_index = witness.receiver_index;
+
+    size_t l0_size_t = sender_index.ToUint64(); // type from BigInt to size_t
+    size_t l1_size_t = receiver_index.ToUint64();
     
-    for(auto i=0; i<m; i++)
+    for(auto i = 0; i < m; i++)
     {
-        al0[i]=GenRandomBigIntLessThan(order);
-        al1[i]=GenRandomBigIntLessThan(order);
-        if(l0.GetTheNthBit(i)==1)   
+        al0[i] = GenRandomBigIntLessThan(order);
+        al1[i] = GenRandomBigIntLessThan(order);
+        if(sender_index.GetTheNthBit(i) == 1)   
         {
-            bl0[i]=bn_1;
+            bl0[i] = bn_1;
         }
         else
         {
-            bl0[i]=bn_0;
+            bl0[i] = bn_0;
         }
-        if(l1.GetTheNthBit(i)==1)   
+        if(receiver_index.GetTheNthBit(i) == 1)   
         {
-            bl1[i]=bn_1;
+            bl1[i] = bn_1;
         }
         else
         {
-            bl1[i]=bn_0;
+            bl1[i] = bn_0;
         }
     }
-    cons_random.vec_al0=al0;
-    cons_random.vec_al1=al1;
+    consistency_random.vec_al0 = al0;
+    consistency_random.vec_al1 = al1;
+
+    // fill the element to commit
     std::vector<BigInt> vec_ma0(2*m);
     std::vector<BigInt> vec_mb0(2*m);
     std::vector<BigInt> vec_ma1(2*m);
@@ -328,7 +330,7 @@ void Prove(PP &pp,Witness &witness,Instance &instance,std::string &transcript_st
     std::vector<BigInt> vec_ma(4*m+2);
     std::vector<BigInt> vec_mb(4*m+2);
 
-    /*fill vec_ma0 and vec_mb0,the first part*/
+    /*fill vec_ma0 and vec_mb0, the first part*/
     std::copy(al0.begin(), al0.end(), vec_ma0.begin());
     std::copy(al1.begin(), al1.end(), vec_ma0.begin()+m);
     std::copy(bl0.begin(), bl0.end(), vec_mb0.begin());
@@ -336,32 +338,30 @@ void Prove(PP &pp,Witness &witness,Instance &instance,std::string &transcript_st
 
     /*fill vec_ma1*/
     std::vector<BigInt> vec_tmpa(m);
-    BigInt modx=order;
-    vec_tmpa=BigIntVectorModNegate(al0,modx);
+    
+    vec_tmpa = BigIntVectorModNegate(al0, order);
   
-    vec_tmpa=BigIntVectorModProduct(vec_tmpa, al0, order);
+    vec_tmpa = BigIntVectorModProduct(vec_tmpa, al0, order);
     std::copy(vec_tmpa.begin(), vec_tmpa.end(), vec_ma1.begin());
 
-    vec_tmpa=BigIntVectorModNegate(al1,modx);
-    vec_tmpa=BigIntVectorModProduct(vec_tmpa, al1, order);
+    vec_tmpa = BigIntVectorModNegate(al1,order);
+    vec_tmpa = BigIntVectorModProduct(vec_tmpa, al1, order);
     std::copy(vec_tmpa.begin(), vec_tmpa.end(), vec_ma1.begin()+m);
 
     /*fill vec_mb1*/
     std::vector<BigInt> vec_tmpb(m);
-    BigInt bk2=bn_2.Negate();
-    std::vector<BigInt> bn1(m,bn_1);
-    vec_tmpb=BigIntVectorModScalar(bl0, bk2, order);
+    BigInt bn2_minus = bn_2.Negate();
+    std::vector<BigInt> vec_1_power(m, bn_1);
+    vec_tmpb=BigIntVectorModScalar(bl0, bn2_minus, order);
  
-    vec_tmpb=BigIntVectorModAdd(vec_tmpb, bn1, order);
-    //vec_tmpb=BigIntVectorModSub(bn1,vec_tmpb, order);
+    vec_tmpb=BigIntVectorModAdd(vec_tmpb, vec_1_power, order);
     vec_tmpb=BigIntVectorModProduct(vec_tmpb, al0, order);
 
     std::copy(vec_tmpb.begin(), vec_tmpb.end(), vec_mb1.begin());
 
-    vec_tmpb=BigIntVectorModScalar(bl1, bk2, order);
+    vec_tmpb=BigIntVectorModScalar(bl1, bn2_minus, order);
  
-    vec_tmpb=BigIntVectorModAdd(vec_tmpb, bn1, order);
-    //vec_tmpb=BigIntVectorModSub(bn1, vec_tmpb,order);
+    vec_tmpb=BigIntVectorModAdd(vec_tmpb, vec_1_power, order);
     vec_tmpb=BigIntVectorModProduct(vec_tmpb, al1, order);
     std::copy(vec_tmpb.begin(), vec_tmpb.end(), vec_mb1.begin()+m);
 
@@ -371,577 +371,590 @@ void Prove(PP &pp,Witness &witness,Instance &instance,std::string &transcript_st
     std::copy(vec_mb0.begin(), vec_mb0.end(), vec_mb.begin());
     std::copy(vec_mb1.begin(), vec_mb1.end(), vec_mb.begin()+2*m);
 
-    vec_ma[4*m]=vec_ma[0]*vec_ma[m]%order;
-    vec_ma[4*m+1]=vec_ma[4*m];
-    if(vec_mb[0]==bn_1)
+    vec_ma[4*m] = vec_ma[0] * vec_ma[m] % order;
+    vec_ma[4*m+1] = vec_ma[4*m];
+    if(vec_mb[0] == bn_1)
     {
-        vec_mb[4*m]=vec_ma[m];
+        vec_mb[4*m] = vec_ma[m];
        
     }
     else
     {
-        vec_mb[4*m]=vec_ma[0];
+        vec_mb[4*m] = vec_ma[0];
     }
-    if(vec_mb[m]==bn_1)
+    if(vec_mb[m] == bn_1)
     {
-        vec_mb[4*m+1]=-vec_ma[m];
+        vec_mb[4*m+1] = -vec_ma[m];
     }
     else
     {
-        vec_mb[4*m+1]=-vec_ma[0];
+        vec_mb[4*m+1] = -vec_ma[0];
     }
     
-    proof.proof_ComA=Pedersen::Commit(pp.com_part, vec_ma, ra); //comiitment of A
+    proof.proof_commitment_A=Pedersen::Commit(pp.com_part, vec_ma, ra); //comiitment of A
 
-    proof.proof_ComB=Pedersen::Commit(pp.com_part, vec_mb, rb); //commitment of B
+    proof.proof_commitment_B=Pedersen::Commit(pp.com_part, vec_mb, rb); //commitment of B
 
-
+    // linear polynomials F0(X) = b0 * X + a0 
     std::vector< std::vector< std::pair<BigInt, BigInt>> > vec_F0(m,std::vector<std::pair<BigInt, BigInt>>(2));
+    // linear polynomials F1(X) = b1 * X + a1 
     std::vector< std::vector< std::pair<BigInt, BigInt>> > vec_F1(m,std::vector<std::pair<BigInt, BigInt>>(2)); 
   
+    // polynomial product
     std::vector< std::vector<BigInt> > vec_P0(n,std::vector<BigInt>(m)); //n rows ,m columns
     std::vector< std::vector<BigInt> > vec_P1(n,std::vector<BigInt>(m)); //n rows ,m columns
     std::vector< std::vector<BigInt> > vec_P0transposition; //n rows ,m columns
     std::vector< std::vector<BigInt> > vec_P1transposition; //n rows ,m columns
 
     /*compute F and P*/
-    for(auto k=0;k<m;k++)
+    for(auto k = 0; k < m; k++)
     {   
         std::pair<BigInt, BigInt> tmp_F0;
         std::pair<BigInt, BigInt> tmp_F1;
-        tmp_F0.first=bl0[k];
-        tmp_F0.second=al0[k];
-        vec_F0[k][1]=tmp_F0;
-        tmp_F0.first=(bn_1-bl0[k]);
-        tmp_F0.second=-al0[k];
-        vec_F0[k][0]=tmp_F0;
+        tmp_F0.first = bl0[k];
+        tmp_F0.second = al0[k];
+        vec_F0[k][1] = tmp_F0;
+        tmp_F0.first = (bn_1 - bl0[k]);
+        tmp_F0.secon d= -al0[k];
+        vec_F0[k][0] = tmp_F0;
 
-        tmp_F1.first=bl1[k];
-        tmp_F1.second=al1[k];
-        vec_F1[k][1]=tmp_F1;
-        tmp_F1.first=(bn_1-bl1[k]);
-        tmp_F1.second=-al1[k];
-        vec_F1[k][0]=tmp_F1;
+        tmp_F1.first = bl1[k];
+        tmp_F1.second = al1[k];
+        vec_F1[k][1] = tmp_F1;
+        tmp_F1.first = (bn_1 - bl1[k]);
+        tmp_F1.second = -al1[k];
+        vec_F1[k][0] = tmp_F1;
     }
 
     std::vector<BigInt> vec_product_tmp;
-    for(auto i=0;i<n;i++)
+    for(auto i = 0; i < n; i++)
     {
-        vec_product_tmp=BigIntPolModProduct(vec_F0,i, order);
-        vec_P0[i]=vec_product_tmp; 
-        vec_product_tmp=BigIntPolModProduct(vec_F1,i, order);
-        vec_P1[i]=vec_product_tmp;            
+        vec_product_tmp = BigIntPolModProduct(vec_F0,i, order);
+        vec_P0[i] = vec_product_tmp; 
+        vec_product_tmp = BigIntPolModProduct(vec_F1,i, order);
+        vec_P1[i] = vec_product_tmp;            
     }
    
-    vec_P0transposition=BigIntMatrixtransposition(vec_P0);
-    vec_P1transposition=BigIntMatrixtransposition(vec_P1);
+    vec_P0transposition=BigIntMatrixTransposition(vec_P0);
+    vec_P1transposition=BigIntMatrixTransposition(vec_P1);
 
     /*compute challenge v*/
-    transcript_str+=proof.proof_ComA.ToByteString();
-    transcript_str+=proof.proof_ComB.ToByteString();
+    transcript_str += proof.proof_commitment_A.ToByteString();
+    transcript_str += proof.proof_commitment_B.ToByteString();
    
 
-    BigInt v=Hash::StringToBigInt(transcript_str);
+    BigInt v = Hash::StringToBigInt(transcript_str);
 
-    size_t rs=witness.Ran_num; //rs should be equal to N;
+    size_t map_len = pp.num_cipher; //map_len should be equal to N;
    
-    std::vector<BigInt> vec_ksi=GenBigIntPowerVector4sdpt(rs, v);
+    std::vector<BigInt> vec_ksi = GenBigIntPowerVector4sdpt(map_len, v);
 
-    //sample phi,chi_k,psi_k,omega from Zq
-    std::vector<BigInt>phi(m);
-    std::vector<BigInt>chi(m);
-    std::vector<BigInt>psi(m);
-    std::vector<BigInt>omega(m);
+    //sample phi, chi_k, psi_k, omega from Zq
+    std::vector<BigInt> phi(m);
+    std::vector<BigInt> chi(m);
+    std::vector<BigInt> psi(m);
+    std::vector<BigInt> omega(m);
 
     for(auto i=0;i<m;i++)
     {
-        phi[i]=GenRandomBigIntLessThan(order);
-        chi[i]=GenRandomBigIntLessThan(order);
-        psi[i]=GenRandomBigIntLessThan(order);
-        omega[i]=GenRandomBigIntLessThan(order);
+        phi[i] = GenRandomBigIntLessThan(order);
+        chi[i] = GenRandomBigIntLessThan(order);
+        psi[i] = GenRandomBigIntLessThan(order);
+        omega[i] = GenRandomBigIntLessThan(order);
     }
 
     //compute the lower-order terms 
-    std::vector<ECPoint> vec_lower_cipher_bal_left(m);
-    std::vector<ECPoint> vec_lower_cipher_bal_right(m);
-    std::vector<ECPoint> vec_lower_cipher_value(m);
-    std::vector<ECPoint> lower_cipher4D(m);
-    std::vector<ECPoint> lower_vec_pk(m);
-    std::vector<ECPoint> lower_vec_g(m);
-    std::vector<ECPoint> lower_vec_oppcipher(m);
-    std::vector<ECPoint> lower_vec_oppcipherpk(m);
+    std::vector<ECPoint> proof_vec_lower_cipher_balance_left(m);
+    std::vector<ECPoint> proof_vec_lower_cipher_balance_right(m);
+    std::vector<ECPoint> proof_vec_lower_cipher_transfer_left(m);
+    std::vector<ECPoint> proof_lower_cipher_transfer_right(m);
+    std::vector<ECPoint> proof_vec_lower_pk(m);
+    std::vector<ECPoint> proof_vec_lower_g(m);
+    std::vector<ECPoint> proof_vec_lower_opposite_cipher(m);
+    std::vector<ECPoint> proof_vec_lower_opposite_cipher_g(m);
     
     //in this way, ECPointVectorMul is equal to MultiExp of the paper Anonymous Zehter
-    ECPoint Ec_tmp;
-    ECPoint Ec_tmpsum;
+    ECPoint ec_tmp;
+    ECPoint ec_sum_tmp;
     
-    for(size_t k=0;k<m;k++)
+    for(size_t k = 0; k < m; k++)
     {
-        vec_lower_cipher_bal_left[k]=ECPointVectorMul(instance.vec_cipher_bal_left, vec_P0transposition[k]) + (instance.vec_pk[l0_size_t] * phi[k]);
-        vec_lower_cipher_bal_right[k]=ECPointVectorMul(instance.vec_cipher_bal_right, vec_P0transposition[k]) + (pp.g * phi[k]);
-        vec_lower_cipher_value[k]=ECPointVectorMul(instance.vec_cipher_value, vec_P0transposition[k]) + (instance.vec_pk[l0_size_t] * chi[k]);
-        lower_cipher4D[k]=(pp.g * chi[k]);
-        lower_vec_pk[k]=ECPointVectorMul(instance.vec_pk,vec_P0transposition[k])+ (instance.vec_pk[l0_size_t] * psi[k]);
-        lower_vec_g[k]=pp.g * psi[k];
-        lower_vec_oppcipherpk[k]=(pp.g * omega[k]);
-        Ec_tmpsum.SetInfinity();
+        proof_vec_lower_cipher_balance_left[k] = ECPointVectorMul(instance.vec_cipher_balance_left, vec_P0transposition[k]) + (instance.vec_pk[l0_size_t] * phi[k]);
+        proof_vec_lower_cipher_balance_right[k] = ECPointVectorMul(instance.vec_cipher_balance_right, vec_P0transposition[k]) + (pp.g * phi[k]);
+        proof_vec_lower_cipher_transfer_left[k] = ECPointVectorMul(instance.vec_cipher_transfer_left, vec_P0transposition[k]) + (instance.vec_pk[l0_size_t] * chi[k]);
+        proof_lower_cipher_transfer_right[k] = (pp.g * chi[k]);
+        proof_vec_lower_pk[k] = ECPointVectorMul(instance.vec_pk, vec_P0transposition[k]) + (instance.vec_pk[l0_size_t] * psi[k]);
+        proof_vec_lower_g[k] = pp.g * psi[k];
+        proof_vec_lower_opposite_cipher_g[k] = (pp.g * omega[k]);
+        ec_sum_tmp.SetInfinity();
         //use the other way is also ok,but need to two vector addtionly 
-        for(size_t l=0;l<2;l++)
+        for(size_t l = 0; l < 2; l++)
         {
-            for(size_t j=0;j<n/2;j++)
+            for(size_t j = 0; j< n/2; j++)
             {
-                size_t index_ka=(2*j+l)%n;
-                size_t index_Pl0=(l0_size_t+2*j)%n;
-                size_t index_Pl1=(l1_size_t+2*j)%n;
-                if(l==0)
+                size_t index_ka = (2*j+l) % n;
+                size_t index_Pl0 = (l0_size_t+2*j) % n;
+                size_t index_Pl1 = (l1_size_t+2*j) % n;
+                if(l == 0)
                 {
-                    BigInt expont=witness.value * (-vec_P0[index_Pl0][k]+vec_P0[index_Pl1][k]);
-                    Ec_tmp=pp.g*expont;
+                    BigInt expont = witness.value * (-vec_P0[index_Pl0][k] + vec_P0[index_Pl1][k]);
+                    ec_tmp = pp.g * expont;
                 }
                 else
                 {
-                    BigInt expont=witness.value * (-vec_P1[index_Pl0][k]+vec_P1[index_Pl1][k]);
-                    Ec_tmp=pp.g*expont;
+                    BigInt expont = witness.value * (-vec_P1[index_Pl0][k] + vec_P1[index_Pl1][k]);
+                    ec_tmp = pp.g * expont;
                 }
-                Ec_tmpsum=Ec_tmpsum + Ec_tmp*vec_ksi[index_ka];                
+                ec_sum_tmp = ec_sum_tmp + ec_tmp * vec_ksi[index_ka];                
             }
         }
-        lower_vec_oppcipher[k]=Ec_tmpsum+(instance.cipher4D * omega[k]);
+        proof_vec_lower_opposite_cipher[k] = ec_sum_tmp + (instance.cipher_transfer_right * omega[k]);
     }
-    proof.vec_lower_cipher_bal_left=vec_lower_cipher_bal_left;
-    proof.vec_lower_cipher_bal_right=vec_lower_cipher_bal_right;
-    proof.vec_lower_cipher_value=vec_lower_cipher_value;
-    proof.lower_cipher4D=lower_cipher4D;
-    proof.lower_vec_pk=lower_vec_pk;
-    proof.lower_vec_g=lower_vec_g;
-    proof.lower_vec_oppcipher=lower_vec_oppcipher;
-    proof.lower_vec_oppcipherpk=lower_vec_oppcipherpk;
+    proof.proof_vec_lower_cipher_balance_left = proof_vec_lower_cipher_balance_left;
+    proof.proof_vec_lower_cipher_balance_right = proof_vec_lower_cipher_balance_right;
+    proof.proof_vec_lower_cipher_transfer_left = proof_vec_lower_cipher_transfer_left;
+    proof.proof_lower_cipher_transfer_right = proof_lower_cipher_transfer_right;
+    proof.proof_vec_lower_pk = proof_vec_lower_pk;
+    proof.proof_vec_lower_g = proof_vec_lower_g;
+    proof.proof_vec_lower_opposite_cipher = proof_vec_lower_opposite_cipher;
+    proof.proof_vec_lower_opposite_cipher_g = proof_vec_lower_opposite_cipher_g;
 
     /*compute the challenge w*/
     //we use the parallel way to compute the challenge w, which is more efficient,if need,serial way is also ok 
-    for(size_t i=0;i < m;i++)
+    for(size_t i = 0; i < m; i++)
     {
-        transcript_str+=proof.vec_lower_cipher_bal_left[i].ToByteString();
-        transcript_str+=proof.vec_lower_cipher_bal_right[i].ToByteString();
-        transcript_str+=proof.vec_lower_cipher_value[i].ToByteString();
-        transcript_str+=proof.lower_cipher4D[i].ToByteString();
-        transcript_str+=proof.lower_vec_pk[i].ToByteString();
-        transcript_str+=proof.lower_vec_g[i].ToByteString();
-        transcript_str+=proof.lower_vec_oppcipher[i].ToByteString();
-        transcript_str+=proof.lower_vec_oppcipherpk[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_cipher_balance_left[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_cipher_balance_right[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_cipher_transfer_left[i].ToByteString();
+        transcript_str += proof.proof_lower_cipher_transfer_right[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_pk[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_g[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_opposite_cipher[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
-    BigInt w=Hash::StringToBigInt(transcript_str);
+    BigInt w = Hash::StringToBigInt(transcript_str);
     
-    proof.vec_proof_f0.resize(m);
-    proof.vec_proof_f1.resize(m);
-    for(auto k=0;k<m;k++)
+    proof.proof_vec_eval_f0.resize(m);
+    proof.proof_vec_eval_f1.resize(m);
+    for(auto k = 0; k < m; k++)
     {
-        proof.vec_proof_f0[k]=(bl0[k]*w%order+al0[k])%order;
-        proof.vec_proof_f1[k]=(bl1[k]*w%order+al1[k])%order;
-        transcript_str += proof.vec_proof_f0[k].ToByteString();
-        transcript_str += proof.vec_proof_f1[k].ToByteString();
+        proof.proof_vec_eval_f0[k] = (bl0[k] * w % order + al0[k]) % order;
+        proof.proof_vec_eval_f1[k] = (bl1[k] * w % order + al1[k]) % order;
+        transcript_str += proof.proof_vec_eval_f0[k].ToByteString();
+        transcript_str += proof.proof_vec_eval_f1[k].ToByteString();
     }
-    proof.proof_Za=(rb*w%order+ra)%order;
+    proof.proof_Za=(rb * w % order + ra) % order; // Za = rB * w + rA
     
     transcript_str += proof.proof_Za.ToByteString();
 
-    BigInt z=Hash::StringToBigInt(transcript_str);
+    BigInt z = Hash::StringToBigInt(transcript_str);
     
-    //prover ??????anticipates?????? certain re-encryptions
-    BigInt wem=w.ModExp(m,order);
-    ECPoint re_cipherrbalright=instance.vec_cipher_bal_right[l0_size_t]*wem ;
-    BigInt w_exp_k;
-    for(auto k=0;k<m;k++)
-    {
-        w_exp_k=w.ModExp(k,order);
-        w_exp_k=w_exp_k.ModMul(-phi[k],order);
-        re_cipherrbalright=re_cipherrbalright+pp.g*w_exp_k;
-    }
-    ECPoint re_cipher4D=instance.cipher4D*wem;
-    BigInt w4g=bn_0;
-    //we can also use the other way to compute 
-    for(auto k=0;k<m;k++)
-    {
-        w_exp_k=w.ModExp(k,order);
-        w4g=(w4g-chi[k]*w_exp_k)%order;      
-    }
-    re_cipher4D=re_cipher4D+pp.g*w4g;
+    //prover "anticipates" certain re-encryptions
+    BigInt w_exp_m = w.ModExp(m, order);
 
-    BigInt wv=bn_0;
+    // Eq (71) -- compute \overline{C_{R n}} = (C_{R n, l_{0}})^{w^{m}} \cdot (\prod_{k=0}^{m-1} g^{-\phi_{k} \cdot w^{k}})
+    ECPoint re_encryption_cipher_balance_right = instance.vec_cipher_balance_right[l0_size_t] * w_exp_m ;
+    BigInt w_exp_k;
+    for(auto k  0; k < m; k++)
+    {
+        w_exp_k = w.ModExp(k, order);
+        w_exp_k = w_exp_k.ModMul(-phi[k], order);
+        re_encryption_cipher_balance_right = re_encryption_cipher_balance_right + pp.g * w_exp_k;
+    }
+
+    // Eq (72)  -- compute \overline{D} = D^{w^m} \cdot g^{-\sum_{k=0}^{m-1} \chi_k \cdot w^k}
+    ECPoint re_encryption_cipher_transfer_right=instance.cipher_transfer_right*w_exp_m;
+    BigInt w_exp_4_g = bn_0;
+    //you can also use the other way to compute 
     for(auto k=0;k<m;k++)
     {
-        w_exp_k=w.ModExp(k,order);
-        wv=(wv+psi[k]*w_exp_k)%order;      
+        w_exp_k = w.ModExp(k,order);
+        w_exp_4_g = (w_exp_4_g - chi[k] * w_exp_k) % order;      
     }
-    wv=wem.ModSub(wv,order);
-    ECPoint re_cipher4g=pp.g*wv; 
+    re_encryption_cipher_transfer_right = re_encryption_cipher_transfer_right + pp.g * w_exp_4_g;
+
+    BigInt w_exp = bn_0;
+    for(auto k = 0; k < m; k++)
+    {
+        w_exp_k = w.ModExp(k,order);
+        w_exp = (w_exp+psi[k] * w_exp_k) % order;      
+    }
+    w_exp = w_exp_m.ModSub(w_exp, order);
+    ECPoint re_encryption_cipher_g = pp.g * w_exp; 
 
     //compute the P of eval of w
     std::vector<BigInt> vec_evalP0(n);
     std::vector<BigInt> vec_evalP1(n);
 
     /*the fisrt way*/
-    BigInt tmp_sumP0=bn_0;
-    BigInt tmp_sumP1=bn_0;
-    for(auto i=0;i<n;i++)
+    BigInt tmp_sum_P0 = bn_0;
+    BigInt tmp_sum_P1 = bn_0;
+    for(auto i = 0;i < n; i++)
     {
-        tmp_sumP0=bn_0;
-        tmp_sumP1=bn_0;
-        for(auto j=0;j<m;j++)
+        tmp_sum_P0 = bn_0;
+        tmp_sum_P1 = bn_0;
+        for(auto j = 0; j < m; j++)
         {
-            tmp_sumP0=(tmp_sumP0+vec_P0[i][j]*w.ModExp(BigInt(j),order))%order;
-            tmp_sumP1=(tmp_sumP1+vec_P1[i][j]*w.ModExp(BigInt(j),order))%order;
+            tmp_sum_P0 = (tmp_sum_P0 + vec_P0[i][j] * w.ModExp(BigInt(j), order)) % order;
+            tmp_sum_P1 = (tmp_sum_P1 + vec_P1[i][j] * w.ModExp(BigInt(j), order)) % order;
         }
-        vec_evalP0[i]=tmp_sumP0;
-        vec_evalP1[i]=tmp_sumP1;
+        vec_evalP0[i] = tmp_sum_P0;
+        vec_evalP1[i] = tmp_sum_P1;
     }
-    /*the sender_index and receiver_index's poly order is m.not m-1,so had better to use the second way*/
-    vec_evalP0[l0_size_t]=(vec_evalP0[l0_size_t]+w.ModExp(m,order))%order;
-    vec_evalP1[l1_size_t]=(vec_evalP1[l1_size_t]+w.ModExp(m,order))%order;
+    /*the sender_index and receiver_index's poly order is m.not m-1,so had better to use the second way if you do not knw detail*/
+    vec_evalP0[l0_size_t] = (vec_evalP0[l0_size_t] + w.ModExp(m, order)) % order;
+    vec_evalP1[l1_size_t] = (vec_evalP1[l1_size_t] + w.ModExp(m, order)) % order;
 
     /*the second way*/
-    /*BigInt tmp_sump0=bn_1;
-    BigInt tmp_sump1=bn_1;
-    for(auto i=0;i<n;i++)
+    /*BigInt tmp_sump0 = bn_1;
+    BigInt tmp_sump1 = bn_1;
+    for(auto i = 0; i < n; i++)
     {
-        tmp_sump0=bn_1;
-        tmp_sump1=bn_1;
-        for(auto k=0;k<m;k++)
+        tmp_sump0 = bn_1;
+        tmp_sump1 = bn_1;
+        for(auto k = 0; k < m; k++)
         {
-            if(GetTheNthBit(i,k)==1)
+            if(GetTheNthBit(i,k) == 1)
             {
-                tmp_sump0=tmp_sump0*proof.vec_proof_f0[k]%order;
-                tmp_sump1=tmp_sump1*proof.vec_proof_f1[k]%order;
+                tmp_sump0 = tmp_sump0 * proof.proof_vec_eval_f0[k] % order;
+                tmp_sump1 = tmp_sump1 * proof.proof_vec_eval_f1[k] % order;
             }
             else
             {
-                tmp_sump0=tmp_sump0*(w-proof.vec_proof_f0[k])%order;
-                tmp_sump1=tmp_sump1*(w-proof.vec_proof_f1[k])%order;
+                tmp_sump0 = tmp_sump0 * (w - proof.proof_vec_eval_f0[k]) % order;
+                tmp_sump1 = tmp_sump1 * (w - proof.proof_vec_eval_f1[k]) % order;
             } 
         }
-        vec_evalP0[i]=tmp_sump0;
-        vec_evalP1[i]=tmp_sump1; 
+        vec_evalP0[i] = tmp_sump0;
+        vec_evalP1[i] = tmp_sump1; 
     }*/
-    ECPoint re_oppcipher;
-    re_oppcipher.SetInfinity();
+
+    // Eq (74) compute --
+    /* \overline{y_X} = \prod_{i,j=0}^{1,\frac N2-1}\text{MultiExp} \left((y_i)_{i=0}^{N-1},
+    \text{Shift}\left((P_{i,i}(w))_{i=0}^{N-1},2\cdot j\right)\right)^{\xi_{2\cdot j+\iota}}
+    \cdot\left(\prod_{k=0}^{m-1}g^{-\omega_k\cdot w^k}\right)
+    */
+    ECPoint re_encryption_opposite_cipher;
+    re_encryption_opposite_cipher.SetInfinity();
     std::vector<BigInt> vec_shift;
 
     for(size_t l=0; l<2; l++)
     {
         ECPoint re_tmp;
-        for(size_t j=0; j<n/2; j++)
+        for(size_t j = 0; j < n/2; j++)
         {
-            size_t index_ka=(2*j+l)%n;
-            if(l==0)
+            size_t index_ka = (2*j+l) % n;
+            if(l == 0)
             {
-                vec_shift=Shift(vec_evalP0,2*j);
-                re_tmp=ECPointVectorMul(instance.vec_pk,vec_shift);
+                vec_shift = Shift(vec_evalP0, 2*j);
+                re_tmp=ECPointVectorMul(instance.vec_pk, vec_shift);
                 
             }
             else
             {
-                vec_shift=Shift(vec_evalP1,2*j);
-                re_tmp=ECPointVectorMul(instance.vec_pk,vec_shift);
+                vec_shift = Shift(vec_evalP1, 2*j);
+                re_tmp = ECPointVectorMul(instance.vec_pk, vec_shift);
                 
             }
-            re_oppcipher=re_oppcipher+re_tmp*vec_ksi[index_ka];  
+            re_encryption_opposite_cipher = re_encryption_opposite_cipher + re_tmp * vec_ksi[index_ka];  
                          
         }
     }
-    for(auto k=0;k<m;k++)
+    for(auto k = 0; k < m; k++)
     {
-        w_exp_k=w.ModExp(k,order);
-        w_exp_k=w_exp_k.ModMul(-omega[k],order);
-        re_oppcipher=re_oppcipher+pp.g*w_exp_k;
+        w_exp_k = w.ModExp(k, order);
+        w_exp_k = w_exp_k.ModMul(-omega[k], order);
+        re_encryption_opposite_cipher = re_encryption_opposite_cipher + pp.g * w_exp_k;
     }
 
-    BigInt ksk,kr,kb,ktau;
-    ksk=GenRandomBigIntLessThan(order);
-    kr=GenRandomBigIntLessThan(order);
-    kb=GenRandomBigIntLessThan(order);
-    ktau=GenRandomBigIntLessThan(order);
+    BigInt ksk, kr, kb, ktau;
+    ksk = GenRandomBigIntLessThan(order);
+    kr = GenRandomBigIntLessThan(order);
+    kb = GenRandomBigIntLessThan(order);
+    ktau = GenRandomBigIntLessThan(order);
 
-    cons_random.kb=kb;
+    consistency_random.kb = kb;
 
-    proof.proof_Ay_re_enc=re_cipher4g*ksk;
-    proof.proof_AD_re_enc=pp.g*kr;
+    // Eq (75) - Eq (79)
+    // compute A_{y} = \overline{g}^{k_{\mathrm{sk}}} 
+    proof.proof_Ay_re_encryption = re_encryption_cipher_g * ksk;
+    // compute A_{D} = g^{k_{r}}
+    proof.proof_AD_re_encryption = pp.g * kr;
     
-    BigInt zsquare= z*z% order; 
-    BigInt zcube= zsquare*z% order;
-    proof.proof_Ab0_re_enc=pp.g*kb+((re_cipher4D)*(-zsquare))*ksk;
-    proof.proof_Ab1_re_enc=pp.g*kb+((re_cipherrbalright)*(zcube))*ksk;
+    BigInt zsquare = z * z % order; 
+    BigInt zcube = zsquare * z% order;
+    // compute A_{b} = g^{k_{b}} \cdot (\overline{D}^{-z^{2}})^{k_{\mathrm{sk}}}
+    proof.proof_Ab0_re_encryption = pp.g * kb + ((re_encryption_cipher_transfer_right) * (-zsquare)) * ksk;
+    // compute A_{b} = g^{k_{b}} \cdot \overline{{C_{Rn}}}z^{3})^{k_{\mathrm{sk}}}
+    proof.proof_Ab1_re_encryption = pp.g * kb + ((re_encryption_cipher_balance_right) * (zcube)) * ksk;
+    // compute A_{X} = \overline{{y_{X}}}k_{r} 
+    proof.proof_Ax_re_encryption = re_encryption_opposite_cipher * kr;
+    // A_{u} = g_{\mathrm{epoch}}^{k_{\mathrm{sk}}}
+    proof.proof_Au = instance.gepoch * ksk;
 
-    proof.proof_Ax_re_enc=re_oppcipher*kr;
-    proof.proof_Au=instance.gepoch*ksk;
-
-    transcript_str+=proof.proof_Ay_re_enc.ToByteString();
-    transcript_str+=proof.proof_AD_re_enc.ToByteString();
-    transcript_str+=proof.proof_Ab0_re_enc.ToByteString();
-    transcript_str+=proof.proof_Ab1_re_enc.ToByteString();
-    transcript_str+=proof.proof_Ax_re_enc.ToByteString();
-    transcript_str+=proof.proof_Au.ToByteString();
+    transcript_str += proof.proof_Ay_re_encryption.ToByteString();
+    transcript_str += proof.proof_AD_re_encryption.ToByteString();
+    transcript_str += proof.proof_Ab0_re_encryption.ToByteString();
+    transcript_str += proof.proof_Ab1_re_encryption.ToByteString();
+    transcript_str += proof.proof_Ax_re_encryption.ToByteString();
+    transcript_str += proof.proof_Au.ToByteString();
    
-    BigInt c=Hash::StringToBigInt(transcript_str);
+    BigInt c = Hash::StringToBigInt(transcript_str);
 
-    BigInt wemc=wem*c%order;
-    proof.proof_Ssk=(ksk+c*witness.sk)%order;
-    proof.proof_Sr=(kr+c*witness.r)%order;
-    proof.proof_Sb0=(kb+((wemc*witness.value)%order)*zsquare)%order;
-    proof.proof_Sb1=(kb+((wemc*witness.vprime)%order)*zcube)%order;
+    BigInt w_exp_m_times_c = w_exp_m * c % order;
+    proof.proof_Ssk = (ksk + c * witness.sk) % order; // S_sk = k_sk + c * sk
+    proof.proof_Sr = (kr + c * witness.r) % order; // S_r = k_r + c * r
+    proof.proof_Sb0 = (kb + ((w_exp_m_times_c * witness.value) % order) * zsquare) % order; // S_b0 = k_b + c * w^m * z^2 * v
+    proof.proof_Sb1 = (kb + ((w_exp_m_times_c * witness.vprime) % order) * zcube) % order; // S_b1 = k_b + c * w^m * z^3 * vprime
     
     #ifdef DEBUG
-        std::cout << "Many prove Succeeds >>>" << std::endl; 
+        std::cout << "MOOM prove Succeeds >>>" << std::endl; 
     #endif
     
-    std::cout<<"Many prove proof Success "<<std::endl;
+    std::cout<<"Many_Out_Of_Many proof Success "<<std::endl;
     
 }
 
 bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof)
 {
     
-    size_t n=pp.num_cipher;
-    size_t m=pp.log_num_cipher;
-
+    size_t n = pp.num_cipher;
+    size_t m = pp.log_num_cipher;
+    // initialize the transcript
     transcript_str = "";
-    transcript_str += proof.proof_ComA.ToByteString();
-    transcript_str += proof.proof_ComB.ToByteString();
+    transcript_str += proof.proof_commitment_A.ToByteString();
+    transcript_str += proof.proof_commitment_B.ToByteString();
 
-    BigInt v=Hash::StringToBigInt(transcript_str);
+    // recover the challenge v
+    BigInt v = Hash::StringToBigInt(transcript_str);
 
     std::vector<BigInt> vec_p0(n);
     std::vector<BigInt> vec_p1(n);
 
-    for(auto i=0;i<m;i++)
+    for(auto i = 0; i < m; i++)
     {
-        transcript_str+=proof.vec_lower_cipher_bal_left[i].ToByteString();
-        transcript_str+=proof.vec_lower_cipher_bal_right[i].ToByteString();
-        transcript_str+=proof.vec_lower_cipher_value[i].ToByteString();
-        transcript_str+=proof.lower_cipher4D[i].ToByteString();
-        transcript_str+=proof.lower_vec_pk[i].ToByteString();
-        transcript_str+=proof.lower_vec_g[i].ToByteString();
-        transcript_str+=proof.lower_vec_oppcipher[i].ToByteString();
-        transcript_str+=proof.lower_vec_oppcipherpk[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_cipher_balance_left[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_cipher_balance_right[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_cipher_transfer_left[i].ToByteString();
+        transcript_str += proof.proof_lower_cipher_transfer_right[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_pk[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_g[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_opposite_cipher[i].ToByteString();
+        transcript_str += proof.proof_vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
-    BigInt w=Hash::StringToBigInt(transcript_str);
+    // recover the challenge v
+    BigInt w = Hash::StringToBigInt(transcript_str);
     
-    BigInt tmp_p0=bn_1;
-    for(auto i=0;i<n;i++)
+    // compute the product of the eval of evaluations of linear polynomials F0(X) = b0 * X + a0 at the verifiers challenge x
+    BigInt tmp_p0 = bn_1;
+    for(auto i = 0; i < n; i++)
     {
-        tmp_p0=bn_1;
-        for(auto k=0;k<m;k++)
+        tmp_p0 = bn_1;
+        for(auto k = 0; k < m; k++)
         {
-            if(GetTheNthBit(i,k)==1)
+            if(GetTheNthBit(i,k) == 1)
             {
-                tmp_p0=tmp_p0*proof.vec_proof_f0[k]%order;        
+                tmp_p0=  tmp_p0 * proof.proof_vec_eval_f0[k] % order;        
             }
             else
             {
-                tmp_p0=(tmp_p0*((w-proof.vec_proof_f0[k])%order)%order)%order;
+                tmp_p0 = (tmp_p0 * ((w - proof.proof_vec_eval_f0[k]) % order) % order) % order;
             }
         }
-        vec_p0[i]=tmp_p0%order;      
+        vec_p0[i] = tmp_p0 % order;      
     }
     
-    BigInt tmp_p1=bn_1;
-    for(auto i=0;i<n;i++)
+    BigInt tmp_p1 = bn_1;
+    for(auto i = 0; i < n; i++)
     {
-        tmp_p1=bn_1;
-        for(auto k=0;k<m;k++)
+        tmp_p1 = bn_1;
+        for(auto k = 0; k < m; k++)
         {
-            if(GetTheNthBit(i,k)==1)
+            if(GetTheNthBit(i,k) == 1)
             {
-                tmp_p1=tmp_p1*proof.vec_proof_f1[k]%order;        
+                tmp_p1 = tmp_p1 * proof.proof_vec_eval_f1[k] % order;        
             }
             else
             {
-                tmp_p1=tmp_p1*(w-proof.vec_proof_f1[k])%order;
+                tmp_p1 = tmp_p1 * (w - proof.proof_vec_eval_f1[k]) % order;
             }
         }
-        vec_p1[i]=tmp_p1%order;      
+        vec_p1[i] = tmp_p1 % order;      
     }
 
-    std::vector<BigInt> vec_mvf(4*m+2);
-    std::cout<<"begin to fill the commitment terms"<<std::endl;
-    std::vector<BigInt> vec_mvftmp4f0(m);
-    for(auto i=0;i<m;i++)
+    std::vector<BigInt> vec_move_f(4*m+2);
+    std::cout << "begin to fill the commitment terms" << std::endl;
+    std::vector<BigInt> vec_move_f_tmp_4_f0(m);
+    for(auto i = 0; i < m; i++)
     {
-        vec_mvftmp4f0[i]=proof.vec_proof_f0[i]*((w-proof.vec_proof_f0[i]+order)%order)%order;
+        vec_move_f_tmp_4_f0[i] = proof.proof_vec_eval_f0[i] * ((w - proof.proof_vec_eval_f0[i] + order) % order) % order;
     }
 
-    std::vector<BigInt> vec_mvftmp4f1(m);
-    for(auto i=0;i<m;i++)
+    std::vector<BigInt> vec_move_f_tmp_4_f1(m);
+    for(auto i = 0; i < m; i++)
     {
-        vec_mvftmp4f1[i]=proof.vec_proof_f1[i]*((w-proof.vec_proof_f1[i]+order)%order)%order;
+        vec_move_f_tmp_4_f1[i] = proof.proof_vec_eval_f1[i] * ((w - proof.proof_vec_eval_f1[i] + order) % order) % order;
     }
    
-    std::copy(proof.vec_proof_f0.begin(), proof.vec_proof_f0.end(), vec_mvf.begin());
-    std::copy(proof.vec_proof_f1.begin(), proof.vec_proof_f1.end(), vec_mvf.begin()+m);
-    std::copy(vec_mvftmp4f0.begin(), vec_mvftmp4f0.end(), vec_mvf.begin()+2*m);
-    std::copy(vec_mvftmp4f1.begin(), vec_mvftmp4f1.end(), vec_mvf.begin()+3*m);
+    std::copy(proof.proof_vec_eval_f0.begin(), proof.proof_vec_eval_f0.end(), vec_move_f.begin());
+    std::copy(proof.proof_vec_eval_f1.begin(), proof.proof_vec_eval_f1.end(), vec_move_f.begin()+m);
+    std::copy(vec_move_f_tmp_4_f0.begin(), vec_move_f_tmp_4_f0.end(), vec_move_f.begin()+2*m);
+    std::copy(vec_move_f_tmp_4_f1.begin(), vec_move_f_tmp_4_f1.end(), vec_move_f.begin()+3*m);
     PrintSplitLine('-');
-    std::cout<<"success fill the commitment terms"<<std::endl;
-    vec_mvf[4*m]=vec_mvf[0]*vec_mvf[m]%order;
-    vec_mvf[4*m+1]=(((w-vec_mvf[0])%order)*((w-vec_mvf[m])%order))%order;
+    std::cout << "success fill the commitment terms" << std::endl;
+    vec_move_f[4*m] = vec_move_f[0] * vec_move_f[m] % order;
+    vec_move_f[4*m+1] = (((w - vec_move_f[0]) % order) * ((w - vec_move_f[m]) % order)) % order;
 
-    std::cout<<"begin to check"<<std::endl;
+    std::cout << "begin to check" << std::endl;
     //check 1 the commitment
-    ECPoint ComLeft=proof.proof_ComA+proof.proof_ComB*w;
-    ECPoint ComRight=Pedersen::Commit(pp.com_part, vec_mvf, proof.proof_Za);
-    if(ComLeft!=ComRight)
+    ECPoint COM_LFET = proof.proof_commitment_A + proof.proof_commitment_B * w;
+    ECPoint COM_RIGHT= Pedersen::Commit(pp.com_part, vec_move_f, proof.proof_Za);
+    if(COM_LFET != ComRight)
     {
-        std::cout<<"Commitment is wrong"<<std::endl;
+        std::cout << "Commitment is wrong" << std::endl;
         return false;
     }
     else{
-        std::cout<<"Commitment is right"<<std::endl;
+        std::cout << "Commitment is right" << std::endl;
     }
     
-    //begin comp of re-encryptions
-    ECPoint re_cipherrballeft=ECPointVectorMul(instance.vec_cipher_bal_left, vec_p0);
-    ECPoint re_cipherrbalright=ECPointVectorMul(instance.vec_cipher_bal_right, vec_p0);
-    ECPoint re_ciphervalue=ECPointVectorMul(instance.vec_cipher_value, vec_p0);
-    BigInt wem=w.ModExp(m,order);
-    ECPoint re_cipher4D=instance.cipher4D*wem;
-    ECPoint re_pk=ECPointVectorMul(instance.vec_pk, vec_p0);
-    ECPoint re_cipher4g=pp.g*wem;
+    //begin re-encryptions
+    ECPoint re_encryption_cipher_balance_left = ECPointVectorMul(instance.vec_cipher_balance_left, vec_p0);
+    ECPoint re_encryption_cipher_balance_right = ECPointVectorMul(instance.vec_cipher_balance_right, vec_p0);
+    ECPoint re_encryption_cipher_transfer_left = ECPointVectorMul(instance.vec_cipher_transfer_left, vec_p0);
+    BigInt w_exp_m = w.ModExp(m, order);
+    ECPoint re_encryption_cipher_transfer_right = instance.cipher_transfer_right * w_exp_m;
+    ECPoint re_encryption_pk = ECPointVectorMul(instance.vec_pk, vec_p0);
+    ECPoint re_encryption_cipher_g = pp.g * w_exp_m;
 
     BigInt w_exp_k;
-    for(auto k=0;k<m;k++)
+    for(auto k = 0; k < m; k++)
     {
-        w_exp_k=w.ModExp(k,order);
-        re_cipherrballeft=re_cipherrballeft+(proof.vec_lower_cipher_bal_left[k]*(-w_exp_k));
-        re_cipherrbalright=re_cipherrbalright+(proof.vec_lower_cipher_bal_right[k]*(-w_exp_k));
-        re_ciphervalue=re_ciphervalue+(proof.vec_lower_cipher_value[k]*(-w_exp_k));
-        re_cipher4D=re_cipher4D+(proof.lower_cipher4D[k]*(-w_exp_k));
-        re_pk=re_pk+(proof.lower_vec_pk[k]*(-w_exp_k));
-        re_cipher4g=re_cipher4g+(proof.lower_vec_g[k]*(-w_exp_k));
+        w_exp_k = w.ModExp(k, order);
+        re_encryption_cipher_balance_left = re_encryption_cipher_balance_left + (proof.proof_vec_lower_cipher_balance_left[k] * (-w_exp_k));
+        re_encryption_cipher_balance_right = re_encryption_cipher_balance_right + (proof.proof_vec_lower_cipher_balance_right[k] * (-w_exp_k));
+        re_encryption_cipher_transfer_left = re_encryption_cipher_transfer_left + (proof.proof_vec_lower_cipher_transfer_left[k] * (-w_exp_k));
+        re_encryption_cipher_transfer_right = re_encryption_cipher_transfer_right + (proof.proof_lower_cipher_transfer_right[k] * (-w_exp_k));
+        re_encryption_pk = re_encryption_pk + (proof.proof_vec_lower_pk[k] * (-w_exp_k));
+        re_encryption_cipher_g = re_encryption_cipher_g + (proof.proof_vec_lower_g[k] * (-w_exp_k));
     }
 
     std::vector<BigInt> vec_ksi=GenBigIntPowerVector4sdpt(n, v);
 
-    ECPoint re_Cx;
-    re_Cx.SetInfinity();
-    ECPoint re_yx;
-    re_yx.SetInfinity();
+    ECPoint re_encryption_opposite_cipher;
+    re_encryption_opposite_cipher.SetInfinity();
+    ECPoint re_encryption_opposite_cipher_g;
+    re_encryption_opposite_cipher_g.SetInfinity();
 
     std::vector<BigInt> vec_shift1;
     std::vector<BigInt> vec_shift2;
-    for(size_t l=0;l<2;l++)
+    for(size_t l = 0; l < 2; l++)
     {
         ECPoint re_tmp0;
         ECPoint re_tmp1;
-        for(size_t j=0;j<n/2;j++)
+        for(size_t j = 0; j < n/2; j++)
         {
-            size_t index_ka=(2*j+l)%n;
-            if(l==0)
+            size_t index_ka = (2*j+l) % n;
+            if(l == 0)
             {
-                vec_shift1=Shift(vec_p0,2*j);
-                re_tmp0=ECPointVectorMul(instance.vec_cipher_value,vec_shift1);
-                re_tmp1=ECPointVectorMul(instance.vec_pk,vec_shift1);
+                vec_shift1 = Shift(vec_p0, 2*j);
+                re_tmp0 = ECPointVectorMul(instance.vec_cipher_transfer_left, vec_shift1);
+                re_tmp1 = ECPointVectorMul(instance.vec_pk, vec_shift1);
             }
             else
             {
-                vec_shift2=Shift(vec_p1,2*j);
-                re_tmp0=ECPointVectorMul(instance.vec_cipher_value,vec_shift2);
-                re_tmp1=ECPointVectorMul(instance.vec_pk,vec_shift2);
+                vec_shift2 = Shift(vec_p1, 2*j);
+                re_tmp0 = ECPointVectorMul(instance.vec_cipher_transfer_left, vec_shift2);
+                re_tmp1 = ECPointVectorMul(instance.vec_pk, vec_shift2);
             }
-            re_Cx=re_Cx+re_tmp0*vec_ksi[index_ka];
-            re_yx=re_yx+re_tmp1*vec_ksi[index_ka];
+            re_encryption_opposite_cipher = re_encryption_opposite_cipher + re_tmp0 * vec_ksi[index_ka];
+            re_encryption_opposite_cipher_g = re_encryption_opposite_cipher_g + re_tmp1 * vec_ksi[index_ka];
         }
         
     }
 
-    for(auto k=0;k<m;k++)
+    for(auto k = 0; k < m; k++)
     {
-        w_exp_k=w.ModExp(k,order);
-        re_Cx=re_Cx+(proof.lower_vec_oppcipher[k]*(-w_exp_k));
-        re_yx=re_yx+(proof.lower_vec_oppcipherpk[k]*(-w_exp_k));
+        w_exp_k = w.ModExp(k,order);
+        re_encryption_opposite_cipher = re_encryption_opposite_cipher + (proof.proof_vec_lower_opposite_cipher[k] * (-w_exp_k));
+        re_encryption_opposite_cipher_g = re_encryption_opposite_cipher_g + (proof.proof_vec_lower_opposite_cipher_g[k] * (-w_exp_k));
     }
     
     //compute the challenge z
-    for(auto k=0;k<m;k++)
+    for(auto k = 0; k < m; k++)
     {
-        transcript_str += proof.vec_proof_f0[k].ToByteString();
-        transcript_str += proof.vec_proof_f1[k].ToByteString();
+        transcript_str += proof.proof_vec_eval_f0[k].ToByteString();
+        transcript_str += proof.proof_vec_eval_f1[k].ToByteString();
     }
     transcript_str += proof.proof_Za.ToByteString();
 
-    BigInt z=Hash::StringToBigInt(transcript_str);
-    BigInt zsquare= z*z% order; 
-    BigInt zcube= zsquare*z% order;
+    BigInt z = Hash::StringToBigInt(transcript_str);
+    BigInt zsquare= z  *z % order; 
+    BigInt zcube= zsquare * z % order;
 
     //compute the challenge c
-    transcript_str+=proof.proof_Ay_re_enc.ToByteString();
-    transcript_str+=proof.proof_AD_re_enc.ToByteString();
-    transcript_str+=proof.proof_Ab0_re_enc.ToByteString();
-    transcript_str+=proof.proof_Ab1_re_enc.ToByteString();
-    transcript_str+=proof.proof_Ax_re_enc.ToByteString();
-    transcript_str+=proof.proof_Au.ToByteString();
+    transcript_str += proof.proof_Ay_re_encryption.ToByteString();
+    transcript_str += proof.proof_AD_re_encryption.ToByteString();
+    transcript_str += proof.proof_Ab0_re_encryption.ToByteString();
+    transcript_str += proof.proof_Ab1_re_encryption.ToByteString();
+    transcript_str += proof.proof_Ax_re_encryption.ToByteString();
+    transcript_str += proof.proof_Au.ToByteString();
    
-    BigInt c=Hash::StringToBigInt(transcript_str);
+    BigInt c = Hash::StringToBigInt(transcript_str);
 
     //check Ay 
-    bool Validity=true;
-    ECPoint re_Ayreencright=re_cipher4g*(proof.proof_Ssk)+re_pk*(-c);
+    bool Validity = true;
+    ECPoint re_encryption_Ay_right = re_encryption_cipher_g * (proof.proof_Ssk) + re_encryption_pk * (-c);
     
-    if(re_Ayreencright!=proof.proof_Ay_re_enc){
-        std::cout<<"Ay check is wrong "<<std::endl;
-        Validity=false;
+    if(re_encryption_Ay_right != proof.proof_Ay_re_encryption){
+        std::cout << "Ay check is wrong " << std::endl;
+        Validity = false;
         
     }
-    //check AD
-    ECPoint re_ADreencright=pp.g*(proof.proof_Sr)+instance.cipher4D*(-c);
-    if(re_ADreencright!=proof.proof_AD_re_enc){
-        std::cout<<"AD check is wrong "<<std::endl;
-        Validity=false;
+    //check AD 
+    ECPoint re_encryption_AD_right = pp.g * (proof.proof_Sr) + instance.cipher_transfer_right * (-c);
+    if(re_encryption_AD_right != proof.proof_AD_re_encryption){
+        std::cout << "AD check is wrong " << std::endl;
+        Validity = false;
        
     }
     //check Ab0
-    ECPoint re_Ab0reencright=pp.g*(proof.proof_Sb0)+(re_cipher4D*(-zsquare))*(proof.proof_Ssk)+(re_ciphervalue*(-zsquare))*(-c);
-    if(re_Ab0reencright!=proof.proof_Ab0_re_enc){
-        std::cout<<"Ab0 check is wrong "<<std::endl;
-        Validity=false;
+    ECPoint re_encryption_Ab0_right = pp.g * (proof.proof_Sb0)+(re_encryption_cipher_transfer_right * (-zsquare)) * (proof.proof_Ssk) + (re_encryption_cipher_transfer_left * (-zsquare)) * (-c);
+    if(re_encryption_Ab0_right != proof.proof_Ab0_re_encryption){
+        std::cout << "Ab0 check is wrong " << std::endl;
+        Validity = false;
         
     }
     //check Ab1
-    ECPoint re_Ab1reencright=pp.g*(proof.proof_Sb1)+(re_cipherrbalright*(zcube))*(proof.proof_Ssk)+(re_cipherrballeft*(zcube))*(-c);
-    if(re_Ab1reencright!=proof.proof_Ab1_re_enc){
-        std::cout<<"Ab1 check is wrong "<<std::endl;
-        Validity=false;
+    ECPoint re_encryption_Ab1_right = pp.g * (proof.proof_Sb1) + (re_encryption_cipher_balance_right * (zcube)) * (proof.proof_Ssk) + (re_encryption_cipher_balance_left * (zcube)) * (-c);
+    if(re_encryption_Ab1_right != proof.proof_Ab1_re_encryption){
+        std::cout << "Ab1 check is wrong " << std::endl;
+        Validity = false;
        
     }
     
     //check Ax
-    ECPoint re_Axreencright=re_Cx*(-c)+re_yx*(proof.proof_Sr);
-    if(re_Axreencright!=proof.proof_Ax_re_enc){
-        std::cout<<"Ax check is wrong "<<std::endl;
-        Validity=false;     
+    ECPoint re_encryption_Ax_right = re_encryption_opposite_cipher * (-c) + re_encryption_opposite_cipher_g * (proof.proof_Sr);
+    if(re_encryption_Ax_right != proof.proof_Ax_re_encryption){
+        std::cout << "Ax check is wrong " << std::endl;
+        Validity = false;     
     }
      //check Au
-    ECPoint re_Auright=instance.gepoch*(proof.proof_Ssk)+instance.uepoch*(-c);
-    if(re_Auright!=proof.proof_Au){
-        std::cout<<"Au check is wrong "<<std::endl;
-        Validity=false;
+    ECPoint re_encryption_Au_right = instance.gepoch * (proof.proof_Ssk) + instance.uepoch * (-c);
+    if(re_encryption_Au_right != proof.proof_Au){
+        std::cout << "Au check is wrong " << std::endl;
+        Validity = false;
        
     }
 
-    #ifdef DEBUG
-    if (Validity){ 
-        std::cout<< " accepts >>>" << std::endl; 
-    }
-    else{
-        std::cout<< " rejects >>>" << std::endl; 
-    }
-    #endif
 
     if (Validity){ 
-        std::cout<< "proof of right encryption accepts >>>" << std::endl; 
+        std::cout << "proof of many_out_of_many proof accepts >>>" << std::endl; 
     }
     else{
-        std::cout<< "proof of right encryption rejects >>>" << std::endl; 
+        std::cout << "proof of many_out_of_many proof rejects >>>" << std::endl; 
     }
     return Validity;
 

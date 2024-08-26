@@ -52,10 +52,10 @@ std::ifstream &operator>>(std::ifstream &fin, PP& pp)
 struct Instance
 {
     // actually no instance here
-    std::vector<ECPoint> Cipher_Transfer_Left;//Eigamal transfer cipher left part
-    std::vector<ECPoint> Cipher_Transfer_Right;//Eigamal transfer cipher right part
-    std::vector<ECPoint> Cipher_Balance_Left;//Eigamal balance cipher value part
-    std::vector<ECPoint> Cipher_Balance_Right;//Eigamal balance cipher value part
+    std::vector<ECPoint> cipher_transfer_left; // Eigamal transfer cipher left part
+    std::vector<ECPoint> cipher_transfer_right; // Eigamal transfer cipher right part
+    std::vector<ECPoint> cipher_balance_left; // Eigamal balance cipher value part
+    std::vector<ECPoint> cipher_balance_right; // Eigamal balance cipher value part
 }; 
 
 struct Witness
@@ -149,47 +149,47 @@ PP Setup(size_t &RANGE_LEN, size_t &MAX_AGG_NUM)
 
 // statement C_\ell = g^-v pk_\ell^v and v \in [0, 2^n-1]
 void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript_str, 
-                            Proof &proof,ManyOutOfMany::ConsRandom cons_random, ManyOutOfMany::Proof &many_out_of_many_proof)
+                            Proof &proof,ManyOutOfMany::ConsistencyRandom consistency_random, ManyOutOfMany::Proof &many_out_of_many_proof)
 { 
     transcript_str = "";
-    transcript_str += many_out_of_many_proof.proof_ComA.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_ComB.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_commitment_A.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_commitment_B.ToByteString();
     
     BigInt v=Hash::StringToBigInt(transcript_str);
 
-    size_t m=many_out_of_many_proof.vec_lower_cipher_bal_left.size();
-    std::cout<<"Log_mom_proof.Num = "<<m<<std::endl;
-    for(size_t i=0;i<m;i++)
+    size_t m = many_out_of_many_proof.proof_vec_lower_cipher_balance_left.size();
+    std::cout << "Log_mom_proof.Num = " << m << std::endl;
+    for(size_t i = 0; i < m; i++)
     {
-        transcript_str+=many_out_of_many_proof.vec_lower_cipher_bal_left[i].ToByteString();
-        transcript_str+=many_out_of_many_proof.vec_lower_cipher_bal_right[i].ToByteString();
-        transcript_str+=many_out_of_many_proof.vec_lower_cipher_value[i].ToByteString();
-        transcript_str+=many_out_of_many_proof.lower_cipher4D[i].ToByteString();
-        transcript_str+=many_out_of_many_proof.lower_vec_pk[i].ToByteString();
-        transcript_str+=many_out_of_many_proof.lower_vec_g[i].ToByteString();
-        transcript_str+=many_out_of_many_proof.lower_vec_oppcipher[i].ToByteString();
-        transcript_str+=many_out_of_many_proof.lower_vec_oppcipherpk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_balance_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_balance_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_transfer_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_lower_cipher_transfer_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_pk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
-    BigInt w=Hash::StringToBigInt(transcript_str);
+    BigInt w = Hash::StringToBigInt(transcript_str);
 
-    for(size_t k=0;k<m;k++)
+    for(size_t k = 0; k < m; k++)
     {
-        transcript_str+= many_out_of_many_proof.vec_proof_f0[k].ToByteString();
-        transcript_str+= many_out_of_many_proof.vec_proof_f1[k].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_eval_f0[k].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_eval_f1[k].ToByteString();
     }
-    transcript_str+=many_out_of_many_proof.proof_Za.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Za.ToByteString();
 
     BigInt z = Hash::StringToBigInt(transcript_str);
 
-    transcript_str +=many_out_of_many_proof.proof_Ay_re_enc.ToByteString();
-    transcript_str +=many_out_of_many_proof.proof_AD_re_enc.ToByteString();
-    transcript_str +=many_out_of_many_proof.proof_Ab0_re_enc.ToByteString();
-    transcript_str +=many_out_of_many_proof.proof_Ab1_re_enc.ToByteString();
-    transcript_str +=many_out_of_many_proof.proof_Ax_re_enc.ToByteString();
-    transcript_str +=many_out_of_many_proof.proof_Au.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ay_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_AD_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab0_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab1_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ax_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Au.ToByteString();
 
-    BigInt c=Hash::StringToBigInt(transcript_str);
+    BigInt c = Hash::StringToBigInt(transcript_str);
 
 
     auto start_time = std::chrono::steady_clock::now(); 
@@ -247,11 +247,11 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
 
     proof.S = ECPointVectorMul(vec_A, vec_a); // Eq (47) 
 
-    // Eq (49, 50) compute y and z
-    //we edit the way to generate y and z,z is the challenge for the valid proof,we reuse it
+    // compute y and z
+    // the way to generate y and z is not same as the bullet_proof
     transcript_str += proof.A.ToByteString(); 
     transcript_str += proof.S.ToByteString(); 
-    transcript_str += z.ToByteString(); // z is the challenge for the proof
+    transcript_str += z.ToByteString(); //  // z is the challenge generated in the many_out_of_many proof
     BigInt y = Hash::StringToBigInt(transcript_str);
 
     BigInt y_inverse = y.ModInverse(order);
@@ -344,12 +344,12 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     // compute proof.mu = (alpha + rho*x) %q;  Eq (62)
     proof.mu = (alpha + rho * x) % order; 
 
-    BigInt ktau=GenRandomBigIntLessThan(order);
+    BigInt ktau = GenRandomBigIntLessThan(order);
     
-    proof.At=pp.g*(-bn_2*cons_random.kb)+pp.h*(ktau); //proof.At = g^(-2 * kb) h^ktau
+    proof.At = pp.g * (-bn_2 * consistency_random.kb) + pp.h * (ktau); // proof.At = g^(-2 * kb) h^ktau
 
-    BigInt w_exp_m=w.ModExp(m,order); // w_exp_m =w^m
-    proof.stau=(ktau+(c*w_exp_m*proof.taux)%order)%order;
+    BigInt w_exp_m = w.ModExp(m,order); // w_exp_m =w^m
+    proof.stau = (ktau + (c * w_exp_m * proof.taux) % order) % order; // proof.stau = ktau + c * w^m * taux
   
     // transmit llx and rrx via inner product proof
 
@@ -383,16 +383,16 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
 
     ip_instance.P = ECPointVectorMul(vec_A, vec_a);  
     
-    std::cout<<"begin to prove inner product"<<std::endl;
+    std::cout << "begin to prove inner product" << std::endl;
  
     InnerProduct::Prove(ip_pp, ip_instance, ip_witness, transcript_str, proof.ip_proof); 
 
     #ifdef DEBUG
-        std::cout << "Bullet Proof Generation Succeeds >>>" << std::endl; 
+        std::cout << "Sigma Bullet Proof Generation Succeeds >>>" << std::endl; 
     #endif
 }
 
-bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof,ManyOutOfMany::Proof &many_out_of_many_proof)
+bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proof, ManyOutOfMany::Proof &many_out_of_many_proof)
 {
     #ifdef DEBUG
         std::cout << "begin to check the proof" << std::endl; 
@@ -401,40 +401,40 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     bool V1, V2, Validity; // variables for checking results
 
     transcript_str = "";
-    transcript_str += many_out_of_many_proof.proof_ComA.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_ComB.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_commitment_A.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_commitment_B.ToByteString();
     
     BigInt v = Hash::StringToBigInt(transcript_str);
 
-    size_t m = many_out_of_many_proof.vec_lower_cipher_bal_left.size(); // m = log N
+    size_t m = many_out_of_many_proof.proof_vec_lower_cipher_balance_left.size(); // m = log N
     for(size_t i = 0; i < m; i++)
     {
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_bal_left[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_bal_right[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_cipher_value[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_cipher4D[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_pk[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_g[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_oppcipher[i].ToByteString();
-        transcript_str += many_out_of_many_proof.lower_vec_oppcipherpk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_balance_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_balance_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_cipher_transfer_left[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_lower_cipher_transfer_right[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_pk[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
+        transcript_str += many_out_of_many_proof.vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
     BigInt w=Hash::StringToBigInt(transcript_str);
 
     for(size_t k = 0; k < m; k++)
     {
-        transcript_str += many_out_of_many_proof.vec_proof_f0[k].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_proof_f1[k].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_eval_f0[k].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_eval_f1[k].ToByteString();
     }
     transcript_str += many_out_of_many_proof.proof_Za.ToByteString();
 
     BigInt z = Hash::StringToBigInt(transcript_str); // //recover the challenge y
 
-    transcript_str += many_out_of_many_proof.proof_Ay_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_AD_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ab0_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ab1_re_enc.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_Ax_re_enc.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ay_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_AD_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab0_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ab1_re_encryption.ToByteString();
+    transcript_str += many_out_of_many_proof.proof_Ax_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_Au.ToByteString();
 
 
@@ -493,23 +493,25 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     BigInt delta_yz = bn_temp1.ModSub(bn_temp2, order);  //Eq (39) also see page 21
 
     //begin sigma-bullet-verify
-    BigInt w_exp_m = w.ModExp(m,order);
-    BigInt w_exp_mc  =w_exp_m*c%order;
-    BigInt leftexp4g = (w_exp_mc*proof.tx)%order;
-    ECPoint Left = pp.g*leftexp4g+pp.h*proof.stau;
+    BigInt w_exp_m = w.ModExp(m,order); // w_exp_m = w ^m
+    BigInt w_exp_m_times_c = w_exp_m * c % order; // w_exp_m_times_c = w^m * c
+    BigInt left_exp_4_g = (w_exp_m_times_c * proof.tx) % order; // left_exp_4_g = w^m * c * tx
+    ECPoint LEFT = pp.g * left_exp_4_g + pp.h * proof.stau; // LEFT = g^{w^m * c * tx} h^{s_tau}
     
-    BigInt rightexp4g = (w_exp_mc*delta_yz)%order;
+    BigInt right_exp_4_g = (w_exp_m_times_c * delta_yz) % order; // right_exp_4_g = w^m * c * {delta_yz}
     
-    BigInt Sb = (many_out_of_many_proof.proof_Sb0+many_out_of_many_proof.proof_Sb1)%order;
+    BigInt Sb = (many_out_of_many_proof.proof_Sb0 + many_out_of_many_proof.proof_Sb1) % order;
  
-    ECPoint Right=pp.g*rightexp4g+pp.g*(Sb)+proof.At+(proof.T1*x+proof.T2*x_square)*w_exp_mc;
+    // RIGHT = g^{w^m * c * {delta_yz}} g^{Sb} At {T1 * x + T2 * {x^2}}^{ w^m * c}                                                                                                     {T1 * x + }
+    ECPoint RIGHT = pp.g * right_exp_4_g + pp.g * (Sb) + proof.At + (proof.T1 * x 
+                                         + proof.T2 * x_square) * w_exp_m_times_c; 
 
     // the intermediate variables used to compute the right value
     std::vector<ECPoint> vec_A; 
     std::vector<BigInt> vec_a;
 
     //this is replace with a sigma protocol
-    V1 = (Left == Right);
+    V1 = (LEFT == RIGHT);
     #ifdef DEBUG
         std::cout << std::boolalpha << "Condition 1 (Aggregating Log Size BulletProof) = " << V1 << std::endl; 
     #endif
@@ -541,7 +543,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     vec_a.resize(2*ip_pp.VECTOR_LEN+4);
     
     std::vector<BigInt> vec_z_minus_unary(LEN, z_minus); 
-    std::move(vec_z_minus_unary.begin(), vec_z_minus_unary.end(), vec_a.begin()); // LEFT += g^{-1 z^n} 
+    std::move(vec_z_minus_unary.begin(), vec_z_minus_unary.end(), vec_a.begin()); 
 
     std::vector<BigInt> vec_rr = BigIntVectorModScalar(vec_y_power, z, BigInt(order)); // z y^nm
     std::vector<BigInt> temp_vec_zz; 
@@ -564,17 +566,14 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     ip_instance.P = ECPointVectorMul(vec_A, vec_a);  // set P_new = A + S^x + h^{-mu} u^tx  
 
     V2 = InnerProduct::FastVerify(ip_pp, ip_instance, transcript_str, proof.ip_proof); 
-    #ifdef DEBUG
-        std::cout << std::boolalpha << "Condition 2 (Aggregating Log Size BulletProof) = " << V2 << std::endl; 
-    #endif
-
+   
     Validity = V1 && V2;     
     #ifdef DEBUG
     if (Validity){ 
-        std::cout<< "log size BulletProof accepts >>>" << std::endl; 
+        std::cout<< "log size Sigma BulletProof accepts >>>" << std::endl; 
     }
     else{
-        std::cout<< "log size BulletProof rejects >>>" << std::endl; 
+        std::cout<< "log size Sigma BulletProof rejects >>>" << std::endl; 
     }
     #endif
 
