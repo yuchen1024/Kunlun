@@ -247,7 +247,7 @@ BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
         }
         else
         {
-            m=-m;
+            m = -m;
         }
        
     }  
