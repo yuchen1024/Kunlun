@@ -11,7 +11,7 @@ void Build_SDPT_Test_Enviroment(size_t ringnumber)
     // setup adcp system
     
     size_t LOG_MAXIMUM_COINS = 32;      
-    //size_t MAX_RECEIVER_NUM = 7;
+
     size_t AnonySetSize = ringnumber;  
 
     SDPT::SP sp;
@@ -208,98 +208,98 @@ void Emulate_SDPT_System(size_t ringnumber)
     std::cout << "begin to the test of 1-to-1 anonymous tx" << std::endl;
     PrintSplitLine('-'); 
     BigInt v;
-    std::cout<<"case 1: 1st valid 1-to-1 anonymous tx"<<std::endl;
+    std::cout << "case 1: 1st valid 1-to-1 anonymous tx" << std::endl;
     v = BigInt(32);
     std::vector<SDPT::AnonSet> AnonSetList;
-    std::cout << "Alice is going to transfer "<< BN_bn2dec(v.bn_ptr) << " coins to Bob" << std::endl;
+    std::cout << "Alice is going to transfer " << BN_bn2dec(v.bn_ptr) << " coins to Bob" << std::endl;
     
     //std::string namelist[9]={Acct_Alice,Acct_Bob,Acct_Carl,Acct_David,Acct_Eve,Acct_Frank,Acct_Grace,Acct_Henry,Acct_Tax};
-    std::vector<SDPT::Account> Accountlist{Acct_Alice,Acct_Bob,Acct_Carl,Acct_David,
-                                Acct_Eve,Acct_Frank,Acct_Grace,Acct_Henry,
-                                Acct_Ida,Acct_Jack,Acct_Kate,Acct_Leo,Acct_Mary,
-                                Acct_Nick,Acct_Olivia,Acct_Paul,Acct_Tax};
-    size_t sender_acc_index=0;
-    size_t receiver_acc_index=1;
-    SDPT::AnonSet AnonSet;
-    size_t num_account=std::min(ringnumber,Accountlist.size());
-    for(auto i=0;i<num_account;i++)
+    std::vector<SDPT::Account> acountlist{Acct_Alice, Acct_Bob, Acct_Carl, Acct_David,
+                                Acct_Eve, Acct_Frank, Acct_Grace, Acct_Henry,
+                                Acct_Ida, Acct_Jack, Acct_Kate, Acct_Leo, Acct_Mary,
+                                Acct_Nick, Acct_Olivia, Acct_Paul, Acct_Tax};
+    size_t sender_acc_index = 0;
+    size_t receiver_acc_index = 1;
+    SDPT::AnonSet anonset;
+    size_t num_account = std::min(ringnumber,acountlist.size());
+    for(auto i = 0; i < num_account; i++)
     {
-        AnonSet.identity=Accountlist[i].identity;
-        AnonSet.pk=Accountlist[i].pk;
-        AnonSet.balance_act=Accountlist[i].balance_ct;
-        AnonSetList.push_back(AnonSet);
+        anonset.identity = acountlist[i].identity;
+        anonset.pk = acountlist[i].pk;
+        anonset.balance_tx = acountlist[i].balance_ct;
+        AnonSetList.push_back(anonset);
     }
     //create 32 accounts additioanlly
-    size_t numadd_account=std::max(size_t(32),ringnumber);
-    for(auto i=0;i<numadd_account;i++)
+    size_t numadd_account = std::max(size_t(32),ringnumber);
+    for(auto i = 0; i < numadd_account; i++)
     {
         BigInt account_balance = BigInt(32); 
-        SDPT::Account Acct = SDPT::CreateAccount(pp, "Account"+std::to_string(i), account_balance); 
-        std::string Acct_FileName = "Account"+std::to_string(i)+".account"; 
+        SDPT::Account Acct = SDPT::CreateAccount(pp, "Account" + std::to_string(i), account_balance); 
+        std::string Acct_FileName = "Account" + std::to_string(i) + ".account"; 
         SDPT::SaveAccount(Acct, Acct_FileName); 
-        Accountlist.push_back(Acct);
+        acountlist.push_back(Acct);
     }
     //we create 16 accounts by hand, the other account we name is by "Account"+ id
-    for(auto i=17;i<ringnumber;i++)
+    for(auto i = 17;i < ringnumber; i++)
     {
-        AnonSet.identity=Accountlist[i].identity;
-        AnonSet.pk=Accountlist[i].pk;
-        AnonSet.balance_act=Accountlist[i].balance_ct;
-        AnonSetList.push_back(AnonSet);
+        anonset.identity = acountlist[i].identity;
+        anonset.pk = acountlist[i].pk;
+        anonset.balance_tx = acountlist[i].balance_ct;
+        AnonSetList.push_back(anonset);
     }
-    size_t n=AnonSetList.size();
-    if(n%2!=0)
+    size_t n = AnonSetList.size();
+    if(n % 2 != 0)
     {
-       std::cout<<"the number of the transaction participant number is not even"<<std::endl;
-       std::cout<<"wrong transaction participant number"<<std::endl;
+       std::cout << "the number of the transaction participant number is not even" << std::endl;
+       std::cout << "wrong transaction participant number" << std::endl;
     }
    
     //index type is size_t in order to find the index of the sender and receiver,in the proof,we use BigInt
     size_t senderindex;
     size_t receiverindex;
-    if(n==2)
+    if(n == 2)
     {
-        senderindex=0;
-        receiverindex=1;
+        senderindex = 0;
+        receiverindex = 1;
     }
     else{
-        senderindex=SDPT::getranindex(n);
-        receiverindex=SDPT::getranindex(n);
-        if(senderindex%2==receiverindex%2){
-            receiverindex=(receiverindex+1)%n;
+        senderindex = SDPT::getranindex(n);
+        receiverindex = SDPT::getranindex(n);
+        if(senderindex % 2 == receiverindex % 2){
+            receiverindex = (receiverindex+1) % n;
         }
-        if(senderindex!=sender_acc_index){
-            std::swap(AnonSetList[senderindex],AnonSetList[sender_acc_index]);
+        if(senderindex != sender_acc_index){
+            std::swap(AnonSetList[senderindex], AnonSetList[sender_acc_index]);
         }
-        if(receiverindex!=receiver_acc_index&&receiverindex!=sender_acc_index&&senderindex!=receiver_acc_index){
-        std::swap(AnonSetList[receiverindex],AnonSetList[receiver_acc_index]);
+        if(receiverindex != receiver_acc_index && receiverindex != sender_acc_index && senderindex != receiver_acc_index){
+        std::swap(AnonSetList[receiverindex], AnonSetList[receiver_acc_index]);
         }
     }
     
-    std::cout<<"senderindex:"<<senderindex<<std::endl;
-    std::cout<<"receiverindex:"<<receiverindex<<std::endl;
-    count=count+bn_1;   
-    std::cout<<"CreateAnoyTransaction "<<std::endl;
-    SDPT::StofAnoyTransaction1 AnoyTransaction1 = SDPT::CreateAnoyTransaction1(pp, Acct_Alice, 
-                                                v,AnonSetList, Acct_Bob.pk, count,senderindex,receiverindex);
+    std::cout << "senderindex:" << senderindex << std::endl;
+    std::cout << "receiverindex:" << receiverindex << std::endl;
+    count = count + bn_1;   
+    std::cout << "CreateAnoyTransaction " << std::endl;
+    SDPT::AnonTransaction1 anon_transaction1 = SDPT::CreateAnonTransaction1(pp, Acct_Alice, 
+                                                v, AnonSetList, Acct_Bob.pk, count, senderindex, receiverindex);
     
     
-    SDPT::StofAnoyTransaction2 AnoyTransaction2 = SDPT::CreateAnoyTransaction2(pp, Acct_Alice, 
+    SDPT::AnonTransaction2 anon_transaction2 = SDPT::CreateAnonTransaction2(pp, Acct_Alice, 
                                                 v,AnonSetList, Acct_Bob.pk, count,senderindex,receiverindex);
-    std::cout<<"begin to mine"<<std::endl;
+    std::cout << "begin to mine" << std::endl;
     std::vector<SDPT::Account> AccountList_miner(ringnumber);
-    std::copy(Accountlist.begin(),Accountlist.begin()+ringnumber,AccountList_miner.begin());
-    if(senderindex!=sender_acc_index)
+    std::copy(acountlist.begin(), acountlist.begin()+ringnumber, AccountList_miner.begin());
+    if(senderindex != sender_acc_index)
     {
-        std::swap(AccountList_miner[senderindex],AccountList_miner[sender_acc_index]);
+        std::swap(AccountList_miner[senderindex], AccountList_miner[sender_acc_index]);
     }
-    if(receiverindex!=receiver_acc_index)
+    if(receiverindex != receiver_acc_index)
     {
-        std::swap(AccountList_miner[receiverindex],AccountList_miner[receiver_acc_index]);
+        std::swap(AccountList_miner[receiverindex], AccountList_miner[receiver_acc_index]);
     }
-    std::cout<<"AccountList_miner.size():"<<AccountList_miner.size()<<std::endl;
-    SDPT::Miner1(pp, AnoyTransaction1, AccountList_miner); 
-    SDPT::Miner2(pp, AnoyTransaction2, AccountList_miner);
+    std::cout << "AccountList_miner.size():" << AccountList_miner.size() << std::endl;
+    SDPT::Miner1(pp, anon_transaction1, AccountList_miner); 
+    SDPT::Miner2(pp, anon_transaction2, AccountList_miner);
     PrintSplitLine('-');
 
     std::cout << "after 1st valid 1-to-1 anonymous tx >>>>>>" << std::endl; 
@@ -310,7 +310,7 @@ void Emulate_SDPT_System(size_t ringnumber)
 
     std::cout << "supervision1 of 1-to-1 anonymous tx begins >>>" << std::endl; 
     PrintSplitLine('-'); 
-    SDPT::SuperviseAnoyTx1(sp, pp,AnoyTransaction1);  
+    SDPT::SuperviseAnonTx1(sp, pp,anon_transaction1);  
     std::cout << "supervision1 of 1-to-1 anonymous tx ends >>>" << std::endl; 
     PrintSplitLine('-');
 
@@ -319,7 +319,7 @@ void Emulate_SDPT_System(size_t ringnumber)
 
     std::cout << "supervision2 of 1-to-1 anonymous tx begins >>>" << std::endl; 
     PrintSplitLine('-'); 
-    SDPT::SuperviseAnoyTx2(sp, pp,AnoyTransaction2);  
+    SDPT::SuperviseAnonTx2(sp, pp,anon_transaction2);  
     std::cout << "supervision2 of 1-to-1 anonymous tx ends >>>" << std::endl; 
     PrintSplitLine('-');
 

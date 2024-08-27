@@ -1,6 +1,5 @@
 /***********************************************************************************
-this hpp implements NIZKPoK for n ElGamal ciphertexts 
-(randomness reuse) encrypt the same message 
+this hpp implements NIZKPoK for Multi Plaintext Equality
 ***********************************************************************************/
 #ifndef KUNLUN_NIZK_MPTEQ_HPP_
 #define KUNLUN_NIZK_MPTEQ_HPP_

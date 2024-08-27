@@ -1,5 +1,5 @@
 /****************************************************************************
-this hpp implements NIZKPoK for ElGamal ciphertext value
+this hpp implements NIZKPoK for Plaintext Bit Equality
 *****************************************************************************/
 #ifndef KUNLUN_NIZK_PTBEQ_HPP_
 #define KUNLUN_NIZK_PTBEQ_HPP_
@@ -28,7 +28,7 @@ struct Instance
 {   
     std::vector<ExponentialElGamal::CT> vec_cipher_transfer;
     std::vector<ECPoint> vec_pk;
-    ExponentialElGamal::CT value_cipher_supervison; // value_cipher_supervison C = enc(pka,v,r); the v is the transaction value
+    ExponentialElGamal::CT cipher_supervison_value; // cipher_supervison_value C = enc(pka,v,r); the v is the transaction value
     std::vector<ExponentialElGamal::CT> vec_cipher_supervision_index_bit_sender; 
     std::vector<ExponentialElGamal::CT> vec_cipher_supervision_index_bit_receiver;
 };
@@ -101,8 +101,8 @@ std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
 void PrintInstance(Instance &instance)
 {
     std::cout << "Plaintext Bit Equality Instance >>> " << std::endl; 
-    instance.value_cipher_supervison.X.Print("instance.value_cipher_supervison.X");
-    instance.value_cipher_supervison.Y.Print("instance.value_cipher_supervison.Y");
+    instance.cipher_supervison_value.X.Print("instance.cipher_supervison_value.X");
+    instance.cipher_supervison_value.Y.Print("instance.cipher_supervison_value.Y");
     size_t vec_size = instance.vec_cipher_transfer.size();
     for(auto i = 0; i < vec_size; i++)
     {
@@ -203,7 +203,7 @@ PP Setup(ExponentialElGamal::PP pp_enc,size_t num_cipher,ECPoint pka)
 }
 
 
-// generate NIZK proof for value_cipher_supervison = Enc(pk_a, v; r) and vec_cipher_supervision_index_bit enc the sender and receiver index
+// generate NIZK proof for cipher_supervison_value = Enc(pk_a, v; r) and vec_cipher_supervision_index_bit enc the sender and receiver index
 Proof Prove(PP &pp, Instance &instance, Witness &witness, ManyOutOfMany::Proof &many_out_of_many_proof, std::string &transcript_str, ManyOutOfMany::ConsistencyRandom consistency_random)
 {   
     Proof proof;
@@ -226,7 +226,7 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, ManyOutOfMany::Proof &
         transcript_str += many_out_of_many_proof.proof_vec_lower_pk[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_g[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_opposite_cipher_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
     BigInt w=Hash::StringToBigInt(transcript_str);
@@ -334,7 +334,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
         transcript_str += many_out_of_many_proof.proof_vec_lower_pk[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_g[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_opposite_cipher_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
     BigInt w=Hash::StringToBigInt(transcript_str);
@@ -369,7 +369,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
 
     // check condition 1
     LEFT = pp.g * proof.z ; //  LEFT  = g^z
-    RIGHT = proof.A + instance.value_cipher_supervison.X * e; // RIGHT = A X^e
+    RIGHT = proof.A + instance.cipher_supervison_value.X * e; // RIGHT = A X^e
     
     vec_condition[0] = (LEFT == RIGHT); //check pk^z1 = A X^e
     
@@ -377,7 +377,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     std::vector<ECPoint> vec_base{pp.pka, pp.g}; 
     std::vector<BigInt> vec_x{proof.z, proof.t}; 
     LEFT = ECPointVectorMul(vec_base, vec_x); // LEFT = pk^z g^t
-    RIGHT = proof.B + instance.value_cipher_supervison.Y * e; // RIGHT = B Y^e 
+    RIGHT = proof.B + instance.cipher_supervison_value.Y * e; // RIGHT = B Y^e 
 
     vec_condition[1] = (LEFT == RIGHT); //check g^z1 h^z2 = B Y^e
 

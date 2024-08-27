@@ -339,12 +339,13 @@ void Prove(PP &pp, Witness &witness, Instance &instance, std::string &transcript
     /*fill vec_ma1*/
     std::vector<BigInt> vec_tmpa(m);
     
-    vec_tmpa = BigIntVectorModNegate(al0, order);
+    BigInt mod = order;
+    vec_tmpa = BigIntVectorModNegate(al0, mod);
   
     vec_tmpa = BigIntVectorModProduct(vec_tmpa, al0, order);
     std::copy(vec_tmpa.begin(), vec_tmpa.end(), vec_ma1.begin());
 
-    vec_tmpa = BigIntVectorModNegate(al1,order);
+    vec_tmpa = BigIntVectorModNegate(al1, mod);
     vec_tmpa = BigIntVectorModProduct(vec_tmpa, al1, order);
     std::copy(vec_tmpa.begin(), vec_tmpa.end(), vec_ma1.begin()+m);
 
@@ -415,7 +416,7 @@ void Prove(PP &pp, Witness &witness, Instance &instance, std::string &transcript
         tmp_F0.second = al0[k];
         vec_F0[k][1] = tmp_F0;
         tmp_F0.first = (bn_1 - bl0[k]);
-        tmp_F0.secon d= -al0[k];
+        tmp_F0.second = -al0[k];
         vec_F0[k][0] = tmp_F0;
 
         tmp_F1.first = bl1[k];
@@ -556,7 +557,7 @@ void Prove(PP &pp, Witness &witness, Instance &instance, std::string &transcript
     // Eq (71) -- compute \overline{C_{R n}} = (C_{R n, l_{0}})^{w^{m}} \cdot (\prod_{k=0}^{m-1} g^{-\phi_{k} \cdot w^{k}})
     ECPoint re_encryption_cipher_balance_right = instance.vec_cipher_balance_right[l0_size_t] * w_exp_m ;
     BigInt w_exp_k;
-    for(auto k  0; k < m; k++)
+    for(auto k = 0; k < m; k++)
     {
         w_exp_k = w.ModExp(k, order);
         w_exp_k = w_exp_k.ModMul(-phi[k], order);
@@ -811,7 +812,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     //check 1 the commitment
     ECPoint COM_LFET = proof.proof_commitment_A + proof.proof_commitment_B * w;
     ECPoint COM_RIGHT= Pedersen::Commit(pp.com_part, vec_move_f, proof.proof_Za);
-    if(COM_LFET != ComRight)
+    if(COM_LFET != COM_RIGHT)
     {
         std::cout << "Commitment is wrong" << std::endl;
         return false;

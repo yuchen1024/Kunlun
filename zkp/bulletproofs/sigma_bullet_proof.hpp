@@ -5,7 +5,7 @@ this hpp implements aggregated logarithmic size Sigma_Bulletproofs
 #define SIGMAL_BULLET_PROOF_HPP_
 
 #include "innerproduct_proof.hpp" 
-#include "../nizk/nizk_right.hpp"
+#include "../nizk/nizk_many_out_of_many.hpp"
 
 namespace SigmaBullet{
 
@@ -168,7 +168,7 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
         transcript_str += many_out_of_many_proof.proof_vec_lower_pk[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_g[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_opposite_cipher_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
     BigInt w = Hash::StringToBigInt(transcript_str);
@@ -416,7 +416,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
         transcript_str += many_out_of_many_proof.proof_vec_lower_pk[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_g[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
-        transcript_str += many_out_of_many_proof.vec_lower_opposite_cipher_g[i].ToByteString();
+        transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
     BigInt w=Hash::StringToBigInt(transcript_str);
