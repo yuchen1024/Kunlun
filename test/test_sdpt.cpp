@@ -263,19 +263,41 @@ void Emulate_SDPT_System(size_t ringnumber)
     }
     else
     {
-        senderindex = SDPT::getranindex(n);
-        receiverindex = SDPT::getranindex(n);
+        //senderindex = SDPT::getranindex(n);
+        //receiverindex = SDPT::getranindex(n);
+        senderindex = 1;
+        receiverindex = 0;
+        if(senderindex == receiverindex)
+        {
+            receiverindex = (receiverindex+1) % n;
+        }
         if(senderindex % 2 == receiverindex % 2)
         {
             receiverindex = (receiverindex+1) % n;
         }
-        if(senderindex != sender_acc_index)
+        if(senderindex == receiver_acc_index && receiverindex == sender_acc_index)
         {
-            std::swap(AnonSetList[senderindex], AnonSetList[sender_acc_index]);
+            std::swap(AnonSetList[senderindex], AnonSetList[receiverindex]);
         }
-        if(receiverindex != receiver_acc_index && receiverindex != sender_acc_index && senderindex != receiver_acc_index)
+        else 
         {
-            std::swap(AnonSetList[receiverindex], AnonSetList[receiver_acc_index]);
+            if(senderindex == receiver_acc_index)
+            {
+                std::swap(AnonSetList[senderindex], AnonSetList[sender_acc_index]);
+                receiver_acc_index = sender_acc_index;
+                std::swap(AnonSetList[receiverindex], AnonSetList[receiver_acc_index]);
+            }
+            else if(receiverindex == sender_acc_index)
+            {
+                std::swap(AnonSetList[receiverindex], AnonSetList[receiver_acc_index]);
+                sender_acc_index = receiver_acc_index;
+                std::swap(AnonSetList[senderindex], AnonSetList[sender_acc_index]);
+            }
+            else 
+            {
+                std::swap(AnonSetList[senderindex], AnonSetList[sender_acc_index]);
+                std::swap(AnonSetList[receiverindex], AnonSetList[receiver_acc_index]);
+            }        
         }
     }
     

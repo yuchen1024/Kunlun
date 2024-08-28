@@ -1192,7 +1192,7 @@ void UpdateAccount(PP &pp, AnonTransaction1 &anon_transaction, std::vector<Accou
     for(auto i = 0; i < anon_transaction.number; i++)
     {
         accountlist_miner[i].balance_ct = anon_transaction.balance_tx[i];
-        accountlist_miner[i].m = ExponentialElGamal::Dec(pp.enc_part,accountlist_miner[i].sk, accountlist_miner[i].balance_ct);
+        accountlist_miner[i].m = ExponentialElGamal::Dec(pp.enc_part, accountlist_miner[i].sk, accountlist_miner[i].balance_ct);
         SaveAccount(accountlist_miner[i], accountlist_miner[i].identity + ".account");
     }
       
