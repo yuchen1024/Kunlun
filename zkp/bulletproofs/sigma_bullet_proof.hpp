@@ -38,14 +38,11 @@ std::ofstream &operator<<(std::ofstream &fout, const PP &pp)
 std::ifstream &operator>>(std::ifstream &fin, PP& pp)
 {
     fin >> pp.RANGE_LEN >> pp.LOG_RANGE_LEN >> pp.MAX_AGG_NUM; 
-
     fin >> pp.g >> pp.h >> pp.u;
-
     pp.vec_g.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM); 
     pp.vec_h.resize(pp.RANGE_LEN * pp.MAX_AGG_NUM); 
     fin >> pp.vec_g;
     fin >> pp.vec_h;
-
     return fin;  
 }
 
@@ -90,7 +87,6 @@ std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
     return fin; 
 }
 
-
 /* generate a^n = (a^0, a^1, a^2, ..., a^{n-1}) */ 
 std::vector<BigInt> GenBigIntPowerVector(size_t LEN, const BigInt &a)
 {
@@ -109,7 +105,6 @@ void PrintProof(Proof &proof)
     proof.S.Print("proof.S"); 
     proof.T1.Print("proof.T1");  
     proof.T2.Print("proof.T2");  
-
     proof.taux.Print("proof.taux"); 
     proof.mu.Print("proof.mu"); 
     proof.tx.Print("proof.tx"); 
@@ -118,7 +113,6 @@ void PrintProof(Proof &proof)
 
     InnerProduct::PrintProof(proof.ip_proof); 
 }
-
 
 std::string ProofToByteString(Proof &proof)
 {
@@ -136,14 +130,11 @@ PP Setup(size_t &RANGE_LEN, size_t &MAX_AGG_NUM)
     pp.RANGE_LEN = RANGE_LEN; 
     pp.LOG_RANGE_LEN = size_t(log2(RANGE_LEN)); 
     pp.MAX_AGG_NUM = MAX_AGG_NUM; 
- 
     pp.g = generator; 
     pp.h = Hash::StringToECPoint(pp.g.ToByteString()); 
     pp.u = GenRandomGenerator();
-
     pp.vec_g = GenRandomECPointVector(RANGE_LEN * MAX_AGG_NUM);
     pp.vec_h = GenRandomECPointVector(RANGE_LEN * MAX_AGG_NUM);
-
     return pp; 
 }
 
@@ -153,10 +144,8 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
 { 
     transcript_str = "";
     transcript_str += many_out_of_many_proof.proof_commitment_A.ToByteString();
-    transcript_str += many_out_of_many_proof.proof_commitment_B.ToByteString();
-    
-    BigInt v=Hash::StringToBigInt(transcript_str);
-
+    transcript_str += many_out_of_many_proof.proof_commitment_B.ToByteString();  
+    BigInt v = Hash::StringToBigInt(transcript_str);
     size_t m = many_out_of_many_proof.proof_vec_lower_cipher_balance_left.size();
     std::cout << "Log_mom_proof.Num = " << m << std::endl;
     for(size_t i = 0; i < m; i++)
@@ -170,46 +159,39 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
         transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher[i].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher_g[i].ToByteString();
     }
-
     BigInt w = Hash::StringToBigInt(transcript_str);
-
     for(size_t k = 0; k < m; k++)
     {
         transcript_str += many_out_of_many_proof.proof_vec_eval_f0[k].ToByteString();
         transcript_str += many_out_of_many_proof.proof_vec_eval_f1[k].ToByteString();
     }
     transcript_str += many_out_of_many_proof.proof_Za.ToByteString();
-
     BigInt z = Hash::StringToBigInt(transcript_str);
-
     transcript_str += many_out_of_many_proof.proof_Ay_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_AD_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_Ab0_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_Ab1_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_Ax_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_Au.ToByteString();
-
     BigInt c = Hash::StringToBigInt(transcript_str);
 
-
     auto start_time = std::chrono::steady_clock::now(); 
-
     size_t n = witness.v.size();
     size_t LEN = pp.RANGE_LEN * n; // LEN = mn
-
     std::vector<BigInt> vec_aL(LEN);  
     std::vector<BigInt> vec_aR(LEN);
- 
     std::vector<BigInt> vec_1_power(LEN, bn_1); // vec_unary = 1^nm
 
     for (auto i = 0; i < n; i++)
     {
         for(auto j = 0; j < pp.RANGE_LEN; j++)
         {
-            if(witness.v[i].GetTheNthBit(j) == 1){
+            if(witness.v[i].GetTheNthBit(j) == 1)
+            {
                 vec_aL[i * pp.RANGE_LEN + j] = bn_1;  
             }
-            else{
+            else
+            {
                 vec_aL[i * pp.RANGE_LEN + j] = bn_0; 
             } 
         }
@@ -284,7 +266,6 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     
     std::vector<BigInt> vec_short_2_power = GenBigIntPowerVector(pp.RANGE_LEN, bn_2); // 2^n
 
-
     for (auto j = 1; j <= n; j++)
     {
         for (auto i = 0; i < (j-1)*pp.RANGE_LEN; i++) 
@@ -325,7 +306,6 @@ void Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcript
     // Eq (56) -- compute the challenge x
     transcript_str += proof.T1.ToByteString() + proof.T2.ToByteString(); 
     BigInt x = Hash::StringToBigInt(transcript_str); 
-
 
     BigInt x_square = x.ModSquare(order);   
 
@@ -403,9 +383,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     transcript_str = "";
     transcript_str += many_out_of_many_proof.proof_commitment_A.ToByteString();
     transcript_str += many_out_of_many_proof.proof_commitment_B.ToByteString();
-    
     BigInt v = Hash::StringToBigInt(transcript_str);
-
     size_t m = many_out_of_many_proof.proof_vec_lower_cipher_balance_left.size(); // m = log N
     for(size_t i = 0; i < m; i++)
     {
@@ -419,7 +397,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
         transcript_str += many_out_of_many_proof.proof_vec_lower_opposite_cipher_g[i].ToByteString();
     }
 
-    BigInt w=Hash::StringToBigInt(transcript_str);
+    BigInt w = Hash::StringToBigInt(transcript_str);
 
     for(size_t k = 0; k < m; k++)
     {
@@ -427,9 +405,7 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
         transcript_str += many_out_of_many_proof.proof_vec_eval_f1[k].ToByteString();
     }
     transcript_str += many_out_of_many_proof.proof_Za.ToByteString();
-
     BigInt z = Hash::StringToBigInt(transcript_str); // //recover the challenge y
-
     transcript_str += many_out_of_many_proof.proof_Ay_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_AD_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_Ab0_re_encryption.ToByteString();
@@ -437,29 +413,23 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     transcript_str += many_out_of_many_proof.proof_Ax_re_encryption.ToByteString();
     transcript_str += many_out_of_many_proof.proof_Au.ToByteString();
 
-
-    BigInt c=Hash::StringToBigInt(transcript_str);
+    BigInt c = Hash::StringToBigInt(transcript_str);
     transcript_str += proof.A.ToByteString();
     transcript_str += proof.S.ToByteString(); 
     transcript_str += z.ToByteString(); 
     BigInt y = Hash::StringToBigInt(transcript_str);  //recover the challenge y
     BigInt y_inverse = y.ModInverse(order);  
-    
-
     BigInt z_minus = z.ModNegate(order); 
     BigInt z_square = z.ModSquare(order);
     BigInt z_cubic = (z * z_square) % order; 
 
     transcript_str += proof.T1.ToByteString() + proof.T2.ToByteString(); 
     BigInt x = Hash::StringToBigInt(transcript_str); 
-
     BigInt x_square = x.ModSquare(order);  // x_square = (x * x) % q;  //recover the challenge x from \pi
 
     transcript_str += x.ToByteString(); 
     BigInt e = Hash::StringToBigInt(transcript_str);  // play the role of x_u
-
-   
-    size_t n =2;// instance.C.size();
+    size_t n = 2;// instance.C.size();
     size_t LEN = pp.RANGE_LEN * n; // l = nm 
     std::vector<BigInt> vec_1_power(LEN, bn_1); // vec_unary = 1^nm
     std::vector<BigInt> vec_short_1_power(pp.RANGE_LEN, bn_1); 
@@ -569,10 +539,12 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
    
     Validity = V1 && V2;     
     #ifdef DEBUG
-    if (Validity){ 
+    if (Validity)
+    { 
         std::cout<< "log size Sigma BulletProof accepts >>>" << std::endl; 
     }
-    else{
+    else
+    {
         std::cout<< "log size Sigma BulletProof rejects >>>" << std::endl; 
     }
     #endif

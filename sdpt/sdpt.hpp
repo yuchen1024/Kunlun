@@ -10,7 +10,7 @@ this hpp implements the SDPT functionality
 #include "../zkp/nizk/nizk_plaintext_bit_equality.hpp" // NIZKPoK for plaintext bit equality
 #include "../zkp/nizk/nizk_multi_plaintext_equality.hpp" // NIZKPoK for multi plaintext equality
 
-#include "../gadget/range_proof.hpp"
+//#include "../gadget/range_proof.hpp"
 #include "../utility/serialization.hpp"
 
 #include <time.h>
@@ -26,7 +26,8 @@ using Serialization::operator>>;
 
 // define the structure of system parameters
 
-struct PP{    
+struct PP
+{    
     BigInt MAXIMUM_COINS; 
     size_t anonset_num; // the number of AnonSet,include the sender
     SigmaBullet::PP sigmabullet_part;
@@ -36,11 +37,13 @@ struct PP{
 };
 
 // define the structure of system parameters
-struct SP{
+struct SP
+{
     BigInt ska;   // supervisor's sk
 };
 
-struct Account{
+struct Account
+{
     std::string identity;     // id
     ECPoint pk;              // public key
     BigInt sk;              // secret key
@@ -48,7 +51,8 @@ struct Account{
     BigInt m;               // dangerous (should only be used for speeding up the proof generation)
 };
 
-struct AnonSet{
+struct AnonSet
+{
     std::string identity;
     ECPoint pk;
     ExponentialElGamal::CT balance_tx; // current balance
@@ -64,7 +68,8 @@ struct SupervisionResult
 };
 
 //the structure of Anonymous Transaction 1
-struct AnonTransaction1{
+struct AnonTransaction1
+{
    BigInt epnumber; // the number of epoch
    ECPoint gepoch; // the generator of epoch
    ECPoint uepoch;// uepoch=gepoch^sender_sk
@@ -93,7 +98,8 @@ struct AnonTransaction1{
 };
 
 //the structure of Anonymous Transaction 2
-struct AnonTransaction2{
+struct AnonTransaction2
+{
    BigInt epnumber; // the number of epoch
    ECPoint gepoch; // the generator of epoch
    ECPoint uepoch;// uepoch=gepoch^sender_sk
@@ -117,24 +123,25 @@ struct AnonTransaction2{
    MultiPlaintextEquality::Proof proof_multi_plaintext_equality_proof; // NIZKPoK for the Multi Plaintext Equality
 
 };
+
 std::string GetAnonTxFileName(AnonTransaction1 &anon_transaction)
 {
     std::string tx_file = "Anonytx_way1_" + anon_transaction.epnumber.ToHexString() + ".tx";    
     return tx_file; 
 }
+
 std::string GetAnonTxFileName(AnonTransaction2 &anon_transaction)
 {
     std::string tx_file = "Anonytx_way2_" + anon_transaction.epnumber.ToHexString() + ".tx";    
     return tx_file; 
 }
+
 void PrintPP(PP &pp)
 {
     PrintSplitLine('-');
     std::cout << "pp content >>>>>>" << std::endl; 
     std::cout << "anonset_num = " << pp.anonset_num << std::endl; 
-
-    pp.pka.Print("supervisor's pk"); 
-    
+    pp.pka.Print("supervisor's pk");  
     PrintSplitLine('-'); 
 }
 
@@ -170,25 +177,29 @@ void PrintAnonyTX1(AnonTransaction1 &anon_transaction)
     std::cout << "log_number of participants >>>" << anon_transaction.log_number << std::endl; 
 
     std::cout << "participants' identity >>>" << std::endl; 
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         std::cout << anon_transaction.identity[i] << std::endl; 
     }
     std::cout << std::endl; 
 
     std::cout << "participants' pk >>>" << std::endl; 
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         anon_transaction.pk[i].Print("pk"); 
     }
     std::cout << std::endl; 
 
     std::cout << "participants' balance >>>" << std::endl; 
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         ExponentialElGamal::PrintCT(anon_transaction.balance_tx[i]); 
     }
     std::cout << std::endl; 
 
     std::cout << "participants' transfer >>>" << std::endl; 
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         anon_transaction.transfer_tx_left[i].Print("transfer_tx_left");
         //ExponentialElGamal::PrintCT(anon_transaction.transfer_tx[i]); 
     }
@@ -227,25 +238,29 @@ void PrintAnonyTX2(AnonTransaction2 &anon_transaction)
     std::cout << "log_number of participants >>>" << anon_transaction.log_number << std::endl; 
 
     std::cout << "participants' identity >>>" << std::endl; 
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         std::cout << anon_transaction.identity[i] << std::endl; 
     }
     std::cout << std::endl; 
 
     std::cout << "participants' pk >>>" << std::endl; 
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         anon_transaction.pk[i].Print("pk"); 
     }
     std::cout << std::endl; 
 
     std::cout << "participants' balance >>>" << std::endl; 
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         ExponentialElGamal::PrintCT(anon_transaction.balance_tx[i]); 
     }
     std::cout << std::endl; 
 
     std::cout << "participants' transfer >>>" << std::endl; 
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         anon_transaction.transfer_tx_left[i].Print("transfer_tx_left");
         //ExponentialElGamal::PrintCT(anon_transaction.transfer_tx[i]); 
     }
@@ -355,10 +370,12 @@ void SaveAnonyTx1(AnonTransaction1 anon_transaction, std::string sdpt_anontx_fil
     fout << anon_transaction.proof_many_out_of_many_proof;
     //save supertvisor's Supervise1 result and proof
     fout << anon_transaction.cipher_supervison_value;
-    for(auto i = 0;i < anon_transaction.cipher_supervision_index_sender.size(); i++){
+    for(auto i = 0;i < anon_transaction.cipher_supervision_index_sender.size(); i++)
+    {
         fout << anon_transaction.cipher_supervision_index_sender[i];
     }
-    for(auto i = 0; i < anon_transaction.cipher_supervision_index_receiver.size(); i++){
+    for(auto i = 0; i < anon_transaction.cipher_supervision_index_receiver.size(); i++)
+    {
         fout << anon_transaction.cipher_supervision_index_receiver[i];
     }
     fout << anon_transaction.proof_plaintext_bit_equality_proof;
@@ -395,7 +412,8 @@ void SaveAnonyTx2(AnonTransaction2 anon_transaction, std::string sdpt_anontx_fil
     fout << anon_transaction.proof_many_out_of_many_proof;
     
     //save supertvisor's Supervise2 result and proof
-    for(auto i = 0; i < anon_transaction.cipher_supervison.size(); i++){
+    for(auto i = 0; i < anon_transaction.cipher_supervison.size(); i++)
+    {
         fout << anon_transaction.cipher_supervison[i];
     }
     fout << anon_transaction.proof_multi_plaintext_equality_proof;
@@ -421,7 +439,7 @@ void FetchAnonyTx1(AnonTransaction1 &anon_transaction, std::string sdpt_anontx_f
     fin >> anon_transaction.gepoch;
     fin >> anon_transaction.uepoch;
     size_t number=anon_transaction.number;
-    for(auto i=0;i<number;i++)
+    for(auto i = 0; i < number; i++)
     {
         fin >> anon_transaction.identity[i];
         fin >> anon_transaction.pk[i];
@@ -434,10 +452,12 @@ void FetchAnonyTx1(AnonTransaction1 &anon_transaction, std::string sdpt_anontx_f
     fin >> anon_transaction.proof_many_out_of_many_proof;
     //recover supertvisor's Supervise1 result and proof
     fin >> anon_transaction.cipher_supervison_value;
-    for(auto i=0;i<anon_transaction.cipher_supervision_index_sender.size();i++){
+    for(auto i = 0; i < anon_transaction.cipher_supervision_index_sender.size(); i++)
+    {
         fin >> anon_transaction.cipher_supervision_index_sender[i];
     }
-    for(auto i=0;i<anon_transaction.cipher_supervision_index_receiver.size();i++){
+    for(auto i = 0; i < anon_transaction.cipher_supervision_index_receiver.size(); i++)
+    {
         fin >> anon_transaction.cipher_supervision_index_receiver[i];
     }
     fin >> anon_transaction.proof_plaintext_bit_equality_proof;
@@ -469,7 +489,8 @@ void FetchAnonyTx2(AnonTransaction2 &anon_transaction, std::string sdpt_anontx_f
     fin >> anon_transaction.proof_many_out_of_many_proof;
     
     //recover supertvisor's Supervise2 result and proof
-    for(auto i = 0; i < anon_transaction.cipher_supervison.size(); i++){
+    for(auto i = 0; i < anon_transaction.cipher_supervison.size(); i++)
+    {
         fin >> anon_transaction.cipher_supervison[i];
     }
     fin >> anon_transaction.proof_multi_plaintext_equality_proof;
@@ -482,13 +503,12 @@ std::tuple<PP, SP> Setup(size_t LOG_MAXIMUM_COINS, size_t anonset_num)
     PP pp; 
     SP sp; 
 
-    if(IsPowerOfTwo(anonset_num) == false){ 
+    if(IsPowerOfTwo(anonset_num) == false)
+    { 
         std::cout << "parameters warning: (anonset_num) had better be a power of 2" << std::endl;
-    }
-     
+    }  
     pp.MAXIMUM_COINS = BigInt(uint64_t(pow(2, LOG_MAXIMUM_COINS)));  
     pp.anonset_num = anonset_num;
-
     size_t MAX_AGG_NUM = anonset_num ;
     size_t Log_anonset_num = size_t(log2(anonset_num-1)+1);
     std::cout << "MAX_AGG_NUM = " << MAX_AGG_NUM << std::endl;
@@ -517,10 +537,7 @@ Account CreateAccount(PP &pp, std::string identity, BigInt &init_balance)
 {
     Account new_acct;
     new_acct.identity = identity;
-
-
     std::tie(new_acct.pk, new_acct.sk) = ExponentialElGamal::KeyGen(pp.enc_part); // generate a keypair
-
     new_acct.m = init_balance; 
 
     // initialize account balance with 0 coins
@@ -551,6 +568,7 @@ size_t getranindex(size_t n)
     srand(time(0));
     return rand() % n;
 }
+
 // create a anonymous transaction: pk1 transfers v coins to pk2
 AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v, std::vector<AnonSet> &AnonSetList, ECPoint &pkr, BigInt epnumber, size_t sender_index, size_t receiver_index)
 {
@@ -561,7 +579,6 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
     std::cout<<"the number of AnonSet is "<<anon_transaction.number<<std::endl;
     std::cout<<"the log_number of AnonSet is "<<anon_transaction.log_number<<std::endl;
 
-    
     std::vector<std::string> identity_list(anon_transaction.number);
     std::vector<ECPoint> pk_list(anon_transaction.number);
     std::vector<ExponentialElGamal::CT> balance_tx_list(anon_transaction.number);
@@ -569,7 +586,7 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
 
     auto start_time = std::chrono::steady_clock::now();
     /*fill the struct of vec */
-    for(size_t i = 0;i < anon_transaction.number; i++)
+    for(size_t i = 0; i < anon_transaction.number; i++)
     {
         identity_list[i] = AnonSetList[i].identity;
         pk_list[i] = AnonSetList[i].pk;
@@ -585,7 +602,7 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
  
     transfer_tx_list[receiver_index] = ExponentialElGamal::Enc(pp.enc_part, pkr, v, r); // transfer v coins to receiver
  
-    for(auto i = 0;i < anon_transaction.number; i++)
+    for(auto i = 0; i < anon_transaction.number; i++)
     {
         if(i != sender_index && i != receiver_index){
             transfer_tx_list[i] = ExponentialElGamal::Enc(pp.enc_part, AnonSetList[i].pk, bn_0, r); // transfer 0 coins to AnonSet
@@ -629,15 +646,13 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
         many_out_of_many_instance.vec_cipher_transfer_left[i] = anon_transaction.transfer_tx_left[i];
     }
     many_out_of_many_instance.cipher_transfer_right = anon_transaction.transfer_tx_right;
-    
     many_out_of_many_instance.gepoch = anon_transaction.gepoch;
     many_out_of_many_instance.uepoch = anon_transaction.uepoch;
 
-
     /*Home add */
-    for(size_t i = 0; i < anon_transaction.number; i++){
-       anon_transaction.balance_tx[i]=ExponentialElGamal::HomoAdd(anon_transaction.balance_tx[i],
-                                                            transfer_tx_list[i]); 
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
+       anon_transaction.balance_tx[i]=ExponentialElGamal::HomoAdd(anon_transaction.balance_tx[i], transfer_tx_list[i]); 
        many_out_of_many_instance.vec_cipher_balance_left[i] = anon_transaction.balance_tx[i].Y;
        many_out_of_many_instance.vec_cipher_balance_right[i] = anon_transaction.balance_tx[i].X;                                                    
     }
@@ -652,15 +667,12 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
     many_out_of_many_witness.sk = Acct_sender.sk;
     PrintSplitLine('-');
     std::cout << "begin to decrypt the balance of the sender" << std::endl;
-    many_out_of_many_witness.vprime=ExponentialElGamal::Dec(pp.enc_part, Acct_sender.sk,
-                                    anon_transaction.balance_tx[sender_index]);
+    many_out_of_many_witness.vprime = ExponentialElGamal::Dec(pp.enc_part, Acct_sender.sk, anon_transaction.balance_tx[sender_index]);
     PrintSplitLine('-');
     std::cout<<"successfully decrypt the balance of the sender"<<std::endl;
    
     // vprime = sender's balance-transfer value
-    size_t vprime_size_t=many_out_of_many_witness.vprime.ToUint64();
-    //PrintSplitLine('-');
-    //std::cout<<"vprime_size_t="<<vprime_size_t<<std::endl;
+    size_t vprime_size_t = many_out_of_many_witness.vprime.ToUint64();
 
     ManyOutOfMany::ConsistencyRandom consistency_random;
     ManyOutOfMany::Proof proof_many_out_of_many_proof;
@@ -668,7 +680,7 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
     PrintSplitLine('-');
     std::cout<<"begin to prove the validity of the transaction"<<std::endl;
     ManyOutOfMany::Prove(many_out_of_many_pp, many_out_of_many_witness, many_out_of_many_instance,
-                 transcript_str, proof_many_out_of_many_proof, consistency_random);
+                        transcript_str, proof_many_out_of_many_proof, consistency_random);
 
     anon_transaction.proof_many_out_of_many_proof = proof_many_out_of_many_proof;
     PrintSplitLine('-');
@@ -681,11 +693,13 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
     sigmabullet_instance.cipher_transfer_right.resize(anon_transaction.number);
     sigmabullet_instance.cipher_balance_left.resize(anon_transaction.number);
     sigmabullet_instance.cipher_balance_right.resize(anon_transaction.number);
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         sigmabullet_instance.cipher_transfer_left[i] = anon_transaction.transfer_tx_left[i];
         sigmabullet_instance.cipher_transfer_right[i] = anon_transaction.transfer_tx_right;
     }
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         sigmabullet_instance.cipher_balance_left[i] = anon_transaction.balance_tx[i].Y;
         sigmabullet_instance.cipher_balance_left[i] = anon_transaction.balance_tx[i].X;
     }
@@ -694,7 +708,7 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
     PrintSplitLine('-');
     std::cout << "begin to prove the sigma bullet proof" << std::endl;
     SigmaBullet::Prove(pp.sigmabullet_part, sigmabullet_instance, sigmabullet_witness,
-                transcript_str, proof_sigma_bullet_proof, consistency_random, proof_many_out_of_many_proof);
+                    transcript_str, proof_sigma_bullet_proof, consistency_random, proof_many_out_of_many_proof);
     PrintSplitLine('-');
     std::cout << "successfully generate the sigma bullet proof" << std::endl;
     anon_transaction.proof_sigma_bullet_proof = proof_sigma_bullet_proof;
@@ -711,7 +725,8 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
     plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_sender_v.resize(anon_transaction.log_number);
     plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_receiver_v.resize(anon_transaction.log_number);
     plaintext_bit_equality_instance.vec_pk = anon_transaction.pk;
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         plaintext_bit_equality_instance.vec_cipher_transfer[i] = transfer_tx_list[i];
     }
     BigInt cipher_supervison_value_r = GenRandomBigIntLessThan(order);
@@ -732,7 +747,8 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
 
     plaintext_bit_equality_instance.vec_cipher_supervision_index_bit_sender.resize(anon_transaction.log_number);
     plaintext_bit_equality_instance.vec_cipher_supervision_index_bit_receiver.resize(anon_transaction.log_number);
-    for(size_t i = 0; i < anon_transaction.log_number; i++){
+    for(size_t i = 0; i < anon_transaction.log_number; i++)
+    {
         cipher_supervision_index_sender_r = GenRandomBigIntLessThan(order);
         cipher_supervision_index_receiver_r = GenRandomBigIntLessThan(order);
         plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_sender_r[i] = cipher_supervision_index_sender_r;
@@ -754,7 +770,6 @@ AnonTransaction1 CreateAnonTransaction1(PP &pp, Account &Acct_sender, BigInt &v,
         {
             cipher_supervision_index_receiver_v = bn_0;
         }
-
         anon_transaction.cipher_supervision_index_sender[i] = ExponentialElGamal::Enc(pp.enc_part, pp.pka, cipher_supervision_index_sender_v, cipher_supervision_index_sender_r);
         anon_transaction.cipher_supervision_index_receiver[i] = ExponentialElGamal::Enc(pp.enc_part, pp.pka, cipher_supervision_index_receiver_v, cipher_supervision_index_receiver_r);
         plaintext_bit_equality_witness.vec_cipher_supervision_index_bit_sender_v[i] = cipher_supervision_index_sender_v;
@@ -795,7 +810,7 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
 
     auto start_time = std::chrono::steady_clock::now();
     /*fill the struct of vec */
-    for(size_t i = 0;i < anon_transaction.number; i++)
+    for(size_t i = 0; i < anon_transaction.number; i++)
     {
         identity_list[i] = AnonSetList[i].identity;
         pk_list[i] = AnonSetList[i].pk;
@@ -809,7 +824,7 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
  
     transfer_tx_list[receiver_index] = ExponentialElGamal::Enc(pp.enc_part, pkr, v, r); // transfer v coins to receiver
  
-    for(auto i = 0;i < anon_transaction.number; i++)
+    for(auto i = 0; i < anon_transaction.number; i++)
     {
         if(i != sender_index && i != receiver_index){
             transfer_tx_list[i] = ExponentialElGamal::Enc(pp.enc_part, AnonSetList[i].pk, bn_0, r); // transfer 0 coins to AnonSet
@@ -845,21 +860,20 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
     many_out_of_many_instance.vec_cipher_balance_left.resize(anon_transaction.number);
     many_out_of_many_instance.vec_cipher_balance_right.resize(anon_transaction.number);
     many_out_of_many_instance.vec_cipher_transfer_left.resize(anon_transaction.number);
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         many_out_of_many_instance.vec_cipher_balance_left[i] = anon_transaction.balance_tx[i].Y;
         many_out_of_many_instance.vec_cipher_balance_right[i] = anon_transaction.balance_tx[i].X;
         many_out_of_many_instance.vec_cipher_transfer_left[i] = anon_transaction.transfer_tx_left[i];
     }
     many_out_of_many_instance.cipher_transfer_right = anon_transaction.transfer_tx_right;
-    
     many_out_of_many_instance.gepoch = anon_transaction.gepoch;
     many_out_of_many_instance.uepoch = anon_transaction.uepoch;
 
-
     /*Home add */
-    for(size_t i = 0;i < anon_transaction.number; i++){
-       anon_transaction.balance_tx[i] = ExponentialElGamal::HomoAdd(anon_transaction.balance_tx[i],
-                                                            transfer_tx_list[i]); 
+    for(size_t i = 0;i < anon_transaction.number; i++)
+    {
+       anon_transaction.balance_tx[i] = ExponentialElGamal::HomoAdd(anon_transaction.balance_tx[i], transfer_tx_list[i]); 
        many_out_of_many_instance.vec_cipher_balance_left[i] = anon_transaction.balance_tx[i].Y;
        many_out_of_many_instance.vec_cipher_balance_right[i] = anon_transaction.balance_tx[i].X;                                                    
     }
@@ -881,8 +895,6 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
     
     //vprime =sender's balance - transfer value
     size_t vprime_size_t = many_out_of_many_witness.vprime.ToUint64();
-    PrintSplitLine('-');
-    std::cout << "vprime_size_t=" << vprime_size_t << std::endl;
 
     ManyOutOfMany::ConsistencyRandom consistency_random;
     ManyOutOfMany::Proof proof_many_out_of_many_proof;
@@ -890,7 +902,7 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
     PrintSplitLine('-');
     std::cout << "begin to prove the validity of the transaction" << std::endl;
     ManyOutOfMany::Prove(many_out_of_many_pp, many_out_of_many_witness,many_out_of_many_instance,
-                 transcript_str,proof_many_out_of_many_proof,consistency_random);
+                    transcript_str,proof_many_out_of_many_proof,consistency_random);
 
     anon_transaction.proof_many_out_of_many_proof = proof_many_out_of_many_proof;
     PrintSplitLine('-');
@@ -903,11 +915,13 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
     sigmabullet_instance.cipher_transfer_right.resize(anon_transaction.number);
     sigmabullet_instance.cipher_balance_left.resize(anon_transaction.number);
     sigmabullet_instance.cipher_balance_right.resize(anon_transaction.number);
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         sigmabullet_instance.cipher_transfer_left[i] = anon_transaction.transfer_tx_left[i];
         sigmabullet_instance.cipher_transfer_right[i] = anon_transaction.transfer_tx_right;
     }
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         sigmabullet_instance.cipher_balance_left[i] = anon_transaction.balance_tx[i].Y;
         sigmabullet_instance.cipher_balance_left[i] = anon_transaction.balance_tx[i].X;
     }
@@ -916,7 +930,7 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
     PrintSplitLine('-');
     std::cout << "begin to prove the sigma bullet proof" << std::endl;
     SigmaBullet::Prove(pp.sigmabullet_part,sigmabullet_instance, sigmabullet_witness,
-                transcript_str, proof_sigma_bullet_proof, consistency_random, proof_many_out_of_many_proof);
+                    transcript_str, proof_sigma_bullet_proof, consistency_random, proof_many_out_of_many_proof);
     PrintSplitLine('-');
     std::cout << "successfully generate the sigma bullet proof" << std::endl;
     anon_transaction.proof_sigma_bullet_proof = proof_sigma_bullet_proof;
@@ -930,36 +944,33 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
     multi_plaintext_equality_witness.r = r;
     anon_transaction.cipher_supervison.resize(anon_transaction.number);
     multi_plaintext_equality_instance.vec_cipher_transfer.resize(anon_transaction.number);
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         multi_plaintext_equality_instance.vec_cipher_transfer[i].Y = anon_transaction.transfer_tx_left[i];
         multi_plaintext_equality_instance.vec_cipher_transfer[i].X = anon_transaction.transfer_tx_right;
     }
     multi_plaintext_equality_instance.vec_cipher_supervision.resize(anon_transaction.number);
-    
     multi_plaintext_equality_witness.vec_cipher_supervision_r.resize(anon_transaction.number);
     multi_plaintext_equality_witness.vec_cipher_v.resize(anon_transaction.number);
 
     BigInt cipher_supervison_r;
-  
-    for(size_t i = 0;i < anon_transaction.number; i++){
+    for(size_t i = 0;i < anon_transaction.number; i++)
+    {
         cipher_supervison_r=GenRandomBigIntLessThan(order);
         multi_plaintext_equality_witness.vec_cipher_supervision_r[i] = cipher_supervison_r;
         if(i == sender_index)
         {
-            anon_transaction.cipher_supervison[i] = ExponentialElGamal::Enc(pp.enc_part,pp.pka,-v,cipher_supervison_r);
-            
+            anon_transaction.cipher_supervison[i] = ExponentialElGamal::Enc(pp.enc_part,pp.pka,-v,cipher_supervison_r); 
             multi_plaintext_equality_witness.vec_cipher_v[i] = -v;
         }
         else if(i == receiver_index)
         {
-            anon_transaction.cipher_supervison[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,v,cipher_supervison_r);
-            
+            anon_transaction.cipher_supervison[i]=ExponentialElGamal::Enc(pp.enc_part,pp.pka,v,cipher_supervison_r);          
             multi_plaintext_equality_witness.vec_cipher_v[i] = v;
         }
         else
         {
             anon_transaction.cipher_supervison[i] = ExponentialElGamal::Enc(pp.enc_part,pp.pka,bn_0,cipher_supervison_r);
-            
             multi_plaintext_equality_witness.vec_cipher_v[i] = bn_0;
         }
         multi_plaintext_equality_instance.vec_cipher_supervision[i] = anon_transaction.cipher_supervison[i];  
@@ -967,7 +978,6 @@ AnonTransaction2 CreateAnonTransaction2(PP &pp, Account &Acct_sender, BigInt &v,
     }
     
     std::string transcript_supervision_str2 = "";
-
     anon_transaction.proof_multi_plaintext_equality_proof = MultiPlaintextEquality::Prove(multi_plaintext_equality_pp, multi_plaintext_equality_instance, 
                                                     multi_plaintext_equality_witness, transcript_supervision_str2);
 
@@ -1023,7 +1033,8 @@ bool VerifyAnoyTX1(PP &pp, AnonTransaction1 anon_transaction)
     sigmabullet_instance.cipher_transfer_right.resize(anon_transaction.number);
     sigmabullet_instance.cipher_balance_left.resize(anon_transaction.number);
     sigmabullet_instance.cipher_balance_right.resize(anon_transaction.number);
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         sigmabullet_instance.cipher_transfer_left[i] = anon_transaction.transfer_tx_left[i];
         sigmabullet_instance.cipher_transfer_right[i] = anon_transaction.transfer_tx_right;
         sigmabullet_instance.cipher_balance_left[i] = anon_transaction.balance_tx[i].Y;
@@ -1084,7 +1095,8 @@ bool VerifyAnoyTX2(PP &pp, AnonTransaction2 anon_transaction)
     many_out_of_many_instance.vec_cipher_balance_left.resize(anon_transaction.number);
     many_out_of_many_instance.vec_cipher_balance_right.resize(anon_transaction.number);
     many_out_of_many_instance.vec_cipher_transfer_left.resize(anon_transaction.number);
-    for(size_t i = 0;i < anon_transaction.number; i++){
+    for(size_t i = 0;i < anon_transaction.number; i++)
+    {
         many_out_of_many_instance.vec_cipher_balance_left[i] = anon_transaction.balance_tx[i].Y;
         many_out_of_many_instance.vec_cipher_balance_right[i] = anon_transaction.balance_tx[i].X;
         many_out_of_many_instance.vec_cipher_transfer_left[i] = anon_transaction.transfer_tx_left[i];
@@ -1093,7 +1105,6 @@ bool VerifyAnoyTX2(PP &pp, AnonTransaction2 anon_transaction)
     many_out_of_many_instance.gepoch = anon_transaction.gepoch;
     many_out_of_many_instance.uepoch = anon_transaction.uepoch;
 
-   
     PrintSplitLine('-');
     std::cout << "begin to verify the ManyOutOfMany proof" << std::endl;
     bool condition1 = ManyOutOfMany::Verify(many_out_of_many_pp, many_out_of_many_instance, 
@@ -1111,7 +1122,8 @@ bool VerifyAnoyTX2(PP &pp, AnonTransaction2 anon_transaction)
     sigmabullet_instance.cipher_transfer_right.resize(anon_transaction.number);
     sigmabullet_instance.cipher_balance_left.resize(anon_transaction.number);
     sigmabullet_instance.cipher_balance_right.resize(anon_transaction.number);
-    for(size_t i = 0; i < anon_transaction.number; i++){
+    for(size_t i = 0; i < anon_transaction.number; i++)
+    {
         sigmabullet_instance.cipher_transfer_left[i] = anon_transaction.transfer_tx_left[i];
         sigmabullet_instance.cipher_transfer_right[i] = anon_transaction.transfer_tx_right;
         sigmabullet_instance.cipher_balance_left[i] = anon_transaction.balance_tx[i].Y;
@@ -1190,7 +1202,7 @@ void UpdateAccount(PP &pp, AnonTransaction2 &anon_transaction, std::vector<Accou
 {     
     // update the balance
     std::cout << "update accounts >>>" << std::endl;
-    for(auto i = 0;i < anon_transaction.number; i++)
+    for(auto i = 0; i < anon_transaction.number; i++)
     {
         accountlist_miner[i].balance_ct = anon_transaction.balance_tx[i];
         accountlist_miner[i].m = ExponentialElGamal::Dec(pp.enc_part,accountlist_miner[i].sk, accountlist_miner[i].balance_ct);

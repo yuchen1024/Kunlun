@@ -241,7 +241,8 @@ BigInt Dec(const PP &pp, const BigInt& sk, const CT &ct)
         This processing is not needed in general */
         ECPoint M_inv = M.Invert();
         bool success = ShanksDLOG(pp.g, M_inv, pp.MSG_LEN, pp.TRADEOFF_NUM, m);
-        if(success == false){
+        if(success == false)
+        {
             std::cout << "decryption fails in the specified range (-2^32, 0]" << std::endl; 
             exit(EXIT_FAILURE);
         }

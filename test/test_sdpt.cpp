@@ -30,7 +30,6 @@ void Build_SDPT_Test_Enviroment(size_t ringnumber)
     std::cout << "press any key to continue >>>" << std::endl; 
     system ("read");
 
-
     // create accounts for Alice and Bob and Tax
     std::cout << "generate 16 accounts" << std::endl; 
     PrintSplitLine('-'); 
@@ -240,7 +239,7 @@ void Emulate_SDPT_System(size_t ringnumber)
         acountlist.push_back(Acct);
     }
     //we create 16 accounts by hand, the other account we name is by "Account"+ id
-    for(auto i = 17;i < ringnumber; i++)
+    for(auto i = 17; i < ringnumber; i++)
     {
         anonset.identity = acountlist[i].identity;
         anonset.pk = acountlist[i].pk;
@@ -262,17 +261,21 @@ void Emulate_SDPT_System(size_t ringnumber)
         senderindex = 0;
         receiverindex = 1;
     }
-    else{
+    else
+    {
         senderindex = SDPT::getranindex(n);
         receiverindex = SDPT::getranindex(n);
-        if(senderindex % 2 == receiverindex % 2){
+        if(senderindex % 2 == receiverindex % 2)
+        {
             receiverindex = (receiverindex+1) % n;
         }
-        if(senderindex != sender_acc_index){
+        if(senderindex != sender_acc_index)
+        {
             std::swap(AnonSetList[senderindex], AnonSetList[sender_acc_index]);
         }
-        if(receiverindex != receiver_acc_index && receiverindex != sender_acc_index && senderindex != receiver_acc_index){
-        std::swap(AnonSetList[receiverindex], AnonSetList[receiver_acc_index]);
+        if(receiverindex != receiver_acc_index && receiverindex != sender_acc_index && senderindex != receiver_acc_index)
+        {
+            std::swap(AnonSetList[receiverindex], AnonSetList[receiver_acc_index]);
         }
     }
     
@@ -325,8 +328,6 @@ void Emulate_SDPT_System(size_t ringnumber)
 
 }
 
-
-
 int main()
 {
     CRYPTO_Initialize();  
@@ -335,7 +336,6 @@ int main()
     size_t ringnumber=8;
     Build_SDPT_Test_Enviroment(ringnumber); 
     Emulate_SDPT_System(ringnumber);
-
     CRYPTO_Finalize(); 
 
     return 0; 

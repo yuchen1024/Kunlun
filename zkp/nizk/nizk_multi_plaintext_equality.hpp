@@ -10,10 +10,8 @@ this hpp implements NIZKPoK for Multi Plaintext Equality
 
 namespace MultiPlaintextEquality{
     
-
 using Serialization::operator<<; 
 using Serialization::operator>>; 
-
 
 struct PP
 {
@@ -38,7 +36,6 @@ struct Witness
     std::vector<BigInt> vec_cipher_v; // the encrypted value in ElGamal encryption cipher_transfer, it is the same as cipher_supervision
 };
 
-
 // structure of proof 
 struct Proof
 {
@@ -47,8 +44,7 @@ struct Proof
     std::vector<ECPoint> vec_B2; // P's first round message
     std::vector<BigInt> vec_z1; // P's response in Zq
     std::vector<BigInt> vec_z2; // P's response in Zq
-    std::vector<BigInt> vec_t; // P's response in Zq
-    
+    std::vector<BigInt> vec_t; // P's response in Zq  
 };
 
 std::ofstream &operator<<(std::ofstream &fout, const Proof &proof)
@@ -63,28 +59,32 @@ std::ifstream &operator>>(std::ifstream &fin, Proof &proof)
     return fin;
 } 
 
-
 void PrintInstance(Instance &instance)
 {
     std::cout << "Multi Plaintext Equality Instance >>> " << std::endl; 
     std::string note; 
-    for(auto i = 0; i < instance.vec_pk.size(); i++){
+    for(auto i = 0; i < instance.vec_pk.size(); i++)
+    {
         note = "instance.pk" + std::to_string(i);
         instance.vec_pk[i].Print(note); 
     }
-    for(auto i = 0; i < instance.vec_cipher_transfer.size(); i++){
+    for(auto i = 0; i < instance.vec_cipher_transfer.size(); i++)
+    {
         note = "instance.vec_cipher_transfer" + std::to_string(i);
         instance.vec_cipher_transfer[i].X.Print(note); 
     }
-    for(auto i = 0; i < instance.vec_cipher_transfer.size(); i++){
+    for(auto i = 0; i < instance.vec_cipher_transfer.size(); i++)
+    {
         note = "instance.vec_cipher_transfer" + std::to_string(i);
         instance.vec_cipher_transfer[i].Y.Print(note); 
     }
-    for(auto i = 0; i < instance.vec_cipher_supervision.size(); i++){
+    for(auto i = 0; i < instance.vec_cipher_supervision.size(); i++)
+    {
         note = "instance.vec_cipher_supervision.X" + std::to_string(i);
         instance.vec_cipher_supervision[i].X.Print(note); 
     }
-    for(auto i = 0; i < instance.vec_cipher_supervision.size(); i++){
+    for(auto i = 0; i < instance.vec_cipher_supervision.size(); i++)
+    {
         note = "instance.vec_cipher_supervision.Y" + std::to_string(i);
         instance.vec_cipher_supervision[i].Y.Print(note); 
     }
@@ -94,11 +94,13 @@ void PrintWitness(Witness &witness)
 {
     std::cout << "Multi Plaintext Equality Witness >>> " << std::endl; 
     witness.r.Print("witness.r"); 
-    for(auto i = 0; i < witness.vec_cipher_v.size(); i++){
+    for(auto i = 0; i < witness.vec_cipher_v.size(); i++)
+    {
         std::string note = "witness.vec_cipher_v" + std::to_string(i);
         witness.vec_cipher_v[i].Print(note); 
     }
-    for(auto i = 0; i < witness.vec_cipher_supervision_r.size(); i++){
+    for(auto i = 0; i < witness.vec_cipher_supervision_r.size(); i++)
+    {
         std::string note = "witness.vec_cipher_supervision_r" + std::to_string(i);
         witness.vec_cipher_supervision_r[i].Print(note); 
     }
@@ -210,12 +212,11 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
         transcript_str += proof.vec_B2[i].ToByteString();
     }
     BigInt e = Hash::StringToBigInt(transcript_str);
-
     std::vector<BigInt> vec_z1(num);
     std::vector<BigInt> vec_z2(num);
     std::vector<BigInt> vec_t(num);
-
-    for(auto i=0;i<num;i++){
+    for(auto i = 0; i < num; i++)
+    {
         vec_z1[i] = (vec_a[i] + (e * witness.r) % order) % order; // z1 = a + e * r1 mod q, r1 = r
         vec_z2[i] = (vec_a[i] + (e * witness.vec_cipher_supervision_r[i]) % order) % order; // z2 = a + e * r2 mod q, r2 = vec_cipher_supervision_r
         vec_t[i] = (vec_b[i] + (e * witness.vec_cipher_v[i]) % order) % order; // t = b + e * v mod q
@@ -223,11 +224,9 @@ Proof Prove(PP &pp, Instance &instance, Witness &witness, std::string &transcrip
     proof.vec_z1 = vec_z1;
     proof.vec_z2 = vec_z2;
     proof.vec_t = vec_t;
-
     #ifdef DEBUG
         PrintProof(proof); 
     #endif
-
     return proof; 
 }
 
@@ -238,34 +237,34 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     // initialize the transcript with instance
     size_t num = pp.num_cipher;
     transcript_str = "";
-    for(auto i = 0; i < num; i++){
+    for(auto i = 0; i < num; i++)
+    {
         transcript_str += instance.vec_pk[i].ToByteString();
     }
-    for(auto i = 0; i < num; i++){
+    for(auto i = 0; i < num; i++)
+    {
         transcript_str += instance.vec_cipher_transfer[i].X.ToByteString();
         transcript_str += instance.vec_cipher_transfer[i].Y.ToByteString();
     }
-    for(auto i = 0; i < num; i++){
+    for(auto i = 0; i < num; i++)
+    {
         transcript_str += instance.vec_cipher_supervision[i].X.ToByteString();
         transcript_str += instance.vec_cipher_supervision[i].Y.ToByteString();
     }
   
-
-    for(auto i = 0; i < num; i++){
+    for(auto i = 0; i < num; i++)
+    {
         transcript_str += proof.vec_A[i].ToByteString();
         transcript_str += proof.vec_B1[i].ToByteString(); 
         transcript_str += proof.vec_B2[i].ToByteString();     
     }
     // compute the challenge
     BigInt e = Hash::StringToBigInt(transcript_str); // apply FS-transform to generate the challenge
-    
     std::vector<bool> vec_condition(4*num);
-
     ECPoint LEFT1, RIGHT1; 
     ECPoint LEFT2, RIGHT2;
     ECPoint LEFT3, RIGHT3;
     ECPoint LEFT4, RIGHT4;
-
     for(auto i = 0; i < num; i++)
     {
         LEFT1 = pp.g * proof.vec_z1[i]; // g^{z_1}
@@ -277,13 +276,13 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
         LEFT4 = pp.g * proof.vec_t[i] + pp.pka*proof.vec_z2[i]; // g^{t} {pk_a}^{z_2}
         RIGHT4 = proof.vec_B2[i] + instance.vec_cipher_supervision[i].Y * e; // B_2 {Y_2}^e  
         vec_condition[i] = (LEFT1 == RIGHT1); // check g^{z1} = A {X_1}^e
-        vec_condition[num + i]= (LEFT2 == RIGHT2); // check g^{z_2} = A {X_2}^e
+        vec_condition[num + i] = (LEFT2 == RIGHT2); // check g^{z_2} = A {X_2}^e
         vec_condition[2*num + i] = (LEFT3 == RIGHT3); // check g^{t}{pk_1}^{z_1} = B_1 {Y_1}^e
         vec_condition[3*num + i] = (LEFT4 == RIGHT4); // check g^{t} {pk_a}^{z_2} = B_2 {Y_2}^e 
     }
 
     bool Validity = true; 
-    for(auto i = 0; i <num ; i++)
+    for(auto i = 0; i < num ; i++)
     {
         if(vec_condition[i] == false) Validity = false;
         if(vec_condition[num + i] == false) Validity = false;
@@ -292,15 +291,19 @@ bool Verify(PP &pp, Instance &instance, std::string &transcript_str, Proof &proo
     }
 
     #ifdef DEBUG
-    for(auto i = 0; i <num; i++){
+    for(auto i = 0; i <num; i++)
+    {
         std::cout << std::boolalpha << "Condition "<< std::to_string(i) <<" (Multi Plaintext Equality proof) = " 
                   << vec_condition[i] << std::endl; 
     }
 
-    if (Validity){ 
+    if (Validity)
+    { 
         std::cout << "NIZK proof for " << std::to_string(num) 
                   << "-participants Multi Plaintext Equality accepts >>>" << std::endl; 
-    } else {
+    } 
+    else 
+    {
         std::cout << "NIZK proof for " << std::to_string(num) 
                   << "-participants Multi Plaintext Equality rejects >>>" << std::endl; 
     }
