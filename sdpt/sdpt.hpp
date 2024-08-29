@@ -20,9 +20,7 @@ namespace SDPT{
 using Serialization::operator<<; 
 using Serialization::operator>>; 
 
-
 // define the structure of system parameters
-
 struct PP
 {    
     BigInt MAXIMUM_COINS; 
