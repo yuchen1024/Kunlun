@@ -263,10 +263,8 @@ void Emulate_SDPT_System(size_t ringnumber)
     }
     else
     {
-        //senderindex = SDPT::getranindex(n);
-        //receiverindex = SDPT::getranindex(n);
-        senderindex = 1;
-        receiverindex = 0;
+        senderindex = SDPT::getranindex(n);
+        receiverindex = SDPT::getranindex(n);
         if(senderindex == receiverindex)
         {
             receiverindex = (receiverindex+1) % n;
@@ -314,14 +312,31 @@ void Emulate_SDPT_System(size_t ringnumber)
     std::cout << "begin to mine" << std::endl;
     std::vector<SDPT::Account> AccountList_miner(ringnumber);
     std::copy(acountlist.begin(), acountlist.begin()+ringnumber, AccountList_miner.begin());
-    if(senderindex != sender_acc_index)
+    if(senderindex == receiver_acc_index && receiverindex == sender_acc_index)
     {
-        std::swap(AccountList_miner[senderindex], AccountList_miner[sender_acc_index]);
+            std::swap(AccountList_miner[senderindex], AccountList_miner[receiverindex]);
     }
-    if(receiverindex != receiver_acc_index)
+    else 
     {
-        std::swap(AccountList_miner[receiverindex], AccountList_miner[receiver_acc_index]);
+        if(senderindex == receiver_acc_index)
+        {
+            std::swap(AccountList_miner[senderindex], AccountList_miner[sender_acc_index]);
+            receiver_acc_index = sender_acc_index;
+            std::swap(AccountList_miner[receiverindex], AccountList_miner[receiver_acc_index]);
+        }
+        else if(receiverindex == sender_acc_index)
+        {
+            std::swap(AccountList_miner[receiverindex], AccountList_miner[receiver_acc_index]);
+            sender_acc_index = receiver_acc_index;
+            std::swap(AccountList_miner[senderindex], AccountList_miner[sender_acc_index]);
+        }
+        else 
+        {
+            std::swap(AccountList_miner[senderindex], AccountList_miner[sender_acc_index]);
+            std::swap(AccountList_miner[receiverindex], AccountList_miner[receiver_acc_index]);
+        }        
     }
+    
     std::cout << "AccountList_miner.size():" << AccountList_miner.size() << std::endl;
     SDPT::Miner1(pp, anon_transaction1, AccountList_miner); 
     SDPT::Miner2(pp, anon_transaction2, AccountList_miner);

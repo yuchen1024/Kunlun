@@ -9,10 +9,7 @@ this hpp implements the SDPT functionality
 #include "../zkp/nizk/nizk_many_out_of_many.hpp" // implement many out of many proof
 #include "../zkp/nizk/nizk_plaintext_bit_equality.hpp" // NIZKPoK for plaintext bit equality
 #include "../zkp/nizk/nizk_multi_plaintext_equality.hpp" // NIZKPoK for multi plaintext equality
-
-//#include "../gadget/range_proof.hpp"
 #include "../utility/serialization.hpp"
-
 #include <time.h>
 #define DEMO           // demo mode 
 //#define DEBUG        // show debug information 
