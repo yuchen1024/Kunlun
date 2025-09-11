@@ -132,7 +132,7 @@ inline void PlainInsert(const void* input, size_t LEN)
 template <typename ElementType> // Note: T must be a C++ POD type.
 inline void Insert(const ElementType& element)
 {
-   ParallelPlainInsert(&element, sizeof(ElementType));
+   PlainInsert(&element, sizeof(ElementType));
 }
 
 // specialize for string
