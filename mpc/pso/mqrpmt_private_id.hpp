@@ -132,7 +132,7 @@ Send(NetIO &io, PP &pp, std::vector<block> &vec_X, size_t ITEM_LEN)
     return {vec_union_id, vec_X_id};
 }
 
-// returns union_id and Y_id
+// returns union_id and X_id
 std::tuple<std::vector<std::vector<uint8_t>>, std::vector<std::vector<uint8_t>>> 
 Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN) 
 {
@@ -171,7 +171,6 @@ Receive(NetIO &io, PP &pp, std::vector<block> &vec_Y, size_t ITEM_LEN)
     std::cout << "[Private-ID from distributed OPRF+PSU] Phase 3: Receiver ===> vec_union_id >>> Sender";
     std::cout << " [" << (double)ITEM_LEN*UNION_SIZE/(1024*1024) << " MB]" << std::endl;
 
-    std::shuffle(vec_union_id.begin(), vec_union_id.end(), global_built_in_prg);
     io.SendBytesVector(vec_union_id); 
 
     auto end_time = std::chrono::steady_clock::now(); 
