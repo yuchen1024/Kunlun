@@ -181,8 +181,22 @@ void Send(NetIO &io, PP &pp, std::vector<std::vector<uint8_t>> &vec_X, size_t IT
     cwPRFmqRPMT::Client(io, pp.mqrpmt_part, vec_Block_X);
         
     std::cout << "[mqRPMT-based PSU] Phase 2: execute one-sided OTe >>>" << std::endl;
+
+    size_t original_size_send = vec_X.size();
+    size_t padded_size_send = (original_size_send + 127) / 128 * 128;
+
+    std::vector<std::vector<uint8_t>> vec_X_padded = vec_X;
+
+    if(padded_size_send > original_size_send) {
+        std::vector<uint8_t> dummy_item(ITEM_LEN, 0);
+        vec_X_padded.resize(padded_size_send, dummy_item);
+    }
+
+
+
     // get the intersection X \cup Y via one-sided OT from receiver
-    ALSZOTE::OnesidedSendByteVector(io, pp.ote_part, vec_X, vec_X.size()); 
+    // ALSZOTE::OnesidedSendByteVector(io, pp.ote_part, vec_X, vec_X.size());
+    ALSZOTE::OnesidedSendByteVector(io, pp.ote_part, vec_X_padded, vec_X_padded.size()); 
     
     auto end_time = std::chrono::steady_clock::now(); 
     auto running_time = end_time - start_time;
@@ -217,9 +231,22 @@ std::vector<std::vector<uint8_t>> Receive(NetIO &io, PP &pp, std::vector<std::ve
     } 
 
     std::cout << "[mqRPMT-based PSU] Phase 2: execute one-sided OTe >>>" << std::endl;
+
+
+    //fix issue 15
+    size_t original_size_recv = vec_indication_bit.size();
+    // pad vector to be multiple of 128
+    size_t padded_size_recv = (original_size_recv + 127) / 128 * 128;
+    // we assume the padded positions are 0
+    vec_indication_bit.resize(padded_size_recv, 0);
+
+
+
+
     // get the intersection X \cup Y via one-sided OT from receiver
     std::vector<std::vector<uint8_t>> vec_X_diff; 
-    vec_X_diff = ALSZOTE::OnesidedReceiveByteVector(io, pp.ote_part, vec_indication_bit, vec_indication_bit.size()); 
+    // vec_X_diff = ALSZOTE::OnesidedReceiveByteVector(io, pp.ote_part, vec_indication_bit, vec_indication_bit.size()); 
+    vec_X_diff = ALSZOTE::OnesidedReceiveByteVector(io, pp.ote_part, vec_indication_bit, padded_size_recv);
     std::vector<std::vector<uint8_t>> vec_union = vec_Y; 
     for(auto i = 0; i < vec_X_diff.size(); i++){
         vec_union.emplace_back(vec_X_diff[i]);
