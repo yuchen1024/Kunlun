@@ -21,6 +21,7 @@ In detail, we implement the protocol in Figure:7 without consistency check.
 
 #ifndef VOLE_HPP
 #define VOLE_HPP
+#include <cmath>
 #include "../../crypto/setup.hpp"
 #include "basevole.hpp"
 #include "exconvcode.hpp"
@@ -60,6 +61,15 @@ namespace VOLE {
 		std::vector<block> vec_w;
 		std::vector<block> vec_A;
 		
+		//vec_B = vec_C + vec_A*delta.
+		//w + v = u * delta
+		// return [u, w = share_(u*delta)]
+		if (N_item < 256)
+		{
+			baseVOLE_tA(A_io, N_item, vec_A, vec_C);
+			return vec_A;
+		}
+
 		// call baseVOLE to get vec_u and vec_w
 		baseVOLE_tA(A_io, t, vec_u, vec_w);
 		vec_A = tmpVOLE_A(A_io, N_item, t, vec_C, vec_u, vec_w);	
@@ -69,7 +79,14 @@ namespace VOLE {
 	
 	//(1.2) return vec_B
 	void VOLE_B(NetIO &B_io, uint64_t N_item, std::vector<block>& vec_B, block delta, uint64_t t){
-	 	std::vector<block> vec_v;		
+	 	std::vector<block> vec_v;
+		
+		if (N_item < 256)
+		{
+			baseVOLE_tB(B_io, N_item, vec_B, delta);
+			return ;
+		}
+		
 		baseVOLE_tB(B_io, t, vec_v, delta);
 		tmpVOLE_B(B_io, N_item, t, vec_v, vec_B);
 		
@@ -87,6 +104,7 @@ namespace VOLE {
 		uint64_t sub_len = N_item / t;
 		uint64_t last_len = N_item % t + N_item / t;
 		uint8_t level = (std::ceil(log2(sub_len)));
+		
 		uint8_t level_last1 = (std::ceil(log2(last_len)));
 		uint64_t leaf_num = 1ull << level;
 		uint64_t leaf_num_last1 = 1ull << level_last1;
@@ -291,6 +309,21 @@ namespace VOLE {
 		if(!vec_leaf.empty()){
 			vec_leaf.clear();
 		}
+
+		if (depth <= 1)
+		{
+			if (depth == 0) return Block::zero_block;
+
+			std::vector<block> vec_temp = GGM_PRG(k);
+			vec_leaf.push_back(vec_temp[0]);
+			vec_leaf.push_back(vec_temp[1]);
+
+			vec_m0.push_back(vec_leaf[0]);
+			vec_m1.push_back(vec_leaf[1]); 
+
+			return (vec_leaf[0] ^ vec_leaf[1]);
+		}
+		
 		uint64_t leaf_num = static_cast<uint64_t>(1ull) << depth;
 		uint64_t half_leaf_num = static_cast<uint64_t>(1ull) << (depth - 1);
 		uint64_t inner_num = leaf_num - 2;
@@ -353,6 +386,24 @@ namespace VOLE {
 	
 	//(3.2)
 	std::vector<block> PuncEval(uint8_t depth, block beta, block* ptr_m, uint8_t* ptr_selection_bit){
+
+		if (depth <= 1)
+		{
+			if (depth ==  0) return {};
+			
+			std::vector<block> vec_leaf(2);
+			if (*ptr_selection_bit == 0){
+				vec_leaf[0] = *ptr_m;
+				vec_leaf[1] = *ptr_m ^ beta;
+			}
+			else{
+				vec_leaf[1] = *ptr_m;
+				vec_leaf[0] = *ptr_m ^ beta;
+			}
+
+			return vec_leaf;
+		}
+		
 		uint64_t leaf_num = static_cast<uint64_t>(1ull) << depth;
 		uint64_t half_leaf_num = static_cast<uint64_t>(1ull) << (depth - 1);
 		Punc_Node* ptr_inner = new Punc_Node[leaf_num - 2];
