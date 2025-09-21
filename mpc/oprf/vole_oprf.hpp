@@ -74,6 +74,13 @@ namespace VOLEOPRF
         pp.STATISTICAL_SECURITY_PARAMETER = STATISTICAL_SECURITY_PARAMETER;
         
         pp.okvs_bin_size = 1ull << 15;
+
+        // pp.okvs_bin_size = std::max(1ull << 15, pp.INPUT_NUM >> 7);
+        if ((pp.INPUT_NUM >> 7) > (1ull << 15))
+        {
+            pp.okvs_bin_size = pp.INPUT_NUM >> 7;
+        }
+
         pp.okvs = Baxos<gf_128>(pp.INPUT_NUM, pp.okvs_bin_size, 3, STATISTICAL_SECURITY_PARAMETER);
         pp.okvs_output_size = pp.okvs.bin_num * pp.okvs.total_size;
         
